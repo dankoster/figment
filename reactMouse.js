@@ -33,7 +33,7 @@ function initMouse() {
 		if (timeout) clearTimeout(timeout)
 		timeout = setTimeout(() => {
 			if (comp?.element !== e.path[0]) {
-				if (comp?.node) {
+				if (comp?.node && comp?.node?.classList) {
 					comp.node.classList.remove('figment')
 					comp.node.removeAttribute('figment')
 					comp.node.removeEventListener('click', handlePseudoClick)
@@ -54,7 +54,7 @@ function initMouse() {
 					file: fiber?._debugSource?.fileName
 				}
 
-				if (comp?.node) {
+				if (comp?.node && comp?.node?.classList) {
 					comp.node.classList.add('figment')
 					comp.node.setAttribute('figment', comp.name)
 					comp.node.addEventListener('click', handlePseudoClick)
