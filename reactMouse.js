@@ -19,9 +19,13 @@ function initMouse() {
 		position: absolute;
 		right: 0;
 		top: 0;
-		background: #ff000099;
-		padding: 5px;
+		background: #ff0000eb;
+		padding-left: 5px;
+		padding-right: 5px;
 		border-bottom-left-radius: 5px;
+		font-size: 13px;
+		z-index: 1;
+		color: #ffffff
 	}`
 	document.head.appendChild(style)
 
@@ -34,12 +38,19 @@ function initMouse() {
 					comp.node.removeAttribute('figment')
 					comp.node.removeEventListener('click', handlePseudoClick)
 				}
+				
 				element = e.path[0]
 				let fiber = FindReactFiber(element, 0)
+				
+				//walk up the tree until we get a named component
+				while(fiber && !fiber?._debugOwner?.elementType?.name) {
+					fiber = fiber?._debugOwner
+				}
+
 				comp = {
 					element,
 					node: fiber?._debugOwner?.child?.stateNode,
-					name: fiber?._debugOwner?.elementType?.name,
+					name: fiber?._debugOwner?.elementType?.name, 
 					file: fiber?._debugSource?.fileName
 				}
 
@@ -49,7 +60,7 @@ function initMouse() {
 					comp.node.addEventListener('click', handlePseudoClick)
 				}
 			}
-		}, 500);
+		}, 250);
 	});
 }
 
@@ -67,7 +78,7 @@ function handlePseudoClick (e) {
 
 	if(clickedOnPseudoElement) {
 		e.preventDefault(true)
-		console.log(comp)
+		console.log({component: comp.name, file: comp.file})
 		//chrome.runtime.sendMessage(figmentId, {name: comp.name, file: comp.file})
 	}
 }
