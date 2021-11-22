@@ -1,0 +1,27 @@
+{
+	"name": "Figment",
+	"description": "Figma faster!",
+	"options_page": "options.html",
+	"version": "1.0",
+	"manifest_version": 3,
+	"content_scripts": [{
+        "js": ["contentscript.js"],
+        "matches": ["http://*/*", "https://*/*"]
+    }],
+	"web_accessible_resources": [
+		{
+			"resources": [ "reactMouse.js" ],
+			"matches": [ "<all_urls>" ]
+		}
+	],
+	"permissions": [
+		"storage",
+		"activeTab",
+		"scripting",
+		"notifications"
+	],
+	"host_permissions": [
+		"http://*/*",
+		"https://*/*"
+	]
+}
