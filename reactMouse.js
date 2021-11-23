@@ -79,7 +79,14 @@ function handlePseudoClick (e) {
 	if(clickedOnPseudoElement) {
 		e.preventDefault(true)
 		console.log({component: comp.name, file: comp.file})
-		//chrome.runtime.sendMessage(figmentId, {name: comp.name, file: comp.file})
+		chrome.runtime.sendMessage(figmentId, {name: comp.name, file: comp.file}, function(response) {
+			if (response) {
+				let { id, name, link, image } = response
+				console.log(response)
+				if (link) open(link)
+			}
+			else console.log('no match found in figma')
+		})
 	}
 }
 
