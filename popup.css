@@ -1,0 +1,14 @@
+body {
+    margin: 25px;
+}
+
+span {min-width: 125px;}
+
+div {
+    display: flex;
+    margin-bottom: 5px;
+}
+
+input {
+    min-width: 200px;
+}

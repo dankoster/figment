@@ -4,6 +4,12 @@
 	"options_page": "options.html",
 	"version": "1.0",
 	"manifest_version": 3,
+	"action": {
+		"default_popup": "popup.html"
+	},
+	"background": {
+		"service_worker": "background.js"
+	},	
 	"content_scripts": [{
         "js": ["contentscript.js"],
         "matches": ["http://*/*", "https://*/*"]
@@ -18,7 +24,7 @@
 		"storage",
 		"activeTab",
 		"scripting",
-		"notifications"
+		"unlimitedStorage"
 	],
 	"host_permissions": [
 		"http://*/*",

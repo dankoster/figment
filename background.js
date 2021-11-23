@@ -1,14 +1,4 @@
 
-
-//needs manifest config:
-// "action": {
-// 	"default_popup": "popup.html"
-// },
-// "background": {
-// 	"service_worker": "background.js"
-// },
-
-
 let color = '#3aa757';
 
 chrome.runtime.onInstalled.addListener(() => {

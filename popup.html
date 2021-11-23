@@ -1,10 +1,22 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <link rel="stylesheet" href="button.css">
+    <link rel="stylesheet" href="popup.css">
   </head>
   <body>
-    <button id="changeColor"></button>
+    <div>
+      <span>Document ID</span>
+      <input type="text" id="docId" value="1iE2CJgCM89YMv4o4h52VH" />
+    </div>
+    <div>
+      <span>Document Name</span>
+      <input type="text" id="docName" value="Production---My-Driveway" />
+    </div>
+    <div>
+      <span>User Token</span>
+      <input type="text" id="userToken" placeholder="User Token" />
+    </div>
+    <button id="loadFigmaDoc">Load Figma Doc</button>
 	<script src="popup.js"></script>
   </body>
 </html>
