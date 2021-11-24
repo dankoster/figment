@@ -38,7 +38,7 @@ function initMouse() {
 					comp.node.removeAttribute('figment')
 					comp.node.removeEventListener('click', handlePseudoClick)
 				}
-				
+
 				element = e.path[0]
 				let fiber = FindReactFiber(element, 0)
 				
@@ -51,7 +51,8 @@ function initMouse() {
 					element,
 					node: fiber?._debugOwner?.child?.stateNode,
 					name: fiber?._debugOwner?.elementType?.name, 
-					file: fiber?._debugSource?.fileName
+					file: fiber?._debugSource?.fileName,
+					figmaId: fiber?._debugOwner?.child?.stateNode?.getAttribute('data-figment')
 				}
 
 				if (comp?.node && comp?.node?.classList) {
@@ -79,7 +80,7 @@ function handlePseudoClick (e) {
 	if(clickedOnPseudoElement) {
 		e.preventDefault(true)
 		console.log({component: comp.name, file: comp.file})
-		chrome.runtime.sendMessage(figmentId, {name: comp.name, file: comp.file}, function(response) {
+		chrome.runtime.sendMessage(figmentId, {name: comp.name, id: comp.figmaId}, function(response) {
 			if (response) {
 				let { id, name, link, image } = response
 				console.log(response)

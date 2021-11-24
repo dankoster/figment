@@ -1,18 +1,18 @@
 
 let figmaFrames = []
 
-chrome.runtime.onInstalled.addListener(() => {
-	//let figmaFrames = JSON.parse(localStorage.figmaFrames || '[]')
-	//console.log('initialized from storage', figmaFrames);
+// chrome.runtime.onInstalled.addListener(() => {
+// 	//let figmaFrames = JSON.parse(localStorage.figmaFrames || '[]')
+// 	//console.log('initialized from storage', figmaFrames);
 
-	//TODO: why is chrome.storage.local broken?
-});
+// 	//TODO: why is chrome.storage.local broken?
+// });
 
 //listen for messages from popup.js
 chrome.runtime.onMessage.addListener(
 	async function (request, sender, sendResponse) {
 		await loadFigma(request)
-		sendResponse('loaded')
+		sendResponse(figmaFrames)
 	}
 );
 
@@ -20,8 +20,8 @@ chrome.runtime.onMessage.addListener(
 chrome.runtime.onMessageExternal.addListener(
 	function (request, sender, sendResponse) {
 		//find the figma info for the requested component name
-		let result = figmaFrames.find(frame => frame.name === request.name);
-		console.log(request.name, result)
+		let result = figmaFrames.find(frame => frame.name === request.name || frame.id === decodeURIComponent(request.id))
+		console.log(request, result)
 		sendResponse(result)
 	}
 )
