@@ -30,6 +30,8 @@
     transform: translate(0, 15px) scale(.95);
     transition: transform 0.1s ease-out, opacity 0.1s ease-out;
     pointer-events: none;
+    overflow: overlay;
+    max-height: 500px;
 }
 
 .menu-item {
