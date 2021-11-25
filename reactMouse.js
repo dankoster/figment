@@ -175,6 +175,9 @@ var menu = document.querySelector('.figment-menu');
 
 function showMenu(x, y) {
 	if (menu) {
+		let overflowX = x + getTotal(getComputedStyle(menu), ['width']) - window.innerWidth
+		if(overflowX > 0) x -= (overflowX + 50)
+
 		menu.style.left = x + 'px';
 		menu.style.top = y + 'px';
 		menu.classList.add('menu-show');
