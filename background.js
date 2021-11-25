@@ -1,5 +1,6 @@
 
 let figmaFrames = []
+let lastModified, version, thumbnailUrl
 
 // chrome.runtime.onInstalled.addListener(() => {
 // 	//let figmaFrames = JSON.parse(localStorage.figmaFrames || '[]')
@@ -22,7 +23,16 @@ chrome.runtime.onMessageExternal.addListener(
 		//find the figma info for the requested component name
 		let result = figmaFrames.find(frame => frame.name === request.name || frame.id === decodeURIComponent(request.id))
 		console.log(request, result)
-		sendResponse(result)
+
+		if (!result) {
+			//split the requested name 'MyProfile' into a lowercase regex string like 'my|profile'
+			let regex = new RegExp(request.name.split(/(?=[A-Z])/).map(str => str.toLowerCase()).join('|'))
+			//use the regex to see if any frame name has any word from the requested name 
+			// (so, 'MyProfile' matches 'Profile / Desktop @1680')
+			result = figmaFrames.filter(frame => regex.test(frame.name.toLowerCase()))
+		}
+	
+		sendResponse({ lastModified, version, thumbnailUrl, result })
 	}
 )
 
@@ -34,9 +44,13 @@ async function getCurrentTab() {
 
 async function loadFigma({ docId, docName, userToken }) {
 
-	if(!userToken) userToken = 'XXXXXXXXXXXXXXXXXXXXXXXXXX'
+	if(!userToken) userToken = '277914-26d2f44b-cdd4-4ecb-b08a-4bd54ff90346'
 
 	json = await fetchFigmaJson(`https://api.figma.com/v1/files/${docId}?depth=2`, userToken)
+
+	lastModified = json.lastModified
+	version = json.version 
+	thumbnailUrl = json.thumbnailUrl
 
 	for (const child of json.document.children) {
 		for (const node of child.children.filter(c => c.type === 'FRAME')) {
@@ -49,10 +63,7 @@ async function loadFigma({ docId, docName, userToken }) {
 		}
 	}
 
-	//TODO: store and display figma doc last updated date
-
 	//localStorage.setItem('figmaFrames', JSON.stringify(figmaFrames))
-
 	await chrome.storage.local.set({ figmaFrames: JSON.stringify(figmaFrames) })
 
 	console.log(`loaded figma doc ${docName}!`, figmaFrames)

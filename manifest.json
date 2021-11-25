@@ -16,7 +16,7 @@
     }],
 	"web_accessible_resources": [
 		{
-			"resources": [ "reactMouse.js" ],
+			"resources": [ "reactMouse.js", "styles.css" ],
 			"matches": [ "<all_urls>" ]
 		}
 	],

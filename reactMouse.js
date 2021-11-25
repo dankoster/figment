@@ -1,5 +1,6 @@
 
-const figmentId = document.head.getElementsByTagName('figment')[0].id
+const figmentId = document.head.getElementsByTagName('figment')[0].id //get the ID of the browser plugin
+const delayMs = 50
 
 initMouse()
 
@@ -8,65 +9,63 @@ let element = null;
 let comp = null;
 function initMouse() {
 	console.log(figmentId, 'init mouse!')
-	var style = document.createElement('style');
-	style.innerHTML = `
-	.figment {
-		border: 1px solid #ff000099;
-		position: relative;
-	}
-	  .figment::before {
-		content: attr(figment);
-		position: absolute;
-		right: 0;
-		top: 0;
-		background: #ff0000eb;
-		padding-left: 5px;
-		padding-right: 5px;
-		border-bottom-left-radius: 5px;
-		font-size: 13px;
-		z-index: 1;
-		color: #ffffff
-	}`
-	document.head.appendChild(style)
 
 	document.addEventListener('mousemove', e => {
 		if (timeout) clearTimeout(timeout)
 		timeout = setTimeout(() => {
 			if (comp?.element !== e.path[0]) {
-				if (comp?.node && comp?.node?.classList) {
-					comp.node.classList.remove('figment')
-					comp.node.removeAttribute('figment')
-					comp.node.removeEventListener('click', handlePseudoClick)
+				if (comp?.stateNode && comp?.stateNode?.classList) {
+					comp.stateNode.classList.remove('figment')
+					comp.stateNode.removeAttribute('figment')
+					comp.stateNode.removeEventListener('click', handlePseudoClick)
 				}
-
-				element = e.path[0]
-				let fiber = FindReactFiber(element, 0)
 				
-				//walk up the tree until we get a named component
-				while(fiber && !fiber?._debugOwner?.elementType?.name) {
-					fiber = fiber?._debugOwner
-				}
+				let debugTree = e.path
+				.map(element => {
+					let f = FindReactFiber(element)
+					let debugOwner = f?._debugOwner
+					let debugOwnerSymbolType = typeof debugOwner?.elementType?.$$typeof === 'symbol' ? Symbol.keyFor(debugOwner?.elementType?.$$typeof) : undefined
+					let debugOwnerName = debugOwner?.elementType?.name 
+					|| debugOwner?.elementType?.render?.name 
 
-				comp = {
-					element,
-					node: fiber?._debugOwner?.child?.stateNode,
-					name: fiber?._debugOwner?.elementType?.name, 
-					file: fiber?._debugSource?.fileName,
-					figmaId: fiber?._debugOwner?.child?.stateNode?.getAttribute('data-figment')
-				}
+					//walk down the child tree until we find one with a state node
+					let child = debugOwner?.child
+					let stateNode = child?.stateNode
+					while (!stateNode && child) {
+						child = child?.child
+						stateNode = child?.stateNode
+					}
 
-				if (comp?.node && comp?.node?.classList) {
-					comp.node.classList.add('figment')
-					comp.node.setAttribute('figment', comp.name)
-					comp.node.addEventListener('click', handlePseudoClick)
+					let figmaId = stateNode?.getAttribute && stateNode.getAttribute('data-figment')
+
+					return {
+						element, 
+						debugOwner,
+						debugOwnerName,
+						debugOwnerSymbolType,
+						stateNode, 
+						figmaId
+					}
+				})
+
+				let usefulTree = debugTree.filter(t => t.debugOwnerName && !t.debugOwnerSymbolType)
+				//console.log(usefulTree)
+
+				comp = usefulTree[0]
+				if(comp) comp.debugTree = usefulTree
+
+				if (comp?.stateNode && comp?.stateNode?.classList) {
+					comp.stateNode.classList.add('figment')
+					comp.stateNode.setAttribute('figment', comp.debugOwnerName)
+					comp.stateNode.addEventListener('click', handlePseudoClick)
 				}
 			}
-		}, 250);
+		}, delayMs);
 	});
 }
 
 function handlePseudoClick (e) {
-	let style = getComputedStyle(comp.node, ':before')
+	let style = getComputedStyle(comp.stateNode, ':before')
 	let left = styleToInt(style.left)
 	let top = styleToInt(style.right)
 	let height = getTotal(style, ['height', 'borderWidth', 'paddingTop', 'paddingBottom'])
@@ -79,17 +78,124 @@ function handlePseudoClick (e) {
 
 	if(clickedOnPseudoElement) {
 		e.preventDefault(true)
-		console.log({component: comp.name, file: comp.file})
-		chrome.runtime.sendMessage(figmentId, {name: comp.name, id: comp.figmaId}, function(response) {
-			if (response) {
-				let { id, name, link, image } = response
-				console.log(response)
-				if (link) open(link)
+		//console.log(comp) 
+		chrome.runtime.sendMessage(figmentId, {name: comp.debugOwnerName, id: comp.figmaId}, function(figmaData) {
+			if (figmaData) {
+				//console.log(figmaData)
+				renderMenu(comp.debugTree, figmaData)
+				onContextMenu(e)
 			}
-			else console.log('no match found in figma')
+			//else console.log('no match found in figma')
 		})
 	}
 }
+
+function renderMenu(debugTree, figmaData) {
+	document.querySelectorAll('.figment-menu').forEach(element => element.remove())
+	let ul = document.createElement('ul')
+	ul.className = 'figment-menu'
+
+	debugTree.forEach(item => {
+		let {
+			element, 
+			debugOwner,
+			debugOwnerName,
+			debugOwnerSymbolType,
+			stateNode, 
+			figmaId
+		} = item
+
+		let li = renderMenuItem({text: debugOwnerName})
+		ul.appendChild(li)
+	})
+
+	let sep = document.createElement('li')
+	sep.className = 'menu-separator'
+	ul.appendChild(sep)
+
+	if (figmaData?.lastModified) {
+		let lastModified = new Date(figmaData.lastModified).toLocaleString()
+		let info = renderMenuItem({ text: `last modified ${lastModified}` })
+		info.classList.add('menu-info')
+		ul.appendChild(info)
+	}
+
+	if (figmaData?.result?.length) {
+		figmaData?.result?.forEach(item => {
+			let {
+				id,
+				name,
+				link,
+				image
+			} = item
+
+			let li = renderMenuItem({ text: name, link })
+			ul.appendChild(li)
+		})
+	}
+	else {
+		let li = renderMenuItem({text: 'No figma data'})
+		ul.appendChild(li)
+	}
+
+	document.body.appendChild(ul)
+	menu = document.querySelector('.figment-menu');
+}
+
+function renderMenuItem({text, link}) {
+	let li = document.createElement('li')
+	li.className = 'menu-item'
+
+	// let i = document.createElement('i')
+	// i.className = 'fa fa-folder-open'
+
+	let span = document.createElement('span')
+	span.className = 'menu-text'
+	span.textContent = text
+
+	if (link) {
+		let a = document.createElement('a')
+		a.href = link
+		a.target = '_blank'
+		a.classList.add('menu-btn')
+		li.appendChild(a)
+		// a.appendChild(i)
+		a.appendChild(span)
+	}
+	else {
+		// li.appendChild(i)
+		li.appendChild(span)
+	}
+
+	return li
+}
+
+https://codepen.io/ryanmorr/pen/JdOvYR
+var menu = document.querySelector('.figment-menu');
+
+function showMenu(x, y) {
+	if (menu) {
+		menu.style.left = x + 'px';
+		menu.style.top = y + 'px';
+		menu.classList.add('menu-show');
+	}
+}
+
+function hideMenu() {
+	menu.classList.remove('menu-show');
+}
+
+function onContextMenu(e) {
+	e.preventDefault();
+	showMenu(e.pageX, e.pageY);
+	document.addEventListener('mouseup', onMouseDown, false);
+}
+
+function onMouseDown(e) {
+	hideMenu();
+	document.removeEventListener('mouseup', onMouseDown);
+}
+
 
 let styleToInt = (value) => Number.parseInt(value.replaceAll('px', ''))
 let getTotal = (style, properties) => properties.reduce((total, property) => total + styleToInt(style[property]), 0)
@@ -103,3 +209,4 @@ function FindReactFiber(dom) {
 	});
 	return dom[key]
 }
+
