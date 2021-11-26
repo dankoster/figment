@@ -48,9 +48,12 @@ function initMouse() {
 					}
 				})
 
-				let usefulTree = debugTree.filter(t => t.debugOwnerName && !t.debugOwnerSymbolType)
-				//console.log(usefulTree)
-
+				let usefulTree = debugTree.filter((e1, index, array) => 
+					e1.debugOwnerName //we do have a debug name (the component name)
+					&& !e1.debugOwnerSymbolType //this is not a symbolic reference
+					&& !array.slice(index + 1).find(e2 => e2.debugOwnerName === e1.debugOwnerName) //there is not another one of these ahead in the list
+				)
+				
 				comp = usefulTree[0]
 				if(comp) comp.debugTree = usefulTree
 
@@ -105,7 +108,23 @@ function renderMenu(debugTree, figmaData) {
 			figmaId
 		} = item
 
-		let li = renderMenuItem({text: debugOwnerName})
+		let li = renderMenuItem({ text: debugOwnerName })
+		li.addEventListener("mouseenter", function (e) {
+			e.target.classList.add('comp-menu-item-hover')
+			stateNode.classList.add('figment')
+		});
+		li.addEventListener("mouseleave", function (e) {
+			e.target.classList.remove('comp-menu-item-hover')
+			stateNode.classList.remove('figment')
+		})
+		li.addEventListener('click', function (e) {
+			let uri = [
+				`vscode://file${item.debugOwner._debugSource.fileName}`,
+				item.debugOwner._debugSource.lineNumber,
+				item.debugOwner._debugSource.columnNumber
+			].join(':')
+			open(uri)
+		})
 		ul.appendChild(li)
 	})
 
@@ -146,9 +165,6 @@ function renderMenuItem({text, link}) {
 	let li = document.createElement('li')
 	li.className = 'menu-item'
 
-	// let i = document.createElement('i')
-	// i.className = 'fa fa-folder-open'
-
 	let span = document.createElement('span')
 	span.className = 'menu-text'
 	span.textContent = text
@@ -159,11 +175,9 @@ function renderMenuItem({text, link}) {
 		a.target = '_blank'
 		a.classList.add('menu-btn')
 		li.appendChild(a)
-		// a.appendChild(i)
 		a.appendChild(span)
 	}
 	else {
-		// li.appendChild(i)
 		li.appendChild(span)
 	}
 

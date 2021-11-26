@@ -1,5 +1,6 @@
 .figment {
-    border: 1px solid #ff000099;
+    outline: 1px solid #ff0000;
+    z-index: 30000;
     position: relative;
 }
   .figment::before {
@@ -40,6 +41,11 @@
     margin: 0;
     padding: 0;
     white-space: nowrap;
+}
+
+.comp-menu-item-hover {
+    outline: 1px solid red;
+    cursor: pointer;
 }
 
 .menu-btn { 
