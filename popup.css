@@ -12,3 +12,8 @@ div {
 input {
     min-width: 200px;
 }
+
+.status {
+    padding: 5px;
+    margin-left: 10px;
+}

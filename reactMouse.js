@@ -128,36 +128,38 @@ function renderMenu(debugTree, figmaData) {
 		ul.appendChild(li)
 	})
 
-	let sep = document.createElement('li')
-	sep.className = 'menu-separator'
-	ul.appendChild(sep)
+	if (figmaData?.recordCount) {
+		let sep = document.createElement('li')
+		sep.className = 'menu-separator'
+		ul.appendChild(sep)
 
-	if (Number.isInteger(figmaData?.recordCount)) {
-		let lastModified = new Date(figmaData.lastModified).toLocaleString()
-		let info = renderMenuItem({ text: `total frames: ${figmaData?.recordCount}` })
-		info.classList.add('menu-info')
-		ul.appendChild(info)
-	}
+		if (Number.isInteger(figmaData?.recordCount)) {
+			let lastModified = new Date(figmaData.lastModified).toLocaleString()
+			let info = renderMenuItem({ text: `total frames: ${figmaData?.recordCount}` })
+			info.classList.add('menu-info')
+			ul.appendChild(info)
+		}
 
-	if (figmaData?.lastModified) {
-		let lastModified = new Date(figmaData.lastModified).toLocaleString()
-		let info = renderMenuItem({ text: `last modified ${lastModified}` })
-		info.classList.add('menu-info')
-		ul.appendChild(info)
-	}
+		if (figmaData?.lastModified) {
+			let lastModified = new Date(figmaData.lastModified).toLocaleString()
+			let info = renderMenuItem({ text: `last modified ${lastModified}` })
+			info.classList.add('menu-info')
+			ul.appendChild(info)
+		}
 
-	if (figmaData?.result?.length) {
-		figmaData?.result?.forEach(item => {
-			let {
-				id,
-				name,
-				link,
-				image
-			} = item
+		if (figmaData?.result?.length) {
+			figmaData?.result?.forEach(item => {
+				let {
+					id,
+					name,
+					link,
+					image
+				} = item
 
-			let li = renderMenuItem({ text: name, link })
-			ul.appendChild(li)
-		})
+				let li = renderMenuItem({ text: name, link })
+				ul.appendChild(li)
+			})
+		}
 	}
 
 	document.body.appendChild(ul)

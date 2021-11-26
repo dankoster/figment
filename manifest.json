@@ -1,7 +1,6 @@
 {
 	"name": "Figment",
 	"description": "Figma faster!",
-	"options_page": "options.html",
 	"version": "1.0",
 	"manifest_version": 3,
 	"action": {
