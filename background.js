@@ -22,7 +22,6 @@ chrome.runtime.onMessageExternal.addListener(
 	function (request, sender, sendResponse) {
 		//find the figma info for the requested component name
 		let result = figmaFrames.find(frame => frame.name === request.name || frame.id === decodeURIComponent(request.id))
-		console.log(request, result)
 
 		if (!result) {
 			//split the requested name 'MyProfile' into a lowercase regex string like 'my|profile'
@@ -31,8 +30,10 @@ chrome.runtime.onMessageExternal.addListener(
 			// (so, 'MyProfile' matches 'Profile / Desktop @1680')
 			result = figmaFrames.filter(frame => regex.test(frame.name.toLowerCase()))
 		}
+		
+		console.log(request, result)
 	
-		sendResponse({ lastModified, version, thumbnailUrl, result })
+		sendResponse({ lastModified, version, thumbnailUrl, result, recordCount: figmaFrames?.length })
 	}
 )
 
@@ -44,7 +45,7 @@ async function getCurrentTab() {
 
 async function loadFigma({ docId, docName, userToken }) {
 
-	if(!userToken) userToken = '277914-26d2f44b-cdd4-4ecb-b08a-4bd54ff90346'
+	if(!userToken) userToken = '279423-0728c904-68af-4bc7-91e0-4b988583f961'
 
 	json = await fetchFigmaJson(`https://api.figma.com/v1/files/${docId}?depth=2`, userToken)
 

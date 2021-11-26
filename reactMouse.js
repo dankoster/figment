@@ -132,6 +132,13 @@ function renderMenu(debugTree, figmaData) {
 	sep.className = 'menu-separator'
 	ul.appendChild(sep)
 
+	if (Number.isInteger(figmaData?.recordCount)) {
+		let lastModified = new Date(figmaData.lastModified).toLocaleString()
+		let info = renderMenuItem({ text: `total frames: ${figmaData?.recordCount}` })
+		info.classList.add('menu-info')
+		ul.appendChild(info)
+	}
+
 	if (figmaData?.lastModified) {
 		let lastModified = new Date(figmaData.lastModified).toLocaleString()
 		let info = renderMenuItem({ text: `last modified ${lastModified}` })
@@ -151,10 +158,6 @@ function renderMenu(debugTree, figmaData) {
 			let li = renderMenuItem({ text: name, link })
 			ul.appendChild(li)
 		})
-	}
-	else {
-		let li = renderMenuItem({text: 'No figma data'})
-		ul.appendChild(li)
 	}
 
 	document.body.appendChild(ul)
