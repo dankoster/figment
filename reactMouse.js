@@ -117,14 +117,16 @@ function renderMenu(debugTree, figmaData) {
 			e.target.classList.remove('comp-menu-item-hover')
 			stateNode.classList.remove('figment')
 		})
-		li.addEventListener('click', function (e) {
-			let uri = [
-				`vscode://file${item.debugOwner._debugSource.fileName}`,
-				item.debugOwner._debugSource.lineNumber,
-				item.debugOwner._debugSource.columnNumber
-			].join(':')
-			open(uri)
-		})
+		if (item.debugOwner?._debugSource?.fileName) {
+			li.addEventListener('click', function (e) {
+				let uri = [
+					`vscode://file${item.debugOwner._debugSource.fileName}`,
+					item.debugOwner._debugSource.lineNumber,
+					item.debugOwner._debugSource.columnNumber
+				].join(':')
+				open(uri)
+			})
+		}
 		ul.appendChild(li)
 	})
 
@@ -231,4 +233,3 @@ function FindReactFiber(dom) {
 	});
 	return dom[key]
 }
-
