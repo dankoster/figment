@@ -8,15 +8,9 @@ let statusText = document.getElementById('status')
 let figma = {}
 
 //this is going to run every time the popup is shown!
-GetLocalDataAsync('figma').then((data) => {
-	console.log('GetLocalDataAsync:figma', data)
-	figma = data.figma
-
+chrome.storage.local.get(["figma"], ({ figma }) => {
 	userTokenInput.value = figma?.userToken ?? ''
 	statusText.innerText = figma?.loaded ? 'Loaded ' + new Date(figma?.loaded).toLocaleString() : ''
-
-	//send the figma data to the service worker (background.js)
-	chrome.runtime.sendMessage({figma})
 })
 
 loadFigmaDoc.addEventListener('click', async (e) => {
@@ -33,8 +27,9 @@ loadFigmaDoc.addEventListener('click', async (e) => {
 	console.log(`got figma doc ${docName}!`, figma)
 	userTokenInput.value = figma?.userToken ?? ''
 	statusText.innerText = 'Loaded ' + new Date(figma?.loaded).toLocaleString()
+
+	//save the figma data in extension local storage
 	chrome.storage.local.set({ figma })
-	chrome.runtime.sendMessage({ figma }) //send the figma data to the service worker (background.js)
 
 	loadFigmaDoc.disabled = false
 })
@@ -81,10 +76,4 @@ async function FetchFigmaJson(url, userToken) {
 	let request = new Request(url);
 	let response = await fetch(request, init)
 	return response.json()
-}
-
-async function GetLocalDataAsync(key) {
-	return new Promise((resolve) => {
-		chrome.storage.local.get([key], (data) => { resolve(data) })
-	})
 }

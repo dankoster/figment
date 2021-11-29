@@ -1,15 +1,3 @@
-//the page is loading, so try to get figma data from local storage
-GetLocalDataAsync('figma').then((data) => {
-	//send the figma data to the service worker (background.js)
-	chrome.runtime.sendMessage({figma: data.figma})
-})
-
-async function GetLocalDataAsync(key) {
-	return new Promise((resolve) => {
-		chrome.storage.local.get([key], (data) => { resolve(data) })
-	})
-}
-
 //add the extension id to the dom so we know where to send messages
 let f = document.createElement('figment')
 f.setAttribute('id', chrome.runtime.id)
