@@ -17,6 +17,31 @@
     color: #ffffff
 }
 
+.figment-outline {
+	position: absolute;
+	pointer-events: none;
+	outline: 2px dashed #ff000091;
+	z-index: 30000;
+	position: absolute;
+	border-radius: 5px;
+	outline-offset: -2px;
+}
+.figment-outline::before {
+	pointer-events: all;
+    content: attr(figment);
+    position: absolute;
+    right: 0;
+    top: 0;
+    background: #ff000091;
+    padding-left: 5px;
+    padding-right: 5px;
+    border-bottom-left-radius: 5px;
+	border-top-right-radius: 5px;
+    font-size: 13px;
+    z-index: 1;
+    color: #ffffff
+}
+
 .figment-menu {
     position: absolute;
     padding: 2px;

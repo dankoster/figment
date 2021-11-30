@@ -58,39 +58,44 @@ function initMouse() {
 				if(comp) comp.debugTree = usefulTree
 
 				if (comp?.stateNode && comp?.stateNode?.classList) {
-					comp.stateNode.classList.add('figment')
-					comp.stateNode.setAttribute('figment', comp.debugOwnerName)
-					comp.stateNode.addEventListener('click', handlePseudoClick)
+					highlightElement(comp)
+					//comp.stateNode.classList.add('figment')
+					//comp.stateNode.setAttribute('figment', comp.debugOwnerName)
+					//comp.stateNode.addEventListener('click', handlePseudoClick)
 				}
 			}
 		}, delayMs);
 	});
 }
 
-function handlePseudoClick (e) {
-	let style = getComputedStyle(comp.stateNode, ':before')
-	let left = styleToInt(style.left)
-	let top = styleToInt(style.right)
-	let height = getTotal(style, ['height', 'borderWidth', 'paddingTop', 'paddingBottom'])
-	let width = getTotal(style, ['width', 'borderWidth', 'paddingLeft', 'paddingRight'])
+function highlightElement(comp) {
 
-	let clickedOnPseudoElement = (
-		e.offsetX >= left && e.offsetX <= (left + width) &&
-		e.offsetY >= top && e.offsetY <= (top + height)
-	)
+	let style = getComputedStyle(comp.stateNode)
 
-	if(clickedOnPseudoElement) {
-		e.preventDefault(true)
-		//console.log(comp) 
-		chrome.runtime.sendMessage(figmentId, {name: comp.debugOwnerName, id: comp.figmaId}, function(figmaData) {
-			if (figmaData) {
-				//console.log(figmaData)
-				renderMenu(comp.debugTree, figmaData)
-				onContextMenu(e)
-			}
-			//else console.log('no match found in figma')
-		})
+	let overlay = document.querySelector('.figment-outline')
+	if(!overlay) {
+		overlay = document.createElement('div')
+		overlay.className = 'figment-outline'
+		document.body.appendChild(overlay)
 	}
+
+	overlay.removeEventListener('click', (e) => handlePseudoClick(e, comp))
+	overlay.addEventListener('click', (e) => handlePseudoClick(e, comp))
+	overlay.setAttribute('figment', comp.debugOwnerName)
+	overlay.style.top = getTotal(style, ['marginTop']) + comp.stateNode.offsetTop + 'px'
+	overlay.style.left = getTotal(style, ['marginLeft']) + comp.stateNode.offsetLeft + 'px'
+	overlay.style.width = style.width
+	overlay.style.height = style.height
+}
+
+function handlePseudoClick (e, comp) {
+	e.preventDefault(true)
+	chrome.runtime.sendMessage(figmentId, { name: comp.debugOwnerName, id: comp.figmaId }, function (figmaData) {
+		if (figmaData) {
+			renderMenu(comp.debugTree, figmaData)
+			onContextMenu(e)
+		}
+	})
 }
 
 function renderMenu(debugTree, figmaData) {
@@ -219,7 +224,6 @@ function onMouseDown(e) {
 	hideMenu();
 	document.removeEventListener('mouseup', onMouseDown);
 }
-
 
 let styleToInt = (value) => Number.parseInt(value.replaceAll('px', ''))
 let getTotal = (style, properties) => properties.reduce((total, property) => total + styleToInt(style[property]), 0)
