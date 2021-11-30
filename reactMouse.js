@@ -70,8 +70,6 @@ function initMouse() {
 
 function highlightElement(comp) {
 
-	let style = getComputedStyle(comp.stateNode)
-
 	let overlay = document.querySelector('.figment-outline')
 	if(!overlay) {
 		overlay = document.createElement('div')
@@ -82,10 +80,12 @@ function highlightElement(comp) {
 	overlay.removeEventListener('click', (e) => handlePseudoClick(e, comp))
 	overlay.addEventListener('click', (e) => handlePseudoClick(e, comp))
 	overlay.setAttribute('figment', comp.debugOwnerName)
-	overlay.style.top = getTotal(style, ['marginTop']) + comp.stateNode.offsetTop + 'px'
-	overlay.style.left = getTotal(style, ['marginLeft']) + comp.stateNode.offsetLeft + 'px'
-	overlay.style.width = style.width
-	overlay.style.height = style.height
+
+	let rect = comp?.stateNode?.getBoundingClientRect()
+	overlay.style.top = rect.top + 'px' 
+	overlay.style.left = rect.left + 'px'
+	overlay.style.width = rect.width + 'px'
+	overlay.style.height = rect.height + 'px'
 }
 
 function handlePseudoClick (e, comp) {
