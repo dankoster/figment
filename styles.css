@@ -61,11 +61,14 @@
 }
 
 .menu-item {
-    display: block;
+    display: flex;
     position: relative;
+    gap: 20px;
     margin: 0;
     padding: 0;
     white-space: nowrap;
+    padding-inline: 10px;
+    align-items: center;
 }
 
 .comp-menu-item-hover {
@@ -85,6 +88,7 @@
     white-space: nowrap;
     padding: 6px 8px;
     border-radius: 3px;
+    flex-grow: 1;
 }
 
 button.menu-btn {
@@ -109,9 +113,13 @@ a.menu-btn {
 }
 
 .menu-text {
-    margin-left: 25px;
-    margin-right: 25px;
 }
+
+.menu-subtext {
+    color: darkgrey;
+    flex-grow: 1;
+    text-align: end;
+    font-size: smaller;}
 
 .menu-btn .fa {
     position: absolute;

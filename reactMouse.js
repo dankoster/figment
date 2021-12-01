@@ -45,7 +45,9 @@ function initMouse() {
 				let usefulTree = debugTree.filter((e1, index, array) => 
 					e1.debugOwnerName //we do have a debug name (the component name)
 					&& !e1.debugOwnerSymbolType //this is not a symbolic reference
-					&& !array.slice(index + 1).find(e2 => e2.debugOwnerName === e1.debugOwnerName) //there is not another one of these ahead in the list
+					&& !array.slice(index + 1).find(e2 => e2.debugOwnerName === e1.debugOwnerName 
+						&& e2.debugOwner._debugSource.fileName === e1.debugOwner._debugSource.fileName
+						&& e2.debugOwner._debugSource.lineNumber === e1.debugOwner._debugSource.lineNumber) //there is not another one of these ahead in the list
 				)
 				
 				comp = usefulTree[0]
@@ -79,7 +81,7 @@ function highlightElement({node, label, onClick}) {
 	overlay.setAttribute('figment', label)
 
 	let rect = node.getBoundingClientRect()
-	overlay.style.top = rect.top + 'px' 
+	overlay.style.top = window.scrollY + rect.top + 'px' 
 	overlay.style.left = rect.left + 'px'
 	overlay.style.width = rect.width + 'px'
 	overlay.style.height = rect.height + 'px'
@@ -89,6 +91,7 @@ function handlePseudoClick (e, comp) {
 	e.preventDefault(true)
 	chrome.runtime.sendMessage(figmentId, { name: comp.debugOwnerName, id: comp.figmaId }, function (figmaData) {
 		if (figmaData) {
+			figmaData.searchTerms = [comp.debugOwnerName.split(/(?=[A-Z])/), comp.figmaId].join(' ')
 			renderMenu(comp.debugTree, figmaData)
 			showMenu(e.pageX, e.pageY);
 			document.addEventListener('mouseup', onMouseUp, false);
@@ -116,17 +119,20 @@ function renderMenu(debugTree, figmaData) {
 			figmaId
 		} = item
 
-		let li = renderMenuItem({ text: debugOwnerName })
+		let ds = debugOwner?._debugSource
+		let debugFile = ds?.fileName?.substr(ds?.fileName?.lastIndexOf('/')+1)
+		let debugPath = debugFile && [debugFile, ds?.lineNumber, ds?.columnNumber].join(':')
+
+		let li = renderMenuItem({ text: debugOwnerName, subtext: debugPath })
 		li.addEventListener("mouseenter", function (e) {
 			e.target.classList.add('comp-menu-item-hover')
 			highlightElement({
-				node: stateNode, 
+				node: stateNode.getBoundingClientRect ? stateNode : element, //the stateNode may not be a DOM element 
 				label: debugOwnerName
 			})
 		});
 		li.addEventListener("mouseleave", function (e) {
 			e.target.classList.remove('comp-menu-item-hover')
-			stateNode.classList.remove('figment')
 		})
 		if (item.debugOwner?._debugSource?.fileName) {
 			li.addEventListener('click', function (e) {
@@ -147,7 +153,6 @@ function renderMenu(debugTree, figmaData) {
 		ul.appendChild(sep)
 
 		if (Number.isInteger(figmaData?.recordCount)) {
-			let lastModified = new Date(figmaData.lastModified).toLocaleString()
 			let info = renderMenuItem({ text: `total frames: ${figmaData?.recordCount}` })
 			info.classList.add('menu-info')
 			ul.appendChild(info)
@@ -156,6 +161,12 @@ function renderMenu(debugTree, figmaData) {
 		if (figmaData?.lastModified) {
 			let lastModified = new Date(figmaData.lastModified).toLocaleString()
 			let info = renderMenuItem({ text: `last modified ${lastModified}` })
+			info.classList.add('menu-info')
+			ul.appendChild(info)
+		}
+
+		if (figmaData?.searchTerms) {
+			let info = renderMenuItem({ text: `search terms: ${figmaData?.searchTerms}` })
 			info.classList.add('menu-info')
 			ul.appendChild(info)
 		}
@@ -179,13 +190,13 @@ function renderMenu(debugTree, figmaData) {
 	menu = document.querySelector('.figment-menu');
 }
 
-function renderMenuItem({text, link, }) {
+function renderMenuItem({text, subtext, link, }) {
 	let li = document.createElement('li')
 	li.className = 'menu-item'
 
-	let span = document.createElement('span')
-	span.className = 'menu-text'
-	span.textContent = text
+	let textSpan = document.createElement('span')
+	textSpan.className = 'menu-text'
+	textSpan.textContent = text
 
 	if (link) {
 		let a = document.createElement('a')
@@ -193,10 +204,17 @@ function renderMenuItem({text, link, }) {
 		a.target = '_blank'
 		a.classList.add('menu-btn')
 		li.appendChild(a)
-		a.appendChild(span)
+		a.appendChild(textSpan)
 	}
 	else {
-		li.appendChild(span)
+		li.appendChild(textSpan)
+	}
+
+	if(subtext) {
+		let subtextSpan = document.createElement('span')
+		subtextSpan.className = 'menu-subtext'
+		subtextSpan.textContent = subtext
+		li.appendChild(subtextSpan)
 	}
 
 	return li
