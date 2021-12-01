@@ -13,13 +13,7 @@ function initMouse() {
 	document.addEventListener('mousemove', e => {
 		if (timeout) clearTimeout(timeout)
 		timeout = setTimeout(() => {
-			if (comp?.element !== e.path[0]) {
-				if (comp?.stateNode && comp?.stateNode?.classList) {
-					comp.stateNode.classList.remove('figment')
-					comp.stateNode.removeAttribute('figment')
-					comp.stateNode.removeEventListener('click', handlePseudoClick)
-				}
-				
+			if (comp?.element !== e.path[0]) {				
 				let debugTree = e.path
 				.map(element => {
 					let f = FindReactFiber(element)
@@ -58,30 +52,33 @@ function initMouse() {
 				if(comp) comp.debugTree = usefulTree
 
 				if (comp?.stateNode && comp?.stateNode?.classList) {
-					highlightElement(comp)
-					//comp.stateNode.classList.add('figment')
-					//comp.stateNode.setAttribute('figment', comp.debugOwnerName)
-					//comp.stateNode.addEventListener('click', handlePseudoClick)
+					let component = comp
+					highlightElement({
+						node: comp.stateNode, 
+						label: comp.debugOwnerName, 
+						onClick: (e) => handlePseudoClick(e, component)
+					})
 				}
 			}
 		}, delayMs);
 	});
 }
 
-function highlightElement(comp) {
+function highlightElement({node, label, onClick}) {
+
+	if(!node || !node.getBoundingClientRect) throw `node ${node} is invalid`
 
 	let overlay = document.querySelector('.figment-outline')
-	if(!overlay) {
-		overlay = document.createElement('div')
-		overlay.className = 'figment-outline'
-		document.body.appendChild(overlay)
-	}
+	if(overlay)  document.body.removeChild(overlay)
 
-	overlay.removeEventListener('click', (e) => handlePseudoClick(e, comp))
-	overlay.addEventListener('click', (e) => handlePseudoClick(e, comp))
-	overlay.setAttribute('figment', comp.debugOwnerName)
+	overlay = document.createElement('div')
+	overlay.className = 'figment-outline'
+	document.body.appendChild(overlay)
 
-	let rect = comp?.stateNode?.getBoundingClientRect()
+	if(onClick) overlay.addEventListener('click', onClick)
+	overlay.setAttribute('figment', label)
+
+	let rect = node.getBoundingClientRect()
 	overlay.style.top = rect.top + 'px' 
 	overlay.style.left = rect.left + 'px'
 	overlay.style.width = rect.width + 'px'
@@ -93,9 +90,15 @@ function handlePseudoClick (e, comp) {
 	chrome.runtime.sendMessage(figmentId, { name: comp.debugOwnerName, id: comp.figmaId }, function (figmaData) {
 		if (figmaData) {
 			renderMenu(comp.debugTree, figmaData)
-			onContextMenu(e)
+			showMenu(e.pageX, e.pageY);
+			document.addEventListener('mouseup', onMouseUp, false);
 		}
 	})
+}
+
+function onMouseUp(e) {
+	hideMenu();
+	document.removeEventListener('mouseup', onMouseUp);
 }
 
 function renderMenu(debugTree, figmaData) {
@@ -116,7 +119,10 @@ function renderMenu(debugTree, figmaData) {
 		let li = renderMenuItem({ text: debugOwnerName })
 		li.addEventListener("mouseenter", function (e) {
 			e.target.classList.add('comp-menu-item-hover')
-			stateNode.classList.add('figment')
+			highlightElement({
+				node: stateNode, 
+				label: debugOwnerName
+			})
 		});
 		li.addEventListener("mouseleave", function (e) {
 			e.target.classList.remove('comp-menu-item-hover')
@@ -173,7 +179,7 @@ function renderMenu(debugTree, figmaData) {
 	menu = document.querySelector('.figment-menu');
 }
 
-function renderMenuItem({text, link}) {
+function renderMenuItem({text, link, }) {
 	let li = document.createElement('li')
 	li.className = 'menu-item'
 
@@ -212,17 +218,6 @@ function showMenu(x, y) {
 
 function hideMenu() {
 	menu.classList.remove('menu-show');
-}
-
-function onContextMenu(e) {
-	e.preventDefault();
-	showMenu(e.pageX, e.pageY);
-	document.addEventListener('mouseup', onMouseDown, false);
-}
-
-function onMouseDown(e) {
-	hideMenu();
-	document.removeEventListener('mouseup', onMouseDown);
 }
 
 let styleToInt = (value) => Number.parseInt(value.replaceAll('px', ''))

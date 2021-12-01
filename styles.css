@@ -69,8 +69,10 @@
 }
 
 .comp-menu-item-hover {
-    outline: 1px solid red;
+    outline: 1px dashed #ff000091;
     cursor: pointer;
+    outline-width: 2px;
+    border-radius: 4px;
 }
 
 .menu-btn { 
