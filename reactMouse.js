@@ -44,10 +44,10 @@ function initMouse() {
 
 				let usefulTree = debugTree.filter((e1, index, array) => 
 					e1.debugOwnerName //we do have a debug name (the component name)
-					&& !e1.debugOwnerSymbolType //this is not a symbolic reference
+					//&& !e1.debugOwnerSymbolType //this is not a symbolic reference
 					&& !array.slice(index + 1).find(e2 => e2.debugOwnerName === e1.debugOwnerName 
-						&& e2.debugOwner._debugSource.fileName === e1.debugOwner._debugSource.fileName
-						&& e2.debugOwner._debugSource.lineNumber === e1.debugOwner._debugSource.lineNumber) //there is not another one of these ahead in the list
+						&& e2.debugOwner?._debugSource?.fileName === e1.debugOwner?._debugSource?.fileName
+						&& e2.debugOwner?._debugSource?.lineNumber === e1.debugOwner?._debugSource?.lineNumber) //there is not another one of these ahead in the list
 				)
 				
 				comp = usefulTree[0]
@@ -100,8 +100,10 @@ function handlePseudoClick (e, comp) {
 }
 
 function onMouseUp(e) {
-	hideMenu();
-	document.removeEventListener('mouseup', onMouseUp);
+	if(!e.path[0].classList.contains('menu-keep-open')){
+		menu.classList.remove('menu-show');
+		document.removeEventListener('mouseup', onMouseUp);
+	}
 }
 
 function renderMenu(debugTree, figmaData) {
@@ -123,7 +125,30 @@ function renderMenu(debugTree, figmaData) {
 		let debugFile = ds?.fileName?.substr(ds?.fileName?.lastIndexOf('/')+1)
 		let debugPath = debugFile && [debugFile, ds?.lineNumber, ds?.columnNumber].join(':')
 
-		let li = renderMenuItem({ text: debugOwnerName, subtext: debugPath })
+		let onTextClick = function (e) { 
+			chrome.runtime.sendMessage(figmentId, { name: debugOwnerName, id: figmaId }, function (figmaData) {
+				if (figmaData) {
+					figmaData.searchTerms = [debugOwnerName.split(/(?=[A-Z])/), figmaId].join(' ')
+					document.querySelectorAll('.menu-btn, .figma-info').forEach(e => e.remove())
+					renderFigmaMenuItems(figmaData, ul);
+				}
+			})
+		}
+
+		//todo: make this configurable to support other editors
+		let onSubTextClick = function (e) {
+			if (item.debugOwner?._debugSource?.fileName) {
+				let uri = [
+					`vscode://file${item.debugOwner._debugSource.fileName}`,
+					item.debugOwner._debugSource.lineNumber,
+					item.debugOwner._debugSource.columnNumber
+				].join(':')
+				open(uri)
+			}
+			else console.log('no subtext click!', e)
+		}
+
+		let li = renderMenuItem({ text: debugOwnerName, subtext: debugPath, onTextClick, onSubTextClick })
 		li.addEventListener("mouseenter", function (e) {
 			e.target.classList.add('comp-menu-item-hover')
 			highlightElement({
@@ -134,87 +159,100 @@ function renderMenu(debugTree, figmaData) {
 		li.addEventListener("mouseleave", function (e) {
 			e.target.classList.remove('comp-menu-item-hover')
 		})
-		if (item.debugOwner?._debugSource?.fileName) {
-			li.addEventListener('click', function (e) {
-				let uri = [
-					`vscode://file${item.debugOwner._debugSource.fileName}`,
-					item.debugOwner._debugSource.lineNumber,
-					item.debugOwner._debugSource.columnNumber
-				].join(':')
-				open(uri)
-			})
-		}
 		ul.appendChild(li)
 	})
 
 	if (figmaData?.recordCount) {
-		let sep = document.createElement('li')
-		sep.className = 'menu-separator'
-		ul.appendChild(sep)
-
-		if (Number.isInteger(figmaData?.recordCount)) {
-			let info = renderMenuItem({ text: `total frames: ${figmaData?.recordCount}` })
-			info.classList.add('menu-info')
-			ul.appendChild(info)
-		}
-
-		if (figmaData?.lastModified) {
-			let lastModified = new Date(figmaData.lastModified).toLocaleString()
-			let info = renderMenuItem({ text: `last modified ${lastModified}` })
-			info.classList.add('menu-info')
-			ul.appendChild(info)
-		}
-
-		if (figmaData?.searchTerms) {
-			let info = renderMenuItem({ text: `search terms: ${figmaData?.searchTerms}` })
-			info.classList.add('menu-info')
-			ul.appendChild(info)
-		}
-
-		if (figmaData?.result?.length) {
-			figmaData?.result?.forEach(item => {
-				let {
-					id,
-					name,
-					link,
-					image
-				} = item
-
-				let li = renderMenuItem({ text: name, link })
-				ul.appendChild(li)
-			})
-		}
+		renderFigmaMenuItems(figmaData, ul);
 	}
 
 	document.body.appendChild(ul)
 	menu = document.querySelector('.figment-menu');
 }
 
-function renderMenuItem({text, subtext, link, }) {
+function renderFigmaMenuItems(figmaData, ul) {
+	let sep = document.createElement('li')
+	sep.className = 'menu-separator'
+	sep.classList.add('figma-info')
+	ul.appendChild(sep)
+
+	if (Number.isInteger(figmaData?.recordCount)) {
+		let info = renderInfoMenuItem({ text: `total frames: ${figmaData?.recordCount}` })
+		info.classList.add('figma-info')
+		ul.appendChild(info)
+	}
+
+	if (figmaData?.lastModified) {
+		let lastModified = new Date(figmaData.lastModified).toLocaleString()
+		let info = renderInfoMenuItem({ text: `last modified ${lastModified}` })
+		info.classList.add('figma-info')
+		ul.appendChild(info)
+	}
+
+	if (figmaData?.searchTerms) {
+		let info = renderInfoMenuItem({ text: `search terms: ${figmaData?.searchTerms}` })
+		info.classList.add('figma-info')
+		ul.appendChild(info)
+	}
+
+	if (figmaData?.result?.length) {
+		figmaData?.result?.forEach(item => {
+			let { id, name, link, image } = item;
+
+			let li = document.createElement('li');
+			li.className = 'menu-item';
+
+			let textSpan = document.createElement('span');
+			textSpan.className = 'menu-text';
+			textSpan.textContent = name;
+
+			let a = document.createElement('a');
+			a.href = link;
+			a.target = '_blank';
+			a.classList.add('menu-btn');
+			li.appendChild(a);
+			a.appendChild(textSpan);
+			ul.appendChild(li);
+		});
+	}
+}
+
+function renderInfoMenuItem({text}) {
+	let li = document.createElement('li')
+	li.classList.add('menu-item')
+	li.classList.add('menu-info')
+
+	let textSpan = document.createElement('span')
+	textSpan.className = 'menu-text'
+	textSpan.textContent = text
+
+	li.appendChild(textSpan)
+
+	return li
+}
+
+function renderMenuItem({text, subtext, onTextClick, onSubTextClick}) {
 	let li = document.createElement('li')
 	li.className = 'menu-item'
 
 	let textSpan = document.createElement('span')
 	textSpan.className = 'menu-text'
 	textSpan.textContent = text
+	
+	if(onTextClick) {
+		textSpan.classList.add('menu-keep-open')
+		textSpan.addEventListener('click', onTextClick)
+	}
 
-	if (link) {
-		let a = document.createElement('a')
-		a.href = link
-		a.target = '_blank'
-		a.classList.add('menu-btn')
-		li.appendChild(a)
-		a.appendChild(textSpan)
-	}
-	else {
-		li.appendChild(textSpan)
-	}
+	li.appendChild(textSpan)
 
 	if(subtext) {
 		let subtextSpan = document.createElement('span')
 		subtextSpan.className = 'menu-subtext'
 		subtextSpan.textContent = subtext
 		li.appendChild(subtextSpan)
+
+		if(onSubTextClick) subtextSpan.addEventListener('click', onSubTextClick)
 	}
 
 	return li
@@ -232,10 +270,6 @@ function showMenu(x, y) {
 		menu.style.top = y + 'px';
 		menu.classList.add('menu-show');
 	}
-}
-
-function hideMenu() {
-	menu.classList.remove('menu-show');
 }
 
 let styleToInt = (value) => Number.parseInt(value.replaceAll('px', ''))

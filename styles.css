@@ -119,7 +119,13 @@ a.menu-btn {
     color: darkgrey;
     flex-grow: 1;
     text-align: end;
-    font-size: smaller;}
+    font-size: smaller;
+    margin-right: 15px;
+}
+
+.comp-menu-item-hover .menu-subtext {
+    color: #ff00009e;
+}
 
 .menu-btn .fa {
     position: absolute;
