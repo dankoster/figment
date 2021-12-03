@@ -70,22 +70,66 @@ function highlightElement({node, label, onClick}) {
 
 	if(!node || !node.getBoundingClientRect) throw `node ${node} is invalid`
 
-	let overlay = document.querySelector('.figment-outline')
+	let overlay = document.querySelector('figment-outline')
 	if(overlay)  document.body.removeChild(overlay)
 
-	overlay = document.createElement('div')
-	overlay.className = 'figment-outline'
-	document.body.appendChild(overlay)
+	overlay = document.createElement('figment-outline')
 
 	if(onClick) overlay.addEventListener('click', onClick)
-	overlay.setAttribute('figment', label)
+	overlay.setAttribute('data-text', label) //this is the text label for the overlay
 
 	let rect = node.getBoundingClientRect()
-	overlay.style.top = window.scrollY + rect.top + 'px' 
-	overlay.style.left = rect.left + 'px'
-	overlay.style.width = rect.width + 'px'
-	overlay.style.height = rect.height + 'px'
+	overlay.setAttributes({ figment:label })
+	overlay.setStyles({
+		top: window.scrollY + rect.top + 'px' 
+		,left: rect.left + 'px'
+		,width: rect.width + 'px'
+		,height: rect.height + 'px'
+	})
+
+	document.body.appendChild(overlay)
 }
+
+// Create a class for the element
+class FigmentOutline extends HTMLElement {
+	
+	constructor() {
+		super();
+		const shadow = this.attachShadow({ mode: 'open' });
+
+		this.overlay = document.createElement('div')
+		this.overlay.className = 'figment-outline'
+
+		// Take attribute content and put it inside the info span
+		let text = this.getAttribute('data-text');
+		this.overlay.textContent = text;
+
+		// Apply external styles to the shadow dom
+		const cssLink = document.createElement('link');
+		cssLink.setAttribute('rel', 'stylesheet');
+		cssLink.setAttribute('href', `chrome-extension://${figmentId}/styles.css`);
+
+		// Attach the created elements to the shadow dom
+		shadow.appendChild(cssLink);
+		shadow.appendChild(this.overlay);
+	}
+
+	setStyles(styles) {
+		for(const style in styles) {
+			this.overlay.style[style] = styles[style]
+		}
+	}
+
+	setAttributes(attributes) {
+		for(const attribute in attributes) {
+			this.overlay.setAttribute(attribute, attributes[attribute])
+		}
+	}
+}
+
+// Define the new element
+customElements.define('figment-outline', FigmentOutline);
+
 
 function handlePseudoClick (e, comp) {
 	e.preventDefault(true)
