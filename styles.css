@@ -1,22 +1,3 @@
-.figment {
-    outline: 1px solid #ff0000;
-    z-index: 30000;
-    position: relative;
-}
-  .figment::before {
-    content: attr(figment);
-    position: absolute;
-    right: 0;
-    top: 0;
-    background: #ff0000eb;
-    padding-left: 5px;
-    padding-right: 5px;
-    border-bottom-left-radius: 5px;
-    font-size: 13px;
-    z-index: 1;
-    color: #ffffff
-}
-
 .figment-outline {
 	position: absolute;
 	pointer-events: none;
@@ -25,8 +6,11 @@
 	position: absolute;
 	border-radius: 5px;
 	outline-offset: -2px;
+    transition: all 0.2s ease-in-out;
 }
-.figment-outline::before {
+
+.figment-outline-label {
+    cursor: pointer;
 	pointer-events: all;
     content: attr(figment);
     position: absolute;
@@ -56,8 +40,11 @@
     transform: translate(0, 15px) scale(.95);
     transition: transform 0.1s ease-out, opacity 0.1s ease-out;
     pointer-events: none;
-    overflow: overlay;
-    max-height: 500px;
+}
+
+.menu-scrolling-container {
+    max-height: 400px;
+    overflow: scroll;
 }
 
 .menu-item {
@@ -179,12 +166,12 @@ a.menu-btn {
 }
 
 .menu-show,
-.menu-item:hover > .menu {
+.menu-item:hover > .figment-menu {
     opacity: 1;
     transform: translate(0, 0) scale(1);
     pointer-events: auto;
 }
 
-.menu-item:hover > .menu {
+.menu-item:hover > .figment-menu {
     transition-delay: 300ms;
 }

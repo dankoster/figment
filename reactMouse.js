@@ -6,18 +6,20 @@ initMouse()
 
 let timeout = null;
 let element = null;
-let comp = null;
+let debugTree = null;
 function initMouse() {
 	console.log(figmentId, 'init mouse!')
 
 	document.addEventListener('mousemove', e => {
 		if (timeout) clearTimeout(timeout)
 		timeout = setTimeout(() => {
-			if (comp?.element !== e.path[0]) {				
-				let debugTree = e.path
-				.map(element => {
-					let f = FindReactFiber(element)
-					let debugOwner = f?._debugOwner
+			if (!Array.isArray(debugTree) 
+			|| debugTree[0]?.element !== e.path[0] //are we already on this thing?
+			&& !e.path.some(b => b.className?.includes('figment'))) //is this a figment thing?
+			{
+				debugTree = e.path.map(element => {
+					let fiber = FindReactFiber(element)
+					let debugOwner = fiber?._debugOwner
 					let debugOwnerSymbolType = typeof debugOwner?.elementType?.$$typeof === 'symbol' ? Symbol.keyFor(debugOwner?.elementType?.$$typeof) : undefined
 					let debugOwnerName = debugOwner?.elementType?.name 
 					|| debugOwner?.elementType?.render?.name 
@@ -33,7 +35,8 @@ function initMouse() {
 					let figmaId = stateNode?.getAttribute && stateNode.getAttribute('data-figment')
 
 					return {
-						element, 
+						element,
+						fiber, 
 						debugOwner,
 						debugOwnerName,
 						debugOwnerSymbolType,
@@ -42,7 +45,9 @@ function initMouse() {
 					}
 				})
 
-				let usefulTree = debugTree.filter((e1, index, array) => 
+				let usefulTree = debugTree
+				.filter((e1, index, array) => 
+					//e1.debugOwner
 					e1.debugOwnerName //we do have a debug name (the component name)
 					//&& !e1.debugOwnerSymbolType //this is not a symbolic reference
 					&& !array.slice(index + 1).find(e2 => e2.debugOwnerName === e1.debugOwnerName 
@@ -50,15 +55,14 @@ function initMouse() {
 						&& e2.debugOwner?._debugSource?.lineNumber === e1.debugOwner?._debugSource?.lineNumber) //there is not another one of these ahead in the list
 				)
 				
-				comp = usefulTree[0]
-				if(comp) comp.debugTree = usefulTree
+				let comp = usefulTree[0]
+				// if(comp) comp.debugTree = usefulTree
 
-				if (comp?.stateNode && comp?.stateNode?.classList) {
-					let component = comp
+				if (comp?.stateNode) { // && comp?.stateNode?.classList) {
 					highlightElement({
-						node: comp.stateNode, 
-						label: comp.debugOwnerName, 
-						onClick: (e) => handlePseudoClick(e, component)
+						node: usefulTree[0].stateNode, 
+						label: comp.debugOwnerName ?? comp.element.name, 
+						onClick: (e) => { onOverlayClick(e, usefulTree) }
 					})
 				}
 			}
@@ -68,26 +72,39 @@ function initMouse() {
 
 function highlightElement({node, label, onClick}) {
 
-	if(!node || !node.getBoundingClientRect) throw `node ${node} is invalid`
+	if (node && node.getBoundingClientRect) {
 
-	let overlay = document.querySelector('figment-outline')
-	if(overlay)  document.body.removeChild(overlay)
+		let overlay = document.querySelector('figment-outline')
 
-	overlay = document.createElement('figment-outline')
+		if(!overlay) {
+			overlay = document.createElement('figment-outline')
+			document.body.appendChild(overlay)
+		}
 
-	if(onClick) overlay.addEventListener('click', onClick)
-	overlay.setAttribute('data-text', label) //this is the text label for the overlay
+		overlay.setAttribute('data-text', label) //this is the text label for the overlay
 
-	let rect = node.getBoundingClientRect()
-	overlay.setAttributes({ figment:label })
-	overlay.setStyles({
-		top: window.scrollY + rect.top + 'px' 
-		,left: rect.left + 'px'
-		,width: rect.width + 'px'
-		,height: rect.height + 'px'
+		let rect = node.getBoundingClientRect()
+		overlay.setLabel({label, onClick})
+		overlay.setStyles({
+			top: window.scrollY + rect.top + 'px'
+			, left: rect.left + 'px'
+			, width: rect.width + 'px'
+			, height: rect.height + 'px'
+		})
+	}
+}
+
+function onOverlayClick (e, debugTree) {
+	e.preventDefault(true)
+	let comp = debugTree[0]
+	chrome.runtime.sendMessage(figmentId, { name: comp.debugOwnerName, id: comp.figmaId }, function (figmaData) {
+		if (figmaData) {
+			figmaData.searchTerms = [comp.debugOwnerName.split(/(?=[A-Z])/), comp.figmaId].join(' ')
+			renderMenu(debugTree, figmaData)
+			showMenu(e.pageX, e.pageY);
+			document.addEventListener('mouseup', onMouseUp, false);
+		}
 	})
-
-	document.body.appendChild(overlay)
 }
 
 // Create a class for the element
@@ -95,23 +112,31 @@ class FigmentOutline extends HTMLElement {
 	
 	constructor() {
 		super();
-		const shadow = this.attachShadow({ mode: 'open' });
+		this.shadow = this.attachShadow({ mode: 'open' })
 
 		this.overlay = document.createElement('div')
 		this.overlay.className = 'figment-outline'
 
-		// Take attribute content and put it inside the info span
-		let text = this.getAttribute('data-text');
-		this.overlay.textContent = text;
-
 		// Apply external styles to the shadow dom
-		const cssLink = document.createElement('link');
-		cssLink.setAttribute('rel', 'stylesheet');
-		cssLink.setAttribute('href', `chrome-extension://${figmentId}/styles.css`);
+		const cssLink = document.createElement('link')
+		cssLink.setAttribute('rel', 'stylesheet')
+		cssLink.setAttribute('href', `chrome-extension://${figmentId}/styles.css`)
 
 		// Attach the created elements to the shadow dom
-		shadow.appendChild(cssLink);
-		shadow.appendChild(this.overlay);
+		this.shadow.appendChild(cssLink)
+		this.shadow.appendChild(this.overlay)
+	}
+
+	setLabel({label, onClick}) {
+
+		//remove the old label to avoid accumulating event handlers
+		this.shadow.querySelectorAll('.figment-outline-label').forEach(e => e.remove())
+		
+		this.label = document.createElement('span')
+		this.label.className = 'figment-outline-label'
+		this.label.textContent = label
+		if(onClick) this.label.addEventListener('click', onClick)
+		this.overlay.appendChild(this.label)
 	}
 
 	setStyles(styles) {
@@ -131,18 +156,6 @@ class FigmentOutline extends HTMLElement {
 customElements.define('figment-outline', FigmentOutline);
 
 
-function handlePseudoClick (e, comp) {
-	e.preventDefault(true)
-	chrome.runtime.sendMessage(figmentId, { name: comp.debugOwnerName, id: comp.figmaId }, function (figmaData) {
-		if (figmaData) {
-			figmaData.searchTerms = [comp.debugOwnerName.split(/(?=[A-Z])/), comp.figmaId].join(' ')
-			renderMenu(comp.debugTree, figmaData)
-			showMenu(e.pageX, e.pageY);
-			document.addEventListener('mouseup', onMouseUp, false);
-		}
-	})
-}
-
 function onMouseUp(e) {
 	if(!e.path[0].classList.contains('menu-keep-open')){
 		menu.classList.remove('menu-show');
@@ -155,6 +168,24 @@ function renderMenu(debugTree, figmaData) {
 	let ul = document.createElement('ul')
 	ul.className = 'figment-menu'
 
+	// let subMenu = document.createElement('li')
+	// subMenu.className = 'menu-item menu-item-submenu'
+	// subMenu.innerHTML = `
+	// <button type="button" class="menu-btn">
+	// 	<i class="fa fa-share"></i>
+	// 	<span class="menu-text">Share</span>
+	// </button>
+	// <ul class="figment-menu">
+	// 	<li class="menu-item">
+	// 		<button type="button" class="menu-btn">
+	// 			<i class="fa fa-twitter"></i>
+	// 			<span class="menu-text">Twitter</span>
+	// 		</button>
+	// 	</li>
+	// </ul>`
+
+	// ul.appendChild(subMenu)
+
 	debugTree.forEach(item => {
 		let {
 			element, 
@@ -162,14 +193,28 @@ function renderMenu(debugTree, figmaData) {
 			debugOwnerName,
 			debugOwnerSymbolType,
 			stateNode, 
-			figmaId
+			figmaId,
+			fiber
 		} = item
 
-		let ds = debugOwner?._debugSource
+		let ds = debugOwner?._debugSource // fiber?._debugSource
 		let debugFile = ds?.fileName?.substr(ds?.fileName?.lastIndexOf('/')+1)
 		let debugPath = debugFile && [debugFile, ds?.lineNumber, ds?.columnNumber].join(':')
+		let sourceUrl = ds && `vscode://file${ds?.fileName}:${ds?.lineNumber}:${ds?.columnNumber}`
+		let renderedAtUrl = ds && [
+			`vscode://file${ds?.fileName}`,
+			ds?.lineNumber,
+			ds?.columnNumber
+		].join(':')
+
+
+
+		//TODO: build a "rendered by" tree to display in a sub-menu
+
+
 
 		let onTextClick = function (e) { 
+			console.log(item)
 			chrome.runtime.sendMessage(figmentId, { name: debugOwnerName, id: figmaId }, function (figmaData) {
 				if (figmaData) {
 					figmaData.searchTerms = [debugOwnerName.split(/(?=[A-Z])/), figmaId].join(' ')
@@ -182,17 +227,13 @@ function renderMenu(debugTree, figmaData) {
 		//todo: make this configurable to support other editors
 		let onSubTextClick = function (e) {
 			if (item.debugOwner?._debugSource?.fileName) {
-				let uri = [
-					`vscode://file${item.debugOwner._debugSource.fileName}`,
-					item.debugOwner._debugSource.lineNumber,
-					item.debugOwner._debugSource.columnNumber
-				].join(':')
-				open(uri)
+				open(sourceUrl)
 			}
 			else console.log('no subtext click!', e)
 		}
 
-		let li = renderMenuItem({ text: debugOwnerName, subtext: debugPath, onTextClick, onSubTextClick })
+		let text = debugOwnerName ?? `${item.fiber.elementType} (${debugOwnerSymbolType})`
+		let li = renderMenuItem({ text, subtext: debugPath, onTextClick, onSubTextClick })
 		li.addEventListener("mouseenter", function (e) {
 			e.target.classList.add('comp-menu-item-hover')
 			highlightElement({
@@ -240,6 +281,9 @@ function renderFigmaMenuItems(figmaData, ul) {
 	}
 
 	if (figmaData?.result?.length) {
+		let container = document.createElement('div')
+		container.className = 'menu-scrolling-container'
+		ul.appendChild(container)
 		figmaData?.result?.forEach(item => {
 			let { id, name, link, image } = item;
 
@@ -256,7 +300,7 @@ function renderFigmaMenuItems(figmaData, ul) {
 			a.classList.add('menu-btn');
 			li.appendChild(a);
 			a.appendChild(textSpan);
-			ul.appendChild(li);
+			container.appendChild(li);
 		});
 	}
 }
@@ -275,7 +319,7 @@ function renderInfoMenuItem({text}) {
 	return li
 }
 
-function renderMenuItem({text, subtext, onTextClick, onSubTextClick}) {
+function renderMenuItem({text, onTextClick, subtext, onSubTextClick}) {
 	let li = document.createElement('li')
 	li.className = 'menu-item'
 
