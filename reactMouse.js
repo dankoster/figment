@@ -14,7 +14,7 @@ initFigma()
 let timeout = null;
 let debugTree = null;
 function initFigma() {
-	console.log(figmentId, 'Figma!')
+	console.log(figmentId, 'Figment!')
 
 	document.addEventListener('mousemove', e => {
 		if (timeout) clearTimeout(timeout)
