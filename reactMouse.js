@@ -1,14 +1,20 @@
+import DebugNode from './DebugNode.js'
+import FigmentOutline from './FigmentOutline.js'
 
-const figmentId = document.head.getElementsByTagName('figment')[0].id //get the ID of the browser plugin
+// Define the outline element
+customElements.define('figment-outline', FigmentOutline);
+
+//get the ID of the browser plugin
+export const figmentId = document.head.getElementsByTagName('figment')[0].id 
+
 const delayMs = 50
 
-initMouse()
+initFigma()
 
 let timeout = null;
-let element = null;
 let debugTree = null;
-function initMouse() {
-	console.log(figmentId, 'init mouse!')
+function initFigma() {
+	console.log(figmentId, 'Figma!')
 
 	document.addEventListener('mousemove', e => {
 		if (timeout) clearTimeout(timeout)
@@ -17,33 +23,7 @@ function initMouse() {
 			|| debugTree[0]?.element !== e.path[0] //are we already on this thing?
 			&& !e.path.some(b => b.className?.includes('figment'))) //is this a figment thing?
 			{
-				debugTree = e.path.map(element => {
-					let fiber = FindReactFiber(element)
-					let debugOwner = fiber?._debugOwner
-					let debugOwnerSymbolType = typeof debugOwner?.elementType?.$$typeof === 'symbol' ? Symbol.keyFor(debugOwner?.elementType?.$$typeof) : undefined
-					let debugOwnerName = debugOwner?.elementType?.name 
-					|| debugOwner?.elementType?.render?.name 
-
-					//walk down the child tree until we find one with a state node
-					let child = debugOwner?.child
-					let stateNode = child?.stateNode
-					while (!stateNode && child) {
-						child = child?.child
-						stateNode = child?.stateNode
-					}
-
-					let figmaId = stateNode?.getAttribute && stateNode.getAttribute('data-figment')
-
-					return {
-						element,
-						fiber, 
-						debugOwner,
-						debugOwnerName,
-						debugOwnerSymbolType,
-						stateNode, 
-						figmaId
-					}
-				})
+				debugTree = e.path.map(element => new DebugNode(element))
 
 				let usefulTree = debugTree
 				.filter((e1, index, array) => 
@@ -55,13 +35,10 @@ function initMouse() {
 						&& e2.debugOwner?._debugSource?.lineNumber === e1.debugOwner?._debugSource?.lineNumber) //there is not another one of these ahead in the list
 				)
 				
-				let comp = usefulTree[0]
-				// if(comp) comp.debugTree = usefulTree
-
-				if (comp?.stateNode) { // && comp?.stateNode?.classList) {
+				if (usefulTree[0]?.stateNode) {
 					highlightElement({
 						node: usefulTree[0].stateNode, 
-						label: comp.debugOwnerName ?? comp.element.name, 
+						label: usefulTree[0].debugOwnerName ?? usefulTree[0].element.name, 
 						onClick: (e) => { onOverlayClick(e, usefulTree) }
 					})
 				}
@@ -107,54 +84,6 @@ function onOverlayClick (e, debugTree) {
 	})
 }
 
-// Create a class for the element
-class FigmentOutline extends HTMLElement {
-	
-	constructor() {
-		super();
-		this.shadow = this.attachShadow({ mode: 'open' })
-
-		this.overlay = document.createElement('div')
-		this.overlay.className = 'figment-outline'
-
-		// Apply external styles to the shadow dom
-		const cssLink = document.createElement('link')
-		cssLink.setAttribute('rel', 'stylesheet')
-		cssLink.setAttribute('href', `chrome-extension://${figmentId}/styles.css`)
-
-		// Attach the created elements to the shadow dom
-		this.shadow.appendChild(cssLink)
-		this.shadow.appendChild(this.overlay)
-	}
-
-	setLabel({label, onClick}) {
-
-		//remove the old label to avoid accumulating event handlers
-		this.shadow.querySelectorAll('.figment-outline-label').forEach(e => e.remove())
-		
-		this.label = document.createElement('span')
-		this.label.className = 'figment-outline-label'
-		this.label.textContent = label
-		if(onClick) this.label.addEventListener('click', onClick)
-		this.overlay.appendChild(this.label)
-	}
-
-	setStyles(styles) {
-		for(const style in styles) {
-			this.overlay.style[style] = styles[style]
-		}
-	}
-
-	setAttributes(attributes) {
-		for(const attribute in attributes) {
-			this.overlay.setAttribute(attribute, attributes[attribute])
-		}
-	}
-}
-
-// Define the new element
-customElements.define('figment-outline', FigmentOutline);
-
 
 function onMouseUp(e) {
 	if(!e.path[0].classList.contains('menu-keep-open')){
@@ -167,24 +96,6 @@ function renderMenu(debugTree, figmaData) {
 	document.querySelectorAll('.figment-menu').forEach(element => element.remove())
 	let ul = document.createElement('ul')
 	ul.className = 'figment-menu'
-
-	// let subMenu = document.createElement('li')
-	// subMenu.className = 'menu-item menu-item-submenu'
-	// subMenu.innerHTML = `
-	// <button type="button" class="menu-btn">
-	// 	<i class="fa fa-share"></i>
-	// 	<span class="menu-text">Share</span>
-	// </button>
-	// <ul class="figment-menu">
-	// 	<li class="menu-item">
-	// 		<button type="button" class="menu-btn">
-	// 			<i class="fa fa-twitter"></i>
-	// 			<span class="menu-text">Twitter</span>
-	// 		</button>
-	// 	</li>
-	// </ul>`
-
-	// ul.appendChild(subMenu)
 
 	debugTree.forEach(item => {
 		let {
@@ -206,12 +117,6 @@ function renderMenu(debugTree, figmaData) {
 			ds?.lineNumber,
 			ds?.columnNumber
 		].join(':')
-
-
-
-		//TODO: build a "rendered by" tree to display in a sub-menu
-
-
 
 		let onTextClick = function (e) { 
 			console.log(item)
@@ -244,6 +149,38 @@ function renderMenu(debugTree, figmaData) {
 		li.addEventListener("mouseleave", function (e) {
 			e.target.classList.remove('comp-menu-item-hover')
 		})
+
+
+
+
+		//TODO: build a "rendered by" tree to display in a sub-menu
+		let owner = fiber._debugOwner
+		let source = fiber._debugSource
+		let renderedBy = []
+		while(owner) {
+
+
+			let li = document.createElement('li')
+			li.className = 'menu-item'
+			li.innerHTML = `<button type="button" class="menu-btn">
+						<span class="menu-text">${owner?.elementType?.name} - ${source?.fileName?.substr(ds?.fileName?.lastIndexOf('/')+1)}</span>
+					</button>`
+
+			renderedBy.push(li)
+
+			owner = owner._debugOwner
+			source = owner?._debugSource
+
+		}
+
+		if(renderedBy.length > 0){
+			let subMenu = document.createElement('ul')
+			subMenu.className = 'figment-menu'
+			renderedBy.forEach(li => subMenu.appendChild(li))
+			li.className = 'menu-item menu-item-submenu'
+			li.appendChild(subMenu)
+		}
+
 		ul.appendChild(li)
 	})
 
@@ -362,13 +299,3 @@ function showMenu(x, y) {
 
 let styleToInt = (value) => Number.parseInt(value.replaceAll('px', ''))
 let getTotal = (style, properties) => properties.reduce((total, property) => total + styleToInt(style[property]), 0)
-
-//https://stackoverflow.com/a/39165137
-//https://github.com/Venryx/mobx-devtools-advanced/blob/master/Docs/TreeTraversal.md
-function FindReactFiber(dom) {
-	const key = Object.keys(dom).find(key => {
-		return key.startsWith("__reactFiber$") // react 17+
-			|| key.startsWith("__reactInternalInstance$"); // react <17
-	});
-	return dom[key]
-}

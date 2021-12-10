@@ -15,7 +15,12 @@
     }],
 	"web_accessible_resources": [
 		{
-			"resources": [ "reactMouse.js", "styles.css" ],
+			"resources": [ 
+				"reactMouse.js", 
+				"DebugNode.js", 
+				"FigmentOutline.js",
+				"styles.css" 
+			],
 			"matches": [ "<all_urls>" ]
 		}
 	],

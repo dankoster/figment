@@ -13,6 +13,7 @@ document.head.appendChild(sty)
 //add our script that needs dom context access
 var s = document.createElement('script');
 s.src = chrome.runtime.getURL('reactMouse.js');
+s.setAttribute('type', 'module');
 
 //cleanup 
 s.onload = function() {
