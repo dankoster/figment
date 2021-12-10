@@ -16,7 +16,7 @@
 	"web_accessible_resources": [
 		{
 			"resources": [ 
-				"reactMouse.js", 
+				"Figment.js", 
 				"DebugNode.js", 
 				"FigmentOutline.js",
 				"styles.css" 

@@ -1,4 +1,4 @@
-import { figmentId } from './reactMouse.js'
+import { figmentId } from './Figment.js'
 
 export default class FigmentOutline extends HTMLElement {
 	
