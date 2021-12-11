@@ -13,6 +13,7 @@ initFigma()
 
 let timeout = null;
 let debugTree = null;
+
 function initFigma() {
 	console.log(figmentId, 'Figment!')
 
@@ -77,8 +78,8 @@ function onOverlayClick (e, debugTree) {
 	chrome.runtime.sendMessage(figmentId, { name: comp.debugOwnerName, id: comp.figmaId }, function (figmaData) {
 		if (figmaData) {
 			figmaData.searchTerms = [comp.debugOwnerName.split(/(?=[A-Z])/), comp.figmaId].join(' ')
-			renderMenu(debugTree, figmaData)
-			showMenu(e.pageX, e.pageY);
+			let menu = renderMenu(debugTree, figmaData)
+			menu.Show(e.pageX, e.pageY);
 			document.addEventListener('mouseup', onMouseUp, false);
 		}
 	})
@@ -87,109 +88,162 @@ function onOverlayClick (e, debugTree) {
 
 function onMouseUp(e) {
 	if(!e.path[0].classList.contains('menu-keep-open')){
-		menu.classList.remove('menu-show');
+		Menu.Hide()
 		document.removeEventListener('mouseup', onMouseUp);
 	}
 }
 
-function renderMenu(debugTree, figmaData) {
-	document.querySelectorAll('.figment-menu').forEach(element => element.remove())
-	let ul = document.createElement('ul')
-	ul.className = 'figment-menu'
-
-	debugTree.forEach(item => {
-		let {
-			element, 
-			debugOwner,
-			debugOwnerName,
-			debugOwnerSymbolType,
-			stateNode, 
-			figmaId,
-			fiber
-		} = item
-
-		let ds = debugOwner?._debugSource // fiber?._debugSource
-		let debugFile = ds?.fileName?.substr(ds?.fileName?.lastIndexOf('/')+1)
-		let debugPath = debugFile && [debugFile, ds?.lineNumber, ds?.columnNumber].join(':')
-		let sourceUrl = ds && `vscode://file${ds?.fileName}:${ds?.lineNumber}:${ds?.columnNumber}`
-		let renderedAtUrl = ds && [
-			`vscode://file${ds?.fileName}`,
-			ds?.lineNumber,
-			ds?.columnNumber
-		].join(':')
-
-		let onTextClick = function (e) { 
-			console.log(item)
-			chrome.runtime.sendMessage(figmentId, { name: debugOwnerName, id: figmaId }, function (figmaData) {
-				if (figmaData) {
-					figmaData.searchTerms = [debugOwnerName.split(/(?=[A-Z])/), figmaId].join(' ')
-					document.querySelectorAll('.menu-btn, .figma-info').forEach(e => e.remove())
-					renderFigmaMenuItems(figmaData, ul);
-				}
-			})
-		}
-
-		//todo: make this configurable to support other editors
-		let onSubTextClick = function (e) {
-			if (item.debugOwner?._debugSource?.fileName) {
-				open(sourceUrl)
-			}
-			else console.log('no subtext click!', e)
-		}
-
-		let text = debugOwnerName ?? `${item.fiber.elementType} (${debugOwnerSymbolType})`
-		let li = renderMenuItem({ text, subtext: debugPath, onTextClick, onSubTextClick })
-		li.addEventListener("mouseenter", function (e) {
-			e.target.classList.add('comp-menu-item-hover')
-			highlightElement({
-				node: stateNode.getBoundingClientRect ? stateNode : element, //the stateNode may not be a DOM element 
-				label: debugOwnerName
-			})
-		});
-		li.addEventListener("mouseleave", function (e) {
-			e.target.classList.remove('comp-menu-item-hover')
-		})
 
 
-
-
-		//TODO: build a "rendered by" tree to display in a sub-menu
-		let owner = fiber._debugOwner
-		let source = fiber._debugSource
-		let renderedBy = []
-		while(owner) {
-
-
-			let li = document.createElement('li')
-			li.className = 'menu-item'
-			li.innerHTML = `<button type="button" class="menu-btn">
-						<span class="menu-text">${owner?.elementType?.name} - ${source?.fileName?.substr(ds?.fileName?.lastIndexOf('/')+1)}</span>
-					</button>`
-
-			renderedBy.push(li)
-
-			owner = owner._debugOwner
-			source = owner?._debugSource
-
-		}
-
-		if(renderedBy.length > 0){
-			let subMenu = document.createElement('ul')
-			subMenu.className = 'figment-menu'
-			renderedBy.forEach(li => subMenu.appendChild(li))
-			li.className = 'menu-item menu-item-submenu'
-			li.appendChild(subMenu)
-		}
-
-		ul.appendChild(li)
-	})
-
-	if (figmaData?.recordCount) {
-		renderFigmaMenuItems(figmaData, ul);
+//https://codepen.io/ryanmorr/pen/JdOvYR
+class Menu {
+	constructor() {
+		this.ul = document.createElement('ul')
+		this.ul.className = 'figment-menu'
+		this.items = []
 	}
 
-	document.body.appendChild(ul)
-	menu = document.querySelector('.figment-menu');
+	static Hide() { Menu.Current?.classList.remove('menu-show') }
+
+	static get Current() { return document.querySelector('.figment-menu') }
+
+	static RemoveOld () {
+		//remove old menu(s)
+		document.querySelectorAll('.figment-menu').forEach(element => element.remove())
+	}
+
+	Show(x, y) {
+		if (this.ul) {
+			let overflowX = x + getTotal(getComputedStyle(this.ul), ['width']) - window.innerWidth
+			if (overflowX > 0) x -= (overflowX + 50)
+
+			this.ul.style.left = x + 'px';
+			this.ul.style.top = y + 'px';
+			this.ul.classList.add('menu-show');
+		}
+	}
+
+	AddItem(item) {
+		this.items.push(item)
+		this.ul.appendChild(item.li)
+	}
+}
+
+class MenuItem {
+	constructor({text, onTextClick, subtext, onSubTextClick, mouseEnter, mouseLeave}) {
+		this.li = document.createElement('li')
+		this.li.className = 'menu-item'
+	
+		let textSpan = document.createElement('span')
+		textSpan.className = 'menu-text'
+		textSpan.textContent = text
+		
+		if(onTextClick) {
+			textSpan.classList.add('menu-keep-open')
+			textSpan.addEventListener('click', onTextClick)
+		}
+
+		this.li.appendChild(textSpan)
+		
+		if(mouseEnter) this.li.addEventListener("mouseenter", mouseEnter)
+		if(mouseLeave) this.li.addEventListener("mouseleave", mouseLeave)
+		
+		if(subtext) {
+			let subtextSpan = document.createElement('span')
+			subtextSpan.className = 'menu-subtext'
+			subtextSpan.textContent = subtext
+			this.li.appendChild(subtextSpan)
+	
+			if(onSubTextClick) subtextSpan.addEventListener('click', onSubTextClick)
+		}
+	}
+}
+
+function renderMenu(debugTree, figmaData) {
+	Menu.RemoveOld()
+	let menu = new Menu()
+
+	debugTree.forEach(debugNode => {
+
+		menu.AddItem(new MenuItem({ 
+			text: debugNode.debugOwnerName ?? `${debugNode.fiber.elementType} (${debugNode.debugOwnerSymbolType})`, 
+			subtext: debugNode.debugPath, 
+			onTextClick: (e) => refreshFigmaNodes(debugNode),
+			onSubTextClick: (e) => openSourceFile(debugNode, e),
+			mouseEnter: (e) => componentMenuItemHover({e, debugNode}),
+			mouseLeave: (e) => componentMenuItemHover({e, hovering: false}),
+		}))
+
+
+		// //TODO: build a "rendered by" tree to display in a sub-menu
+		// let owner = debugNode.fiber._debugOwner
+		// let source = debugNode.fiber._debugSource
+		// let renderedBy = []
+		// while(owner) {
+
+
+		// 	let li = document.createElement('li')
+		// 	li.className = 'menu-item'
+		// 	li.innerHTML = `<button type="button" class="menu-btn">
+		// 				<span class="menu-text">${owner?.elementType?.name} - ${source?.fileName?.substr(debugNode.debugSource?.fileName?.lastIndexOf('/')+1)}</span>
+		// 			</button>`
+
+		// 	renderedBy.push(li)
+
+		// 	owner = owner._debugOwner
+		// 	source = owner?._debugSource
+
+		// }
+
+		// if(renderedBy.length > 0){
+		// 	let subMenu = document.createElement('ul')
+		// 	subMenu.className = 'figment-menu'
+		// 	renderedBy.forEach(li => subMenu.appendChild(li))
+		// 	li.className = 'menu-item menu-item-submenu'
+		// 	li.appendChild(subMenu)
+		// }
+
+		//menu.ul.appendChild(menuItem.li)
+	})
+
+	// if (figmaData?.recordCount) {
+	// 	renderFigmaMenuItems(figmaData, ul);
+	// }
+
+	document.body.appendChild(menu.ul)
+	return menu;
+}
+
+function componentMenuItemHover({ e, debugNode, hovering = true }) {
+	if (hovering) {
+		e.target.classList.add('comp-menu-item-hover')
+		highlightElement({
+			node: debugNode.stateNode.getBoundingClientRect ? debugNode.stateNode : debugNode.element,
+			label: debugNode.debugOwnerName
+		})
+	}
+	else {
+		e.target.classList.remove('comp-menu-item-hover')
+	}
+}
+
+function openSourceFile(debugNode, e) {
+	//todo: make this configurable to support other editors
+	if (debugNode.debugOwner?._debugSource?.fileName) {
+		open(debugNode.sourceUrl);
+	}
+	else
+		console.log('no subtext click!', e);
+}
+
+function refreshFigmaNodes(debugNode) {
+	chrome.runtime.sendMessage(figmentId, { name: debugNode.debugOwnerName, id: debugNode.figmaId }, function (figmaData) {
+		if (figmaData) {
+			figmaData.searchTerms = [debugNode.debugOwnerName.split(/(?=[A-Z])/), debugNode.figmaId].join(' ');
+			document.querySelectorAll('.menu-btn, .figma-info').forEach(e => e.remove());
+			renderFigmaMenuItems(figmaData, ul);
+		}
+	})
 }
 
 function renderFigmaMenuItems(figmaData, ul) {
@@ -256,46 +310,33 @@ function renderInfoMenuItem({text}) {
 	return li
 }
 
-function renderMenuItem({text, onTextClick, subtext, onSubTextClick}) {
-	let li = document.createElement('li')
-	li.className = 'menu-item'
+// function renderMenuItem({text, onTextClick, subtext, onSubTextClick}) {
+// 	let li = document.createElement('li')
+// 	li.className = 'menu-item'
 
-	let textSpan = document.createElement('span')
-	textSpan.className = 'menu-text'
-	textSpan.textContent = text
+// 	let textSpan = document.createElement('span')
+// 	textSpan.className = 'menu-text'
+// 	textSpan.textContent = text
 	
-	if(onTextClick) {
-		textSpan.classList.add('menu-keep-open')
-		textSpan.addEventListener('click', onTextClick)
-	}
+// 	if(onTextClick) {
+// 		textSpan.classList.add('menu-keep-open')
+// 		textSpan.addEventListener('click', onTextClick)
+// 	}
 
-	li.appendChild(textSpan)
+// 	li.appendChild(textSpan)
 
-	if(subtext) {
-		let subtextSpan = document.createElement('span')
-		subtextSpan.className = 'menu-subtext'
-		subtextSpan.textContent = subtext
-		li.appendChild(subtextSpan)
+// 	if(subtext) {
+// 		let subtextSpan = document.createElement('span')
+// 		subtextSpan.className = 'menu-subtext'
+// 		subtextSpan.textContent = subtext
+// 		li.appendChild(subtextSpan)
 
-		if(onSubTextClick) subtextSpan.addEventListener('click', onSubTextClick)
-	}
+// 		if(onSubTextClick) subtextSpan.addEventListener('click', onSubTextClick)
+// 	}
 
-	return li
-}
+// 	return li
+// }
 
-https://codepen.io/ryanmorr/pen/JdOvYR
-var menu = document.querySelector('.figment-menu');
-
-function showMenu(x, y) {
-	if (menu) {
-		let overflowX = x + getTotal(getComputedStyle(menu), ['width']) - window.innerWidth
-		if(overflowX > 0) x -= (overflowX + 50)
-
-		menu.style.left = x + 'px';
-		menu.style.top = y + 'px';
-		menu.classList.add('menu-show');
-	}
-}
 
 let styleToInt = (value) => Number.parseInt(value.replaceAll('px', ''))
 let getTotal = (style, properties) => properties.reduce((total, property) => total + styleToInt(style[property]), 0)
