@@ -90,4 +90,17 @@ export class MenuItem {
 			if(onSubTextClick) subtextSpan.addEventListener('click', onSubTextClick)
 		}
 	}
+
+	get SubMenu () {
+		if(!this.subMenu) {
+			this.subMenu = new Menu()
+			this.li.appendChild(this.subMenu.ul)
+		}
+		return this.subMenu
+	}
+
+	AddSubMenuItem(item) {
+		this.SubMenu.AddItem(item)
+		this.li.className = 'menu-item menu-item-submenu'
+	}
 }

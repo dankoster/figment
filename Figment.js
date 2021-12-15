@@ -83,24 +83,17 @@ function renderMenu(debugTree, figmaData) {
 
 		menu.AddItem(item)
 
-		// //display a "rendered by" tree in a sub-menu
-		// let renderedBy = []
-		// debugNode.renderTree.forEach(({name, file}) => {
-		// 	let li = document.createElement('li')
-		// 	li.className = 'menu-item'
-		// 	li.innerHTML = `<button type="button" class="menu-btn">
-		// 				<span class="menu-text">${name} - ${file?.substr(file.lastIndexOf('/')+1)}</span>
-		// 			</button>`
-		// 	renderedBy.push(li)
-		// })
-
-		// if(renderedBy.length > 0){
-		// 	let subMenu = document.createElement('ul')
-		// 	subMenu.className = 'figment-menu'
-		// 	renderedBy.forEach(li => subMenu.appendChild(li))
-		// 	item.li.className = 'menu-item menu-item-submenu'
-		// 	item.li.appendChild(subMenu)
-		// }
+		//display a "rendered by" tree in a sub-menu
+		// TODO: add styling like menu-btn
+		// TODO: only popup submenu when hovering over right end of parent
+		debugNode.renderTree.forEach(({name, file}) => {
+			item.AddSubMenuItem(new MenuItem({
+				text: name,
+				subtext: file?.substr(file.lastIndexOf('/')+1),
+				onTextClick: (e) => file && open(`vscode://file${file}`),
+				onSubTextClick: (e) => file && open(`vscode://file${file}`)
+			}))
+		})
 	})
 
 	if (figmaData?.recordCount) {
