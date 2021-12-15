@@ -4,6 +4,7 @@ export default class FigmentOutline extends HTMLElement {
 	
 	constructor() {
 		super();
+
 		this.shadow = this.attachShadow({ mode: 'open' })
 
 		this.overlay = document.createElement('div')
@@ -42,4 +43,33 @@ export default class FigmentOutline extends HTMLElement {
 			this.overlay.setAttribute(attribute, attributes[attribute])
 		}
 	}
+
+	setLocation(rect) {
+		this.setStyles({
+			top: window.scrollY + rect.top + 'px'
+			, left: rect.left + 'px'
+			, width: rect.width + 'px'
+			, height: rect.height + 'px'
+		})
+	}
+
+	static highlightElement({node, label, onClick}) {
+
+		if (node && node.getBoundingClientRect) {
+	
+			let overlay = document.querySelector('figment-outline')
+	
+			if(!overlay) {
+				// Define the outline element
+				if (!customElements.get('figment-outline'))
+					customElements.define('figment-outline', FigmentOutline);
+
+				overlay = document.createElement('figment-outline')
+				document.body.appendChild(overlay)
+			}
+	
+			overlay.setLabel({label, onClick})
+			overlay.setLocation(node.getBoundingClientRect())
+		}
+	}	
 }

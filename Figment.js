@@ -2,9 +2,6 @@ import DebugNode from './DebugNode.js'
 import FigmentOutline from './FigmentOutline.js'
 import { Menu, MenuItem } from './Menu.js'
 
-// Define the outline element
-customElements.define('figment-outline', FigmentOutline);
-
 //get the ID of the browser plugin
 export const figmentId = document.head.getElementsByTagName('figment')[0].id 
 
@@ -38,7 +35,7 @@ function initFigma() {
 				)
 				
 				if (usefulTree[0]?.stateNode) {
-					highlightElement({
+					FigmentOutline.highlightElement({
 						node: usefulTree[0].stateNode, 
 						label: usefulTree[0].debugOwnerName ?? usefulTree[0].element.name, 
 						onClick: (e) => { onOverlayClick(e, usefulTree) }
@@ -47,30 +44,6 @@ function initFigma() {
 			}
 		}, delayMs);
 	});
-}
-
-function highlightElement({node, label, onClick}) {
-
-	if (node && node.getBoundingClientRect) {
-
-		let overlay = document.querySelector('figment-outline')
-
-		if(!overlay) {
-			overlay = document.createElement('figment-outline')
-			document.body.appendChild(overlay)
-		}
-
-		overlay.setAttribute('data-text', label) //this is the text label for the overlay
-
-		let rect = node.getBoundingClientRect()
-		overlay.setLabel({label, onClick})
-		overlay.setStyles({
-			top: window.scrollY + rect.top + 'px'
-			, left: rect.left + 'px'
-			, width: rect.width + 'px'
-			, height: rect.height + 'px'
-		})
-	}
 }
 
 function onOverlayClick (e, debugTree) {
@@ -141,7 +114,7 @@ function renderMenu(debugTree, figmaData) {
 function componentMenuItemHover({ e, debugNode, hovering = true }) {
 	if (hovering) {
 		e.target.classList.add('comp-menu-item-hover')
-		highlightElement({
+		FigmentOutline.highlightElement({
 			node: debugNode.stateNode.getBoundingClientRect ? debugNode.stateNode : debugNode.element,
 			label: debugNode.debugOwnerName
 		})
