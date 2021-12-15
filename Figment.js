@@ -110,24 +110,24 @@ function renderMenu(debugTree, figmaData) {
 
 		menu.AddItem(item)
 
-		//display a "rendered by" tree in a sub-menu
-		let renderedBy = []
-		debugNode.renderTree.forEach(({name, file}) => {
-			let li = document.createElement('li')
-			li.className = 'menu-item'
-			li.innerHTML = `<button type="button" class="menu-btn">
-						<span class="menu-text">${name} - ${file?.substr(file.lastIndexOf('/')+1)}</span>
-					</button>`
-			renderedBy.push(li)
-		})
+		// //display a "rendered by" tree in a sub-menu
+		// let renderedBy = []
+		// debugNode.renderTree.forEach(({name, file}) => {
+		// 	let li = document.createElement('li')
+		// 	li.className = 'menu-item'
+		// 	li.innerHTML = `<button type="button" class="menu-btn">
+		// 				<span class="menu-text">${name} - ${file?.substr(file.lastIndexOf('/')+1)}</span>
+		// 			</button>`
+		// 	renderedBy.push(li)
+		// })
 
-		if(renderedBy.length > 0){
-			let subMenu = document.createElement('ul')
-			subMenu.className = 'figment-menu'
-			renderedBy.forEach(li => subMenu.appendChild(li))
-			item.li.className = 'menu-item menu-item-submenu'
-			item.li.appendChild(subMenu)
-		}
+		// if(renderedBy.length > 0){
+		// 	let subMenu = document.createElement('ul')
+		// 	subMenu.className = 'figment-menu'
+		// 	renderedBy.forEach(li => subMenu.appendChild(li))
+		// 	item.li.className = 'menu-item menu-item-submenu'
+		// 	item.li.appendChild(subMenu)
+		// }
 	})
 
 	if (figmaData?.recordCount) {
