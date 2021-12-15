@@ -1,6 +1,7 @@
 # Figment
 
 A developer tool to correlate React components and Figma designs
+Requires a development React site
 
 # Features
 * Highlight React components under the mouse
