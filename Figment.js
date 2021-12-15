@@ -162,50 +162,40 @@ function renderMenu(debugTree, figmaData) {
 
 	debugTree.forEach(debugNode => {
 
-		menu.AddItem(new MenuItem({ 
+		let item = new MenuItem({ 
 			text: debugNode.debugOwnerName ?? `${debugNode.fiber.elementType} (${debugNode.debugOwnerSymbolType})`, 
 			subtext: debugNode.renderedByFileName, 
-			onTextClick: (e) => refreshFigmaNodes(debugNode),
+			onTextClick: (e) => refreshFigmaNodes(debugNode, menu),
 			onSubTextClick: (e) => openSourceFileInVsCode(debugNode, e),
 			mouseEnter: (e) => componentMenuItemHover({e, debugNode}),
 			mouseLeave: (e) => componentMenuItemHover({e, hovering: false}),
-		}))
+		})
 
+		menu.AddItem(item)
 
-		// //TODO: build a "rendered by" tree to display in a sub-menu
-		// let owner = debugNode.fiber._debugOwner
-		// let source = debugNode.fiber._debugSource
-		// let renderedBy = []
-		// while(owner) {
+		//display a "rendered by" tree in a sub-menu
+		let renderedBy = []
+		debugNode.renderTree.forEach(({name, file}) => {
+			let li = document.createElement('li')
+			li.className = 'menu-item'
+			li.innerHTML = `<button type="button" class="menu-btn">
+						<span class="menu-text">${name} - ${file?.substr(file.lastIndexOf('/')+1)}</span>
+					</button>`
+			renderedBy.push(li)
+		})
 
-
-		// 	let li = document.createElement('li')
-		// 	li.className = 'menu-item'
-		// 	li.innerHTML = `<button type="button" class="menu-btn">
-		// 				<span class="menu-text">${owner?.elementType?.name} - ${source?.fileName?.substr(debugNode.debugSource?.fileName?.lastIndexOf('/')+1)}</span>
-		// 			</button>`
-
-		// 	renderedBy.push(li)
-
-		// 	owner = owner._debugOwner
-		// 	source = owner?._debugSource
-
-		// }
-
-		// if(renderedBy.length > 0){
-		// 	let subMenu = document.createElement('ul')
-		// 	subMenu.className = 'figment-menu'
-		// 	renderedBy.forEach(li => subMenu.appendChild(li))
-		// 	li.className = 'menu-item menu-item-submenu'
-		// 	li.appendChild(subMenu)
-		// }
-
-		//menu.ul.appendChild(menuItem.li)
+		if(renderedBy.length > 0){
+			let subMenu = document.createElement('ul')
+			subMenu.className = 'figment-menu'
+			renderedBy.forEach(li => subMenu.appendChild(li))
+			item.li.className = 'menu-item menu-item-submenu'
+			item.li.appendChild(subMenu)
+		}
 	})
 
-	// if (figmaData?.recordCount) {
-	// 	renderFigmaMenuItems(figmaData, ul);
-	// }
+	if (figmaData?.recordCount) {
+		renderFigmaMenuItems(figmaData, menu);
+	}
 
 	document.body.appendChild(menu.ul)
 	return menu;
@@ -229,45 +219,45 @@ function openSourceFileInVsCode(debugNode, e) {
 	open(debugNode.renderedByVsCodeLink);
 }
 
-function refreshFigmaNodes(debugNode) {
+function refreshFigmaNodes(debugNode, menu) {
 	chrome.runtime.sendMessage(figmentId, { name: debugNode.debugOwnerName, id: debugNode.figmaId }, function (figmaData) {
 		if (figmaData) {
 			figmaData.searchTerms = [debugNode.debugOwnerName.split(/(?=[A-Z])/), debugNode.figmaId].join(' ');
 			document.querySelectorAll('.menu-btn, .figma-info').forEach(e => e.remove());
-			renderFigmaMenuItems(figmaData, ul);
+			renderFigmaMenuItems(figmaData, menu);
 		}
 	})
 }
 
-function renderFigmaMenuItems(figmaData, ul) {
+function renderFigmaMenuItems(figmaData, menu) {
 	let sep = document.createElement('li')
 	sep.className = 'menu-separator'
 	sep.classList.add('figma-info')
-	ul.appendChild(sep)
+	menu.ul.appendChild(sep)
 
 	if (Number.isInteger(figmaData?.recordCount)) {
 		let info = renderInfoMenuItem({ text: `total frames: ${figmaData?.recordCount}` })
 		info.classList.add('figma-info')
-		ul.appendChild(info)
+		menu.ul.appendChild(info)
 	}
 
 	if (figmaData?.lastModified) {
 		let lastModified = new Date(figmaData.lastModified).toLocaleString()
 		let info = renderInfoMenuItem({ text: `last modified ${lastModified}` })
 		info.classList.add('figma-info')
-		ul.appendChild(info)
+		menu.ul.appendChild(info)
 	}
 
 	if (figmaData?.searchTerms) {
 		let info = renderInfoMenuItem({ text: `search terms: ${figmaData?.searchTerms}` })
 		info.classList.add('figma-info')
-		ul.appendChild(info)
+		menu.ul.appendChild(info)
 	}
 
 	if (figmaData?.result?.length) {
 		let container = document.createElement('div')
 		container.className = 'menu-scrolling-container'
-		ul.appendChild(container)
+		menu.ul.appendChild(container)
 		figmaData?.result?.forEach(item => {
 			let { id, name, link, image } = item;
 
@@ -302,34 +292,6 @@ function renderInfoMenuItem({text}) {
 
 	return li
 }
-
-// function renderMenuItem({text, onTextClick, subtext, onSubTextClick}) {
-// 	let li = document.createElement('li')
-// 	li.className = 'menu-item'
-
-// 	let textSpan = document.createElement('span')
-// 	textSpan.className = 'menu-text'
-// 	textSpan.textContent = text
-	
-// 	if(onTextClick) {
-// 		textSpan.classList.add('menu-keep-open')
-// 		textSpan.addEventListener('click', onTextClick)
-// 	}
-
-// 	li.appendChild(textSpan)
-
-// 	if(subtext) {
-// 		let subtextSpan = document.createElement('span')
-// 		subtextSpan.className = 'menu-subtext'
-// 		subtextSpan.textContent = subtext
-// 		li.appendChild(subtextSpan)
-
-// 		if(onSubTextClick) subtextSpan.addEventListener('click', onSubTextClick)
-// 	}
-
-// 	return li
-// }
-
 
 let styleToInt = (value) => Number.parseInt(value.replaceAll('px', ''))
 let getTotal = (style, properties) => properties.reduce((total, property) => total + styleToInt(style[property]), 0)
