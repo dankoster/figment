@@ -120,17 +120,34 @@ class Menu {
 		}
 	}
 
-	AddItem(item) {
+	AddItem(item, container) {
 		this.items.push(item)
-		this.ul.appendChild(item.li)
+		if (container) container.appendChild(item.li);
+		else this.ul.appendChild(item.li)
 	}
+
+	AddSeparator() {
+		let sep = document.createElement('li')
+		sep.className = 'menu-separator'
+		sep.classList.add('figma-info')
+		this.ul.appendChild(sep)
+	}
+
+	AddScrollingContainer() {
+		let container = document.createElement('div');
+		container.className = 'menu-scrolling-container';
+		this.ul.appendChild(container);
+		return container;
+	}
+	
 }
 
 class MenuItem {
-	constructor({text, onTextClick, subtext, onSubTextClick, mouseEnter, mouseLeave}) {
+	constructor({text, onTextClick, subtext, href, extraClasses, onSubTextClick, mouseEnter, mouseLeave}) {
 		this.li = document.createElement('li')
-		this.li.className = 'menu-item'
-	
+		this.li.classList.add('menu-item')
+		Array.isArray(extraClasses) && extraClasses.forEach(c => this.li.classList.add(c))
+		
 		let textSpan = document.createElement('span')
 		textSpan.className = 'menu-text'
 		textSpan.textContent = text
@@ -140,7 +157,16 @@ class MenuItem {
 			textSpan.addEventListener('click', onTextClick)
 		}
 
-		this.li.appendChild(textSpan)
+		if(href) {
+			let a = document.createElement('a');
+			a.href = href;
+			a.target = '_blank';
+			a.classList.add('menu-btn');
+			this.li.appendChild(a);
+			a.appendChild(textSpan);
+		}
+		else 
+			this.li.appendChild(textSpan)
 		
 		if(mouseEnter) this.li.addEventListener("mouseenter", mouseEnter)
 		if(mouseLeave) this.li.addEventListener("mouseleave", mouseLeave)
@@ -230,67 +256,41 @@ function refreshFigmaNodes(debugNode, menu) {
 }
 
 function renderFigmaMenuItems(figmaData, menu) {
-	let sep = document.createElement('li')
-	sep.className = 'menu-separator'
-	sep.classList.add('figma-info')
-	menu.ul.appendChild(sep)
+
+	menu.AddSeparator()
 
 	if (Number.isInteger(figmaData?.recordCount)) {
-		let info = renderInfoMenuItem({ text: `total frames: ${figmaData?.recordCount}` })
-		info.classList.add('figma-info')
-		menu.ul.appendChild(info)
+		menu.AddItem(new MenuItem({
+			text: `total frames: ${figmaData?.recordCount}`,
+			extraClasses: ['menu-info', 'figma-info']
+		}))
 	}
 
 	if (figmaData?.lastModified) {
 		let lastModified = new Date(figmaData.lastModified).toLocaleString()
-		let info = renderInfoMenuItem({ text: `last modified ${lastModified}` })
-		info.classList.add('figma-info')
-		menu.ul.appendChild(info)
+		menu.AddItem(new MenuItem({
+			text: `last modified ${lastModified}`,
+			extraClasses: ['menu-info', 'figma-info']
+		}))
 	}
 
 	if (figmaData?.searchTerms) {
-		let info = renderInfoMenuItem({ text: `search terms: ${figmaData?.searchTerms}` })
-		info.classList.add('figma-info')
-		menu.ul.appendChild(info)
+		menu.AddItem(new MenuItem({
+			text: `search terms: ${figmaData?.searchTerms}`,
+			extraClasses: ['menu-info','figma-info']
+		}))
 	}
 
 	if (figmaData?.result?.length) {
-		let container = document.createElement('div')
-		container.className = 'menu-scrolling-container'
-		menu.ul.appendChild(container)
+		let container = menu.AddScrollingContainer();
 		figmaData?.result?.forEach(item => {
 			let { id, name, link, image } = item;
-
-			let li = document.createElement('li');
-			li.className = 'menu-item';
-
-			let textSpan = document.createElement('span');
-			textSpan.className = 'menu-text';
-			textSpan.textContent = name;
-
-			let a = document.createElement('a');
-			a.href = link;
-			a.target = '_blank';
-			a.classList.add('menu-btn');
-			li.appendChild(a);
-			a.appendChild(textSpan);
-			container.appendChild(li);
+			menu.AddItem(new MenuItem({ 
+				text: name, 
+				href: link
+			}), container)
 		});
 	}
-}
-
-function renderInfoMenuItem({text}) {
-	let li = document.createElement('li')
-	li.classList.add('menu-item')
-	li.classList.add('menu-info')
-
-	let textSpan = document.createElement('span')
-	textSpan.className = 'menu-text'
-	textSpan.textContent = text
-
-	li.appendChild(textSpan)
-
-	return li
 }
 
 let styleToInt = (value) => Number.parseInt(value.replaceAll('px', ''))
