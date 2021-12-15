@@ -17,6 +17,7 @@
 		{
 			"resources": [ 
 				"Figment.js", 
+				"Menu.js",
 				"DebugNode.js", 
 				"FigmentOutline.js",
 				"styles.css" 
