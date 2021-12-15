@@ -22,7 +22,7 @@ function initFigma() {
 		timeout = setTimeout(() => {
 			if (!Array.isArray(debugTree) 
 			|| debugTree[0]?.element !== e.path[0] //are we already on this thing?
-			&& !e.path.some(b => b.className?.includes('figment'))) //is this a figment thing?
+			&& !e.path.some(b => b.className?.includes && b.className?.includes('figment'))) //is this a figment thing?
 			{
 				debugTree = e.path.map(element => new DebugNode(element))
 
@@ -85,15 +85,12 @@ function onOverlayClick (e, debugTree) {
 	})
 }
 
-
 function onMouseUp(e) {
 	if(!e.path[0].classList.contains('menu-keep-open')){
 		Menu.Hide()
 		document.removeEventListener('mouseup', onMouseUp);
 	}
 }
-
-
 
 //https://codepen.io/ryanmorr/pen/JdOvYR
 class Menu {
@@ -167,9 +164,9 @@ function renderMenu(debugTree, figmaData) {
 
 		menu.AddItem(new MenuItem({ 
 			text: debugNode.debugOwnerName ?? `${debugNode.fiber.elementType} (${debugNode.debugOwnerSymbolType})`, 
-			subtext: debugNode.debugPath, 
+			subtext: debugNode.renderedByFileName, 
 			onTextClick: (e) => refreshFigmaNodes(debugNode),
-			onSubTextClick: (e) => openSourceFile(debugNode, e),
+			onSubTextClick: (e) => openSourceFileInVsCode(debugNode, e),
 			mouseEnter: (e) => componentMenuItemHover({e, debugNode}),
 			mouseLeave: (e) => componentMenuItemHover({e, hovering: false}),
 		}))
@@ -227,13 +224,9 @@ function componentMenuItemHover({ e, debugNode, hovering = true }) {
 	}
 }
 
-function openSourceFile(debugNode, e) {
+function openSourceFileInVsCode(debugNode, e) {
 	//todo: make this configurable to support other editors
-	if (debugNode.debugOwner?._debugSource?.fileName) {
-		open(debugNode.sourceUrl);
-	}
-	else
-		console.log('no subtext click!', e);
+	open(debugNode.renderedByVsCodeLink);
 }
 
 function refreshFigmaNodes(debugNode) {

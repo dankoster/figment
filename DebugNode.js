@@ -9,9 +9,9 @@ export default class DebugNode {
 		this.figmaId = this.stateNode?.getAttribute && this.stateNode.getAttribute('data-figment')
 		
 		this.debugOwnerSymbolType = typeof this.debugOwner?.elementType?.$$typeof === 'symbol' 
-		? Symbol.keyFor(this.debugOwner?.elementType?.$$typeof) : undefined
+		? this.debugOwner?.elementType?.$$typeof.description : undefined
 
-		let ds = this.debugSource
+		let ds = this.debugOwner?._debugSource
 		this.debugFile = ds?.fileName?.substr(ds?.fileName?.lastIndexOf('/')+1)
 		this.debugPath = this.debugFile && [this.debugFile, ds?.lineNumber, ds?.columnNumber].join(':')
 		this.sourceUrl = ds && `vscode://file${ds?.fileName}:${ds?.lineNumber}:${ds?.columnNumber}`
@@ -20,7 +20,56 @@ export default class DebugNode {
 			ds?.lineNumber,
 			ds?.columnNumber
 		].join(':')
+	}
 
+	get renderedByFileName() {
+		let ds = this.renderTree[1]
+		return ds.file.substr(ds.file.lastIndexOf('/')+1)
+	}
+
+	get renderedByVsCodeLink() { 
+		let ds = this.renderTree[1]
+		return ds && `vscode://file${ds.file}`
+	}
+	
+	get renderTree() {
+		if (!this._renderTree) {
+
+			var fiber = this.fiber
+			var fiberTree = []
+			while (fiber) {
+				fiberTree.push(fiber)
+				fiber = fiber._debugOwner
+			}
+
+			let rawRenderTree = fiberTree.map(fiber => {
+				return {
+					name: fiber._debugOwner?.elementType?.name
+						|| fiber._debugOwner?.elementType?.render?.name
+						|| fiber._debugOwner?.elementType?.$$typeof?.description,
+					file: fiber._debugSource && `${fiber._debugSource?.fileName}:${fiber._debugSource?.lineNumber}:${fiber._debugSource?.columnNumber}`
+				}
+			})
+
+			this._renderTree = rawRenderTree.reduce((result, cur, index, array) => {
+				if (!result.length) result.push(cur)
+				else {
+					if (!cur.file)
+						result[result.length - 1].name += `/${cur.name}`
+					else if (!result[result.length - 1].file) {
+						result[result.length - 1].name += `/${cur.name}`
+						result[result.length - 1].file = cur.file
+					}
+					else
+						result.push(cur)
+				}
+
+				return result
+
+			}, [])
+		}
+
+		return this._renderTree
 	}
 
 	get stateNode() {
