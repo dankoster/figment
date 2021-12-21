@@ -1,7 +1,7 @@
 # Figment
 
 A developer tool to correlate React components and Figma designs
-Requires a development React site
+
 
 # Features
 * Highlight React components under the mouse
@@ -9,12 +9,14 @@ Requires a development React site
 * Click a code file to open it in Visual Studio code
 * Click a Figma reference to open the figma document to that point
 
-# Roadmap
+# TODO
 * WIP - react node "rendered by" submenu
 * Enable/Disable from popup
 * Figma images
 * Multiple Figma files
+* Figma Frame search box (don't require clicking on a node)
 * Configurable file open target (VSCode, VIM, etc)
+* Add support for other design tools? (whimsical?)
 
 # Install
 1) Load the extension in a chromium browser
