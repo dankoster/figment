@@ -158,14 +158,21 @@ function renderFigmaMenuItems(figmaData, menu) {
 		}))
 	}
 
-	if (figmaData?.result?.length) {
-		let container = menu.AddScrollingContainer();
-		figmaData?.result?.forEach(item => {
-			let { id, name, link, image } = item;
-			menu.AddItem(new MenuItem({ 
-				text: name, 
-				href: link
-			}), container)
-		});
+	//add an array of results
+	if (Array.isArray(figmaData?.result) && figmaData?.result?.length) {
+		let container = menu.AddScrollingContainer()
+		figmaData?.result?.forEach(item => addFigmaItem(item, container))
+	}
+	//add a single result
+	else if(figmaData?.result?.id) {
+		addFigmaItem(figmaData.result)
+	}
+
+	function addFigmaItem(item, container) {
+		let { id, name, link, image } = item
+		menu.AddItem(new MenuItem({
+			text: name,
+			href: link
+		}), container)
 	}
 }
