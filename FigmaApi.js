@@ -31,7 +31,16 @@ export class FigmaNode {
 	} 
 }
 
-export async function GetFigmaData({ docId, docName, userToken }) {
+export async function GetLocalFigmaData() {
+	return chrome.storage.local.get(["figma"]).then((data) => data.figma)
+}
+
+async function SetLocalFigmaData(figma) {
+	//save the figma data in extension local storage
+	chrome.storage.local.set({ figma })
+}
+
+export async function LoadFigmaData({ docId, docName, userToken }) {
 
 	let json = await FetchFigmaJson(`${figmaApiUrl}/files/${docId}?depth=2`, userToken)
 
@@ -50,6 +59,8 @@ export async function GetFigmaData({ docId, docName, userToken }) {
 			figma.frames.push(new FigmaNode({...node, docId, docName }))
 		}
 	}
+
+	SetLocalFigmaData(figma)
 
 	return figma
 }

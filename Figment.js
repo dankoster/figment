@@ -86,14 +86,14 @@ function renderMenu(debugTree, figmaData) {
 		//display a "rendered by" tree in a sub-menu
 		// TODO: add styling like menu-btn
 		// TODO: only popup submenu when hovering over right end of parent
-		debugNode.renderTree.forEach(({name, file}) => {
-			item.AddSubMenuItem(new MenuItem({
-				text: name,
-				subtext: file?.substr(file.lastIndexOf('/')+1),
-				onTextClick: (e) => file && open(`vscode://file${file}`),
-				onSubTextClick: (e) => file && open(`vscode://file${file}`)
-			}))
-		})
+		// debugNode.renderTree.forEach(({name, file}) => {
+		// 	item.AddSubMenuItem(new MenuItem({
+		// 		text: name,
+		// 		subtext: file?.substr(file.lastIndexOf('/')+1),
+		// 		onTextClick: (e) => file && open(`vscode://file${file}`),
+		// 		onSubTextClick: (e) => file && open(`vscode://file${file}`)
+		// 	}))
+		// })
 	})
 
 	if (figmaData?.recordCount) {

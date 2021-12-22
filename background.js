@@ -1,14 +1,13 @@
-import { FigmaNode, FigmaSearch } from "./FigmaApi.js"
+import { FigmaNode, FigmaSearch, GetLocalFigmaData } from "./FigmaApi.js"
 
 //listen for component name requests from the web page
 chrome.runtime.onMessageExternal.addListener(
 	function (request, sender, sendResponse) {
-		console.log(request)
+		console.log('request', request)
 
-		
-		chrome.storage.local.get(["figma"], ({ figma }) => {
+		GetLocalFigmaData().then((figma) => {
 
-			console.log({figma})
+			console.log('got figma data',figma)
 
 			//find the figma info for the requested component name
 			let result = FigmaSearch.FindByExactNameOrId({figma, ...request}); //figma?.frames?.find(frame => frame.name === request.name || frame.id === decodeURIComponent(request.id))
@@ -22,7 +21,7 @@ chrome.runtime.onMessageExternal.addListener(
 			}
 
 			let test = result.map(r => new FigmaNode(r))
-			console.log({result, test})
+			console.log('search result', {result, test})
 
 			sendResponse({ lastModified: figma?.lastModified, version: figma?.version, result, recordCount: figma?.frames?.length })
 
