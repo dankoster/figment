@@ -1,14 +1,11 @@
 const figmaApiUrl = `https://api.figma.com/v1`
 
 export class FigmaSearch {
-	constructor() { 
-
-	}
-
 	static FindByExactNameOrId({figma, name, id}) { return figma?.frames?.find(frame => frame.name === name || frame.id === decodeURIComponent(id)) }
 	static FindByRegex({figma, regex}) { return figma?.frames?.filter(frame => regex.test(frame.name.toLowerCase()))}
 	static SplitByCaps(searchTerm) { return new RegExp(searchTerm.split(/(?=[A-Z])/).map(str => str.toLowerCase()).join('|')) }
 }
+
 export class FigmaNode {
 	constructor({ id, name, docId, docName }) {
 		this.id = id;
@@ -18,21 +15,45 @@ export class FigmaNode {
 	}
 
 	async getImage(userToken) {
-		if(!this._image) {
+		if(!this._imageUrl) {
 			let url = `${figmaApiUrl}/images/${this.docId}?ids=${this.id}`
 			let json = await FetchFigmaJson(url, userToken)
 			
 			if(json.err) throw json.err 
 
 			let id = decodeURIComponent(this.id)
-			this._image = json.images[id]
+			this._imageUrl = json.images[id]
+
+			//TODO: update this in local storage! (timeout in 30 days)
+			// https://www.figma.com/developers/api#get-images-endpoint
+			UpdateLocalStorageFigmaNode(this)
 		}
-		return this._image
+		return this._imageUrl
 	} 
 }
 
+async function UpdateLocalStorageFigmaNode(node) {
+	GetLocalFigmaData().then(data => {
+
+		debugger
+		
+		if (Array.isArray(data.nodes)) {
+			const index = data.nodes.indexOf(n => n.id === node.id)
+			if (index >= 0) {
+				data.nodes[index] = node
+				SetLocalFigmaData(data)
+			}
+			else console.warn(`${node.id} not found in`, data.nodes)
+		}
+		else console.warn(`${data.nodes} is not an array`)
+	})
+}
+
 export async function GetLocalFigmaData() {
-	return chrome.storage.local.get(["figma"]).then((data) => data.figma)
+	return chrome.storage.local.get(["figma"]).then((data) => {
+		data.figma.nodes = data.figma.frames.map(f => new FigmaNode(f))
+		return data.figma
+	})
 }
 
 async function SetLocalFigmaData(figma) {

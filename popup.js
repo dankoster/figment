@@ -1,16 +1,15 @@
-import { GetFigmaData } from './FigmaApi.js'
+import { GetLocalFigmaData, LoadFigmaData } from './FigmaApi.js'
 
-let changeColor = document.getElementById("changeColor")
 let loadFigmaDoc = document.getElementById("loadFigmaDoc")
 let docIdInput = document.getElementById("docId")
 let docNameInput = document.getElementById("docName")
 let userTokenInput = document.getElementById("userToken")
 let statusText = document.getElementById('status')
 
-let figma = {}
+//The popup is reconstructed every time it is shown and destroyed when hidden
+// This script is going to run every time the popup is shown!
 
-//this is going to run every time the popup is shown!
-chrome.storage.local.get(["figma"], ({ figma }) => {
+GetLocalFigmaData().then((figma) => {
 	userTokenInput.value = figma?.userToken ?? ''
 	statusText.innerText = figma?.loaded ? 'Loaded ' + new Date(figma?.loaded).toLocaleString() : ''
 })
@@ -20,7 +19,7 @@ loadFigmaDoc.addEventListener('click', async (e) => {
 	loadFigmaDoc.disabled = true
 	statusText.innerText = 'Loading...'
 
-	figma = await GetFigmaData({
+	let figma = await LoadFigmaData({
 		docId: docIdInput.value,
 		docName: docNameInput.value,
 		userToken: userTokenInput.value
@@ -29,9 +28,6 @@ loadFigmaDoc.addEventListener('click', async (e) => {
 	console.log(`got figma doc ${docName}!`, figma)
 	userTokenInput.value = figma?.userToken ?? ''
 	statusText.innerText = 'Loaded ' + new Date(figma?.loaded).toLocaleString()
-
-	//save the figma data in extension local storage
-	chrome.storage.local.set({ figma })
 
 	loadFigmaDoc.disabled = false
 })

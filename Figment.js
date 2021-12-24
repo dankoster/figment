@@ -46,12 +46,19 @@ function initFigma() {
 	});
 }
 
+function SearchFigmaData({ name, id }) {
+	return new Promise((resolve) => {
+		chrome.runtime.sendMessage(figmentId, { search : {name, id} }, function (response) { 
+			resolve(response) 
+		})
+	})
+}
+
 function onOverlayClick (e, debugTree) {
 	e.preventDefault(true)
 	let comp = debugTree[0]
-	chrome.runtime.sendMessage(figmentId, { name: comp.debugOwnerName, id: comp.figmaId }, function (figmaData) {
+	SearchFigmaData({ name: comp.debugOwnerName, id: comp.figmaId }).then((figmaData) => {
 		if (figmaData) {
-			figmaData.searchTerms = [comp.debugOwnerName.split(/(?=[A-Z])/), comp.figmaId].join(' ')
 			let menu = renderMenu(debugTree, figmaData)
 			menu.Show(e.pageX, e.pageY);
 			document.addEventListener('mouseup', onMouseUp, false);
@@ -123,9 +130,8 @@ function openSourceFileInVsCode(debugNode, e) {
 }
 
 function refreshFigmaNodes(debugNode, menu) {
-	chrome.runtime.sendMessage(figmentId, { name: debugNode.debugOwnerName, id: debugNode.figmaId }, function (figmaData) {
+	SearchFigmaData({ name: debugNode.debugOwnerName, id: debugNode.figmaId }).then((figmaData) => {
 		if (figmaData) {
-			figmaData.searchTerms = [debugNode.debugOwnerName.split(/(?=[A-Z])/), debugNode.figmaId].join(' ');
 			document.querySelectorAll('.menu-btn, .figma-info').forEach(e => e.remove());
 			renderFigmaMenuItems(figmaData, menu);
 		}
