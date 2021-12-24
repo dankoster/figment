@@ -6,17 +6,22 @@ chrome.runtime.onMessageExternal.addListener(
 		console.log('request', request)
 
 		GetLocalFigmaData().then((figma) => {
-
-			console.log('got figma data',figma)
-
-			let searchResult = SearchFigmaData(figma, request.search);
-
-			console.log({searchResult})
+			console.log('got figma data', figma)
 			let result = {}
 
-			if(searchResult) result.search = {...request.search, ...searchResult}
+			if (request.search) {
+				let searchResult = SearchFigmaData(figma, request.search);
+				result.search = { ...request.search, result: { ...searchResult } }
+			}
+
+			if(request.images) {
+				console.warn('NOT IMPLEMENTED')
+				result.images = {...request.images, result: 'NOT IMPLEMENTED'}
+				//TODO: update each search result with it's image url and update local storage with a ttl of 30 days
+			}
+
 			console.log(result)
-			sendResponse(searchResult)
+			sendResponse(result)
 
 		});
 

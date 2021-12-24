@@ -4,51 +4,62 @@ import { Menu, MenuItem } from './Menu.js'
 
 //get the ID of the browser plugin
 export const figmentId = document.head.getElementsByTagName('figment')[0].id 
+console.log(figmentId, 'Figment!')
 
 const delayMs = 50
-
-initFigma()
-
 let timeout = null;
 let debugTree = null;
 
-function initFigma() {
-	console.log(figmentId, 'Figment!')
+document.addEventListener('mousemove', e => {
+	if (timeout) clearTimeout(timeout)
+	timeout = setTimeout(() => HighlightNodeUnderMouse(e), delayMs);
+});
 
-	document.addEventListener('mousemove', e => {
-		if (timeout) clearTimeout(timeout)
-		timeout = setTimeout(() => {
-			if (!Array.isArray(debugTree) 
-			|| debugTree[0]?.element !== e.path[0] //are we already on this thing?
-			&& !e.path.some(b => b.className?.includes && b.className?.includes('figment'))) //is this a figment thing?
-			{
-				debugTree = e.path.map(element => new DebugNode(element))
+function HighlightNodeUnderMouse(e) {
+	if (!Array.isArray(debugTree)
+		|| debugTree[0]?.element !== e.path[0] //are we already on this thing?
+		&& !e.path.some(b => b.className?.includes && b.className?.includes('figment'))) //is this a figment thing?
+	{
+		debugTree = e.path.map(element => new DebugNode(element))
 
-				let usefulTree = debugTree
-				.filter((e1, index, array) => 
-					//e1.debugOwner
-					e1.debugOwnerName //we do have a debug name (the component name)
-					//&& !e1.debugOwnerSymbolType //this is not a symbolic reference
-					&& !array.slice(index + 1).find(e2 => e2.debugOwnerName === e1.debugOwnerName 
-						&& e2.debugOwner?._debugSource?.fileName === e1.debugOwner?._debugSource?.fileName
-						&& e2.debugOwner?._debugSource?.lineNumber === e1.debugOwner?._debugSource?.lineNumber) //there is not another one of these ahead in the list
-				)
-				
-				if (usefulTree[0]?.stateNode) {
-					FigmentOutline.highlightElement({
-						node: usefulTree[0].stateNode, 
-						label: usefulTree[0].debugOwnerName ?? usefulTree[0].element.name, 
-						onClick: (e) => { onOverlayClick(e, usefulTree) }
-					})
-				}
-			}
-		}, delayMs);
-	});
+		let usefulTree = debugTree
+			.filter((e1, index, array) =>
+				//e1.debugOwner
+				e1.debugOwnerName //we do have a debug name (the component name)
+
+				//&& !e1.debugOwnerSymbolType //this is not a symbolic reference
+				&& !array.slice(index + 1).find(e2 => e2.debugOwnerName === e1.debugOwnerName
+					&& e2.debugOwner?._debugSource?.fileName === e1.debugOwner?._debugSource?.fileName
+					&& e2.debugOwner?._debugSource?.lineNumber === e1.debugOwner?._debugSource?.lineNumber) //there is not another one of these ahead in the list
+			)
+
+		if (usefulTree[0]?.stateNode) {
+			FigmentOutline.highlightElement({
+				node: usefulTree[0].stateNode,
+				label: usefulTree[0].debugOwnerName ?? usefulTree[0].element.name,
+				onClick: (e) => { onOverlayClick(e, usefulTree) }
+			})
+		}
+	}
 }
 
-function SearchFigmaData({ name, id }) {
+const SearchFigmaData = ({ name, id }) => FigmentQuery({ search: { name, id } }).then(response => {
+	let ids = response?.search?.result?.result?.map(r => r.id)
+	console.log('searchFigmaData', ids)
+	if(ids) GetFigmaImageLinks(ids).then(response => {
+		console.warn('NOT IMPLEMENTED')
+		console.log(response)
+		//TODO: update each search result with it's image url and start pre-fetching the images
+	})
+	return response?.search?.result
+})
+const GetFigmaImageLinks = (ids) => FigmentQuery({ images: ids })
+
+function FigmentQuery(query) {
 	return new Promise((resolve) => {
-		chrome.runtime.sendMessage(figmentId, { search : {name, id} }, function (response) { 
+		//this should be returning a promise, according to the docs?
+		//https://developer.chrome.com/docs/extensions/reference/runtime/#method-sendMessage
+		chrome.runtime.sendMessage(figmentId, query, function (response) { 
 			resolve(response) 
 		})
 	})
