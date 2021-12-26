@@ -86,8 +86,16 @@ export async function LoadFigmaData({ docId, docName, userToken }) {
 	return figma
 }
 
-export async function GetFigmentImages({ docId, ids }) {
+export async function GetFigmentImages({ docId, userToken, ids }) {
 
+	if(!Array.isArray(ids)) throw `${ids} is not an array`
+	if(!ids.length) throw `${ids} can not be empty`
+
+	let idCsv = ids.map(id => encodeURIComponent(id)).join(',')
+	let url = `${figmaApiUrl}/images/${docId}?ids=${idCsv}`
+	let json = await FetchFigmaJson(url, userToken)
+
+	//json
 	// {
 	// 	"err": null,
 	// 	"images": {
@@ -95,9 +103,10 @@ export async function GetFigmentImages({ docId, ids }) {
 	// 	  "1382:106541": "https://s3-us-west-2.amazonaws.com/figma-alpha-api/img/a491/8f09/ffb0d33e7aa56fc4448a0e29cc45de9d"
 	// 	}
 	// }
+	
+	if(json.err) throw json.err 
 
-	throw 'NOT IMPLEMENTED'
-	if(!Array.isArray(ids)) throw 'ids must be an Array'
+	return json.images
 }
 
 async function FetchFigmaJson(url, userToken) {

@@ -53,7 +53,8 @@ export class Menu {
 }
 
 export class MenuItem {
-	constructor({text, onTextClick, subtext, href, extraClasses, onSubTextClick, mouseEnter, mouseLeave}) {
+	constructor({id, text, onTextClick, subtext, href, extraClasses, imageSrc, onSubTextClick, mouseEnter, mouseLeave}) {
+		this.id = id
 		this.li = document.createElement('li')
 		this.li.classList.add('menu-item')
 		Array.isArray(extraClasses) && extraClasses.forEach(c => this.li.classList.add(c))
@@ -89,6 +90,22 @@ export class MenuItem {
 	
 			if(onSubTextClick) subtextSpan.addEventListener('click', onSubTextClick)
 		}
+
+		if (imageSrc) this.imageSrc = imageSrc
+	}
+
+	get imageSrc() { return this.img?.src }
+
+	set imageSrc(value) { 
+		if (value) {
+			if (!this.img) {
+				this.img = document.createElement('img')
+				this.li.appendChild(this.img)
+				this.img.className = 'menu-image'
+			}
+			this.img.src = value ?? ''
+		}
+		else if(this.img) this.img.remove() 
 	}
 
 	get SubMenu () {

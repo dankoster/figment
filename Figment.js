@@ -1,6 +1,7 @@
 import DebugNode from './DebugNode.js'
 import FigmentOutline from './FigmentOutline.js'
 import { Menu, MenuItem } from './Menu.js'
+import { SearchFigmaData, GetFigmaImageLinks } from './LocalApi.js'
 
 //get the ID of the browser plugin
 export const figmentId = document.head.getElementsByTagName('figment')[0].id 
@@ -43,37 +44,13 @@ function HighlightNodeUnderMouse(e) {
 	}
 }
 
-const SearchFigmaData = ({ name, id }) => FigmentQuery({ search: { name, id } }).then(response => {
-	let ids = response?.search?.result?.result?.map(r => r.id)
-	console.log('searchFigmaData', ids)
-	if(ids) GetFigmaImageLinks(ids).then(response => {
-		console.warn('NOT IMPLEMENTED')
-		console.log(response)
-		//TODO: update each search result with it's image url and start pre-fetching the images
-	})
-	return response?.search?.result
-})
-const GetFigmaImageLinks = (ids) => FigmentQuery({ images: ids })
-
-function FigmentQuery(query) {
-	return new Promise((resolve) => {
-		//this should be returning a promise, according to the docs?
-		//https://developer.chrome.com/docs/extensions/reference/runtime/#method-sendMessage
-		chrome.runtime.sendMessage(figmentId, query, function (response) { 
-			resolve(response) 
-		})
-	})
-}
-
 function onOverlayClick (e, debugTree) {
 	e.preventDefault(true)
 	let comp = debugTree[0]
 	SearchFigmaData({ name: comp.debugOwnerName, id: comp.figmaId }).then((figmaData) => {
-		if (figmaData) {
-			let menu = renderMenu(debugTree, figmaData)
-			menu.Show(e.pageX, e.pageY);
-			document.addEventListener('mouseup', onMouseUp, false);
-		}
+		let menu = renderMenu(debugTree, figmaData)
+		menu.Show(e.pageX, e.pageY);
+		document.addEventListener('mouseup', onMouseUp, false);
 	})
 }
 
@@ -174,7 +151,6 @@ function renderFigmaMenuItems(figmaData, menu) {
 			extraClasses: ['menu-info','figma-info']
 		}))
 	}
-
 	//add an array of results
 	if (Array.isArray(figmaData?.result) && figmaData?.result?.length) {
 		let container = menu.AddScrollingContainer()
@@ -185,11 +161,20 @@ function renderFigmaMenuItems(figmaData, menu) {
 		addFigmaItem(figmaData.result)
 	}
 
+	//requet image links for each figma item
+	let ids = figmaData?.result?.map(r => r.id)
+	if(Array.isArray(ids) && ids.length) 
+		GetFigmaImageLinks(ids).then(linkById => {
+			//update each search result with it's image url 
+			menu.items.forEach(m => m.imageSrc = linkById[m.id])
+		})
+
 	function addFigmaItem(item, container) {
-		let { id, name, link, image } = item
+		let { id, name, link, imageSrc } = item
 		menu.AddItem(new MenuItem({
+			id,
 			text: name,
-			href: link
+			href: link,
 		}), container)
 	}
 }

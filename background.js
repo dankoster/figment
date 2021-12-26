@@ -1,4 +1,4 @@
-import { FigmaNode, FigmaSearch, GetLocalFigmaData } from "./FigmaApi.js"
+import { FigmaNode, FigmaSearch, GetFigmentImages, GetLocalFigmaData } from "./FigmaApi.js"
 
 //listen for component name requests from the web page
 chrome.runtime.onMessageExternal.addListener(
@@ -12,17 +12,23 @@ chrome.runtime.onMessageExternal.addListener(
 			if (request.search) {
 				let searchResult = SearchFigmaData(figma, request.search);
 				result.search = { ...request.search, result: { ...searchResult } }
+
+				console.log(result)
+				sendResponse(result)	
 			}
 
 			if(request.images) {
-				console.warn('NOT IMPLEMENTED')
-				result.images = {...request.images, result: 'NOT IMPLEMENTED'}
-				//TODO: update each search result with it's image url and update local storage with a ttl of 30 days
+				//TODO: optimize this to only get images for items that don't already have an image url cached
+				let images = GetFigmentImages({ ...figma, ids: request.images}).then((images) => {
+					result.images = {...request.images, result: images}
+
+					//TODO: update each figma result with it's image url and update local storage with a ttl of 30 days
+					// see FigmaApi.UpdateLocalStorageFigmaNode
+
+					console.log(result)
+					sendResponse(result)	
+				})
 			}
-
-			console.log(result)
-			sendResponse(result)
-
 		});
 
         return true //tell the api a response is pending

@@ -58,6 +58,22 @@
     align-items: center;
 }
 
+.menu-item:hover .menu-image {
+    visibility: visible;
+  }
+
+.menu-image {
+    visibility: hidden;
+    /* border: 1px solid red; */
+    height: 200px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    object-fit: contain;
+    background: whitesmoke;
+    width: 100%;
+}
+
 .comp-menu-item-hover {
     outline: 1px dashed #ff000091;
     cursor: pointer;
