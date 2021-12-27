@@ -64,15 +64,17 @@
 
 .menu-image {
     visibility: hidden;
-    /* border: 1px solid red; */
-    height: 200px;
+    pointer-events: none;
+    border: 1px solid darkgray;
     position: fixed;
-    top: 0;
-    left: 0;
+    top: -30px;
+    left: -15px;
     object-fit: contain;
-    background: whitesmoke;
-    width: 100%;
-}
+    width: calc(100% + 30px);
+    border-radius: 5px;
+    box-shadow: 1px 1px 5px #1f1f1f2b;
+    backdrop-filter: blur(5px) saturate(0.5) brightness(0.95);
+    padding: 4px;}
 
 .comp-menu-item-hover {
     outline: 1px dashed #ff000091;

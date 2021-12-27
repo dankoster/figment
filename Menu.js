@@ -8,6 +8,8 @@ export class Menu {
 		this.ul = document.createElement('ul')
 		this.ul.className = 'figment-menu'
 		this.items = []
+
+		document.body.appendChild(this.ul)
 	}
 
 	static Hide() { Menu.Current?.classList.remove('menu-show') }
@@ -106,6 +108,10 @@ export class MenuItem {
 			this.img.src = value ?? ''
 		}
 		else if(this.img) this.img.remove() 
+	}
+
+	set imageHeight(value) {
+		if(Number.isSafeInteger(value) && this.img) this.img.height = value
 	}
 
 	get SubMenu () {

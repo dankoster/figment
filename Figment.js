@@ -95,7 +95,6 @@ function renderMenu(debugTree, figmaData) {
 		renderFigmaMenuItems(figmaData, menu);
 	}
 
-	document.body.appendChild(menu.ul)
 	return menu;
 }
 
@@ -118,16 +117,15 @@ function openSourceFileInVsCode(debugNode, e) {
 }
 
 function refreshFigmaNodes(debugNode, menu) {
-	SearchFigmaData({ name: debugNode.debugOwnerName, id: debugNode.figmaId }).then((figmaData) => {
-		if (figmaData) {
-			document.querySelectorAll('.menu-btn, .figma-info').forEach(e => e.remove());
-			renderFigmaMenuItems(figmaData, menu);
-		}
-	})
+	SearchFigmaData({ name: debugNode.debugOwnerName, id: debugNode.figmaId })
+	.then((figmaData) => renderFigmaMenuItems(figmaData, menu))
 }
 
 function renderFigmaMenuItems(figmaData, menu) {
 
+	//remove old items
+	document.querySelectorAll('.menu-btn, .figma-info, .menu-scrolling-container').forEach(e => e.remove());
+	
 	menu.AddSeparator()
 
 	if (Number.isInteger(figmaData?.recordCount)) {
@@ -151,23 +149,31 @@ function renderFigmaMenuItems(figmaData, menu) {
 			extraClasses: ['menu-info','figma-info']
 		}))
 	}
+
+	let container = menu.AddScrollingContainer()
+
 	//add an array of results
 	if (Array.isArray(figmaData?.result) && figmaData?.result?.length) {
-		let container = menu.AddScrollingContainer()
 		figmaData?.result?.forEach(item => addFigmaItem(item, container))
 	}
 	//add a single result
 	else if(figmaData?.result?.id) {
-		addFigmaItem(figmaData.result)
+		addFigmaItem(figmaData.result, container)
 	}
 
 	//requet image links for each figma item
 	let ids = figmaData?.result?.map(r => r.id)
-	if(Array.isArray(ids) && ids.length) 
+	if(Array.isArray(ids) && ids.length) {
+		let trace = Trace('request image links')
 		GetFigmaImageLinks(ids).then(linkById => {
 			//update each search result with it's image url 
-			menu.items.forEach(m => m.imageSrc = linkById[m.id])
+			menu.items.forEach(m => {
+				m.imageSrc = linkById[m.id]
+				m.imageHeight = container.offsetTop + 30 //set the height of the image so it's bottom doesnt' overlap the top of the scrolling container
+			})
+			trace.elapsed('got image links')
 		})
+	}
 
 	function addFigmaItem(item, container) {
 		let { id, name, link, imageSrc } = item
@@ -176,5 +182,27 @@ function renderFigmaMenuItems(figmaData, menu) {
 			text: name,
 			href: link,
 		}), container)
+	}
+}
+
+
+
+function Trace(message) {
+	let trace = {}
+	Error.captureStackTrace(trace) //in typescript: eval('Error.captureStackTrace(this.trace)')
+	let stack = Array.from(trace.stack.normalize().matchAll('(?<=at ).*'), at => at[0])
+	let caller = stack[2]
+	let callee = stack[1].substring(0, stack[1].indexOf(' '))
+	console.groupCollapsed(message || `${caller} --> ${callee}`)
+	stack.slice(1).forEach(s => console.log(s))
+	console.groupEnd()
+	let started = new Date()
+
+	return {
+		caller, callee, stack, started,
+		elapsed: (message) => {
+			let d = new Date(Date.now() - started).toISOString()
+			console.log(message || caller, d.substring(d.lastIndexOf('T') + 1, d.length - 1))
+		}
 	}
 }
