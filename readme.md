@@ -6,13 +6,15 @@ A developer tool to correlate React components and Figma designs
 # Features
 * Highlight React components under the mouse
 * Click the highlight label to see a menu showing the tree of components under the mouse and a listing of Figma frames with matching names
+* Hover over a react node name to highlight that node on the page
+* Click a react node name in the menu to search figma for that name
 * Click a code file to open it in Visual Studio code
+* Hover over a figma reference to see a preview image 
 * Click a Figma reference to open the figma document to that point
 
 # TODO
 * WIP - react node "rendered by" submenu
 * Enable/Disable from popup
-* Figma images
 * Multiple Figma files
 * Figma Frame search box (don't require clicking on a node)
 * Configurable file open target (VSCode, VIM, etc)
