@@ -65,13 +65,16 @@ function renderMenu(debugTree, figmaData) {
 	Menu.RemoveOld()
 	let menu = new Menu()
 
+	//todo: let the user choose the react render tree or the element tree...
+	
+	//menu for the stack of elements under the mouse
 	debugTree.forEach(debugNode => {
 
 		let item = new MenuItem({ 
 			text: debugNode.debugOwnerName ?? `${debugNode.fiber.elementType} (${debugNode.debugOwnerSymbolType})`, 
 			subtext: debugNode.renderedByFileName, 
-			onTextClick: (e) => refreshFigmaNodes(debugNode, menu),
-			onSubTextClick: (e) => openSourceFileInVsCode(debugNode, e),
+			onTextClick: (e) => refreshFigmaNodes({debugNode, menu}),
+			onSubTextClick: (e) => openSourceFileInVsCode({debugNode, e}),
 			mouseEnter: (e) => componentMenuItemHover({e, debugNode}),
 			mouseLeave: (e) => componentMenuItemHover({e, hovering: false}),
 		})
@@ -91,6 +94,23 @@ function renderMenu(debugTree, figmaData) {
 		// })
 	})
 
+	menu.AddSeparator()
+
+	//menu for the react render tree for the top element
+	debugTree[0].renderTree.forEach(node => {
+
+		let item = new MenuItem({ 
+			text: node.name, 
+			subtext: node.file?.substr(node.file.lastIndexOf('/')+1), 
+			onTextClick: (e) => refreshFigmaNodes({name: node.name, menu}),
+			onSubTextClick: (e) => openSourceFileInVsCode({file: node.file, e}),
+			mouseEnter: (e) => componentMenuItemHover({e, node: node.closestElement, label: node.name}),
+			mouseLeave: (e) => componentMenuItemHover({e, hovering: false}),
+		})
+
+		menu.AddItem(item)
+	})
+
 	if (figmaData?.recordCount) {
 		renderFigmaMenuItems(figmaData, menu);
 	}
@@ -98,12 +118,12 @@ function renderMenu(debugTree, figmaData) {
 	return menu;
 }
 
-function componentMenuItemHover({ e, debugNode, hovering = true }) {
+function componentMenuItemHover({ e, node, label, debugNode, hovering = true }) {
 	if (hovering) {
 		e.target.classList.add('comp-menu-item-hover')
 		FigmentOutline.highlightElement({
-			node: debugNode.stateNode.getBoundingClientRect ? debugNode.stateNode : debugNode.element,
-			label: debugNode.debugOwnerName
+			node: node || (debugNode?.stateNode.getBoundingClientRect ? debugNode.stateNode : debugNode.element),
+			label: label || (debugNode?.debugOwnerName)
 		})
 	}
 	else {
@@ -111,13 +131,16 @@ function componentMenuItemHover({ e, debugNode, hovering = true }) {
 	}
 }
 
-function openSourceFileInVsCode(debugNode, e) {
+function openSourceFileInVsCode({file, debugNode, e}) {
 	//todo: make this configurable to support other editors
-	open(debugNode.renderedByVsCodeLink);
+	//todo: don't close the menu
+	if (file) open(`vscode://file${file}`)
+	else if(debugNode) open(debugNode?.renderedByVsCodeLink)
+	else throw `can't open file`
 }
 
-function refreshFigmaNodes(debugNode, menu) {
-	SearchFigmaData({ name: debugNode.debugOwnerName, id: debugNode.figmaId })
+function refreshFigmaNodes({debugNode, name, figmaId, menu}) {
+	SearchFigmaData({ name: name || debugNode?.debugOwnerName, id: figmaId || debugNode?.figmaId })
 	.then((figmaData) => renderFigmaMenuItems(figmaData, menu))
 }
 
@@ -126,7 +149,7 @@ function renderFigmaMenuItems(figmaData, menu) {
 	//remove old items
 	document.querySelectorAll('.menu-btn, .figma-info, .menu-scrolling-container').forEach(e => e.remove());
 	
-	menu.AddSeparator()
+	menu.AddSeparator({extraClasses: 'figma-info'})
 
 	if (Number.isInteger(figmaData?.recordCount)) {
 		menu.AddItem(new MenuItem({

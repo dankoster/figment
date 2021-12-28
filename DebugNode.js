@@ -43,7 +43,15 @@ export default class DebugNode {
 			}
 
 			let rawRenderTree = fiberTree.map(fiber => {
+				let f = fiber
+				let sn = fiber.stateNode
+				while(!sn && f.return) {
+					sn = f.stateNode
+					f = f.return
+				}
 				return {
+					fiber,
+					closestElement: sn,
 					name: fiber._debugOwner?.elementType?.name
 						|| fiber._debugOwner?.elementType?.render?.name
 						|| fiber._debugOwner?.elementType?.$$typeof?.description,

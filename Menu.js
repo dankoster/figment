@@ -38,10 +38,10 @@ export class Menu {
 		else this.ul.appendChild(item.li)
 	}
 
-	AddSeparator() {
+	AddSeparator({extraClasses} = {}) {
 		let sep = document.createElement('li')
 		sep.className = 'menu-separator'
-		sep.classList.add('figma-info')
+		if(extraClasses) sep.classList.add(extraClasses)
 		this.ul.appendChild(sep)
 	}
 
@@ -90,7 +90,10 @@ export class MenuItem {
 			subtextSpan.textContent = subtext
 			this.li.appendChild(subtextSpan)
 	
-			if(onSubTextClick) subtextSpan.addEventListener('click', onSubTextClick)
+			if(onSubTextClick) {
+				subtextSpan.classList.add('menu-keep-open')
+				subtextSpan.addEventListener('click', onSubTextClick)
+			}
 		}
 
 		if (imageSrc) this.imageSrc = imageSrc

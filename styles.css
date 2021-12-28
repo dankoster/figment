@@ -67,7 +67,7 @@
     pointer-events: none;
     border: 1px solid darkgray;
     position: fixed;
-    top: -30px;
+    top: -33px;
     left: -15px;
     object-fit: contain;
     width: calc(100% + 30px);
