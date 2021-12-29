@@ -31,6 +31,91 @@ export default class DebugNode {
 		let ds = this.renderTree[1]
 		return ds && `vscode://file${ds.file}`
 	}
+
+//2 Before we know whether it is function or class
+//3 Root of a host tree. Could be nested inside another node.
+//4 A subtree. Could be an entry point to a different renderer.
+
+	get betterRenderTree() {
+
+		//what we really need is this, from the react-devtools
+		//https://github.com/facebook/react/blob/3b3daf5573efe801fa3dc659020625b4023d3a9f/packages/react-devtools-shared/src/backend/renderer.js#L3033
+
+		if (!this._betterRenderTree) {
+
+
+			const {_debugOwner} = this.fiber
+			const owners = [this.fiber]
+
+			if (_debugOwner) {
+				let owner = _debugOwner
+				while (owner) {
+					owners.push(owner)
+					owner = owner._debugOwner
+				}
+			}
+
+			const tag = {
+				0:  'FunctionComponent',
+				1:  'ClassComponent',
+				2:  'IndeterminateComponent',
+				3:  'HostRoot',
+				4:  'HostPortal',
+				5:  'HostComponent',
+				6:  'HostText',
+				7:  'Fragment',
+				8:  'Mode',
+				9:  'ContextConsumer',
+				10: 'ContextProvider',
+				11: 'ForwardRef',
+				12: 'Profiler',
+				13: 'SuspenseComponent',
+				14: 'MemoComponent',
+				15: 'SimpleMemoComponent',
+				16: 'LazyComponent',
+			}
+			  
+
+
+			let fiber = this.fiber
+			let ft = []
+			while (fiber) {
+				ft.push(fiber)
+				fiber = fiber.return
+			}
+
+			let normalized = ft.map(f => {
+				let result = {}
+				result.type = this.fiberTypeName(f)
+				result.tag = f.tag
+				result.kind = tag[f.tag]
+				result.file = f._debugSource && [f._debugSource?.fileName, f._debugSource?.lineNumber, f._debugSource?.columnNumber].join(':')
+				result.stateNode = f.stateNode
+				result.fiber = f
+				return result
+			})
+
+			// let consolidated = normalized.reduce((result, cur, index, array) => {
+			// 	if (!result.length) result.push(cur)
+			// 	else {
+			// 		if(Object.values(result[result.length - 1]).every(x => x))
+			// 			result.push(cur)
+			// 		else {
+			// 			result[result.length - 1].type = [result[result.length - 1].type, cur.type].filter(t=>t).join('/')
+			// 			if (!result[result.length - 1].file) result[result.length - 1].file = cur.file
+			// 			if (!result[result.length - 1].stateNode) result[result.length - 1].stateNode = cur.stateNode
+			// 		}
+			// 	}
+
+			// 	return result
+
+			// }, [])
+
+
+			this._betterRenderTree = normalized.filter(f => f.type)
+		}
+		return this._betterRenderTree
+	}
 	
 	get renderTree() {
 		if (!this._renderTree) {
@@ -90,6 +175,23 @@ export default class DebugNode {
 		}
 		return stateNode
 	}
+
+	fiberTypeName(f) {
+		let t = typeof f?.type
+		let result
+
+		if (t == 'string') result = f.type
+		else if (t == 'object') {
+			if (f.type?.displayName) result = f.type?.displayName
+			//else if (typeof f.type?.$$typeof == 'symbol') result = f.type.$$typeof.description
+			//else Object.getPrototypeOf(f.type??{})?.constructor.name
+		}
+		else if (t == 'function') result = f.type.name
+		else result = t
+
+		return result
+	}
+
 
 	static FindReactFiber(dom) {
 		//https://stackoverflow.com/a/39165137

@@ -34,7 +34,7 @@ export class Menu {
 
 	AddItem(item, container) {
 		this.items.push(item)
-		if (container) container.appendChild(item.li);
+		if (container) container.appendChild(item.li)
 		else this.ul.appendChild(item.li)
 	}
 
@@ -45,9 +45,11 @@ export class Menu {
 		this.ul.appendChild(sep)
 	}
 
-	AddScrollingContainer() {
-		let container = document.createElement('div');
-		container.className = 'menu-scrolling-container';
+	AddScrollingContainer({extraClasses, maxHeight} = {}) {
+		let container = document.createElement('div')
+		container.className = 'menu-scrolling-container'
+		if(maxHeight) container.style.maxHeight = maxHeight
+		if(extraClasses) container.classList.add(extraClasses)
 		this.ul.appendChild(container);
 		return container;
 	}
@@ -55,7 +57,7 @@ export class Menu {
 }
 
 export class MenuItem {
-	constructor({id, text, onTextClick, subtext, href, extraClasses, imageSrc, onSubTextClick, mouseEnter, mouseLeave}) {
+	constructor({id, text, textClass, onTextClick, subtext, href, extraClasses, imageSrc, onSubTextClick, mouseEnter, mouseLeave}) {
 		this.id = id
 		this.li = document.createElement('li')
 		this.li.classList.add('menu-item')
@@ -64,6 +66,7 @@ export class MenuItem {
 		let textSpan = document.createElement('span')
 		textSpan.className = 'menu-text'
 		textSpan.textContent = text
+		if(textClass) textSpan.classList.add(textClass)
 		
 		if(onTextClick) {
 			textSpan.classList.add('menu-keep-open')

@@ -82,33 +82,25 @@ function renderMenu(debugTree, figmaData) {
 		menu.AddItem(item)
 
 		//display a "rendered by" tree in a sub-menu
-		// TODO: add styling like menu-btn
-		// TODO: only popup submenu when hovering over right end of parent
 		// debugNode.renderTree.forEach(({name, file}) => {
-		// 	item.AddSubMenuItem(new MenuItem({
-		// 		text: name,
-		// 		subtext: file?.substr(file.lastIndexOf('/')+1),
-		// 		onTextClick: (e) => file && open(`vscode://file${file}`),
-		// 		onSubTextClick: (e) => file && open(`vscode://file${file}`)
-		// 	}))
+		// 	item.AddSubMenuItem(new MenuItem({ text: name }))
 		// })
 	})
 
 	menu.AddSeparator()
+	let container = menu.AddScrollingContainer({maxHeight: '150px'})
 
-	//menu for the react render tree for the top element
-	debugTree[0].renderTree.forEach(node => {
-
-		let item = new MenuItem({ 
-			text: node.name, 
+	debugTree[0].betterRenderTree.forEach(node => {
+		let isDomElement = node.stateNode instanceof HTMLElement
+		menu.AddItem(new MenuItem({ 
+			text: node.type, 
+			textClass: isDomElement && 'state-node',
 			subtext: node.file?.substr(node.file.lastIndexOf('/')+1), 
-			onTextClick: (e) => refreshFigmaNodes({name: node.name, menu}),
-			onSubTextClick: (e) => openSourceFileInVsCode({file: node.file, e}),
-			mouseEnter: (e) => componentMenuItemHover({e, node: node.closestElement, label: node.name}),
-			mouseLeave: (e) => componentMenuItemHover({e, hovering: false}),
-		})
-
-		menu.AddItem(item)
+			onTextClick: (e) => refreshFigmaNodes({name: node.type, menu}),
+			onSubTextClick: node.file && ((e) => openSourceFileInVsCode({file: node.file, e})),
+			mouseEnter: isDomElement && ((e) => componentMenuItemHover({e, node: node.stateNode, label: node.debugOwnerType})),
+			mouseLeave: isDomElement && ((e) => componentMenuItemHover({e, hovering: false})),
+		}), container)
 	})
 
 	if (figmaData?.recordCount) {
@@ -147,7 +139,7 @@ function refreshFigmaNodes({debugNode, name, figmaId, menu}) {
 function renderFigmaMenuItems(figmaData, menu) {
 
 	//remove old items
-	document.querySelectorAll('.menu-btn, .figma-info, .menu-scrolling-container').forEach(e => e.remove());
+	document.querySelectorAll('.menu-btn, .figma-info').forEach(e => e.remove());
 	
 	menu.AddSeparator({extraClasses: 'figma-info'})
 
@@ -173,7 +165,7 @@ function renderFigmaMenuItems(figmaData, menu) {
 		}))
 	}
 
-	let container = menu.AddScrollingContainer()
+	let container = menu.AddScrollingContainer({extraClasses: 'figma-info'})
 
 	//add an array of results
 	if (Array.isArray(figmaData?.result) && figmaData?.result?.length) {

@@ -118,9 +118,15 @@ a.menu-btn {
 }
 
 .menu-text {
+    cursor: pointer;
+}
+
+.state-node {
+    font-weight: bold;
 }
 
 .menu-subtext {
+    cursor: pointer;
     color: darkgrey;
     flex-grow: 1;
     text-align: end;
