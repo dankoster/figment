@@ -5,7 +5,7 @@ export default class DebugNode {
 
 		this.debugSource = this.fiber?._debugSource
 		this.debugOwner = this.fiber?._debugOwner
-		this.debugOwnerName = this.debugOwner?.elementType?.name || this.debugOwner?.elementType?.render?.name
+		this.debugOwnerName = this.debugOwner?.elementType?.name || this.fiberTypeName(this.debugOwner) || this.debugOwner?.elementType?.render?.name
 		this.figmaId = this.stateNode?.getAttribute && this.stateNode.getAttribute('data-figment')
 		
 		this.debugOwnerSymbolType = typeof this.debugOwner?.elementType?.$$typeof === 'symbol' 
