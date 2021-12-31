@@ -57,15 +57,20 @@ export class Menu {
 }
 
 export class MenuItem {
-	constructor({id, text, textClass, onTextClick, subtext, href, extraClasses, imageSrc, onSubTextClick, mouseEnter, mouseLeave}) {
+	constructor({id, text, textClass, textData, onTextClick, subtext, href, extraClasses, imageSrc, onSubTextClick, mouseEnter, mouseLeave}) {
 		this.id = id
 		this.li = document.createElement('li')
 		this.li.classList.add('menu-item')
 		Array.isArray(extraClasses) && extraClasses.forEach(c => this.li.classList.add(c))
+
+		this.content = document.createElement('div')
+		this.content.className = 'menu-item-content menu-item-grid-component'
+		this.li.appendChild(this.content)
 		
 		let textSpan = document.createElement('span')
 		textSpan.className = 'menu-text'
 		textSpan.textContent = text
+		if(textData) textSpan.setAttribute('data-text', textData)
 		if(textClass) textSpan.classList.add(textClass)
 		
 		if(onTextClick) {
@@ -78,11 +83,11 @@ export class MenuItem {
 			a.href = href;
 			a.target = '_blank';
 			a.classList.add('menu-btn');
-			this.li.appendChild(a);
+			this.content.appendChild(a);
 			a.appendChild(textSpan);
 		}
 		else 
-			this.li.appendChild(textSpan)
+			this.content.appendChild(textSpan)
 		
 		if(mouseEnter) this.li.addEventListener("mouseenter", mouseEnter)
 		if(mouseLeave) this.li.addEventListener("mouseleave", mouseLeave)
@@ -91,7 +96,7 @@ export class MenuItem {
 			let subtextSpan = document.createElement('span')
 			subtextSpan.className = 'menu-subtext'
 			subtextSpan.textContent = subtext
-			this.li.appendChild(subtextSpan)
+			this.content.appendChild(subtextSpan)
 	
 			if(onSubTextClick) {
 				subtextSpan.classList.add('menu-keep-open')
@@ -126,6 +131,35 @@ export class MenuItem {
 			this.li.appendChild(this.subMenu.ul)
 		}
 		return this.subMenu
+	}
+
+	get Expando () {
+		if(!this.expando) {
+			let checkbox = document.createElement('input')
+			checkbox.id=`collapsible-${Math.random().toString(16).slice(2)}`
+			checkbox.className = "menu-item-grid-prefix toggle"
+			checkbox.type="checkbox"
+
+			let label = document.createElement('label')
+			label.setAttribute('for', checkbox.id)
+			label.className='menu-item-grid-prefix lbl-toggle menu-keep-open'
+			this.li.prepend(label)
+			this.li.prepend(checkbox)
+
+			let content = document.createElement('div')
+			content.className = 'menu-item-grid-expando collapsible-content'
+			this.li.appendChild(content)
+			let inner = document.createElement('div')
+			inner.className = 'content-inner'
+			content.appendChild(inner)
+
+			this.expando = inner
+		}
+		return this.expando
+	}
+
+	AddExpandoItem(item) {
+		this.Expando.appendChild(item)
 	}
 
 	AddSubMenuItem(item) {

@@ -25,10 +25,8 @@ function HighlightNodeUnderMouse(e) {
 
 		let usefulTree = debugTree
 			.filter((e1, index, array) =>
-				//e1.debugOwner
 				e1.debugOwnerName //we do have a debug name (the component name)
-
-				//&& !e1.debugOwnerSymbolType //this is not a symbolic reference
+				&& e1.fiber
 				&& !array.slice(index + 1).find(e2 => e2.debugOwnerName === e1.debugOwnerName
 					&& e2.debugOwner?._debugSource?.fileName === e1.debugOwner?._debugSource?.fileName
 					&& e2.debugOwner?._debugSource?.lineNumber === e1.debugOwner?._debugSource?.lineNumber) //there is not another one of these ahead in the list
@@ -68,10 +66,11 @@ function renderMenu(debugTree, figmaData) {
 	//todo: let the user choose the react render tree or the element tree...
 	
 	//menu for the stack of elements under the mouse
-	debugTree.forEach(debugNode => {
+	// only get the first one (for now)
+	debugTree.slice(0,1).forEach(debugNode => {
 
 		let item = new MenuItem({ 
-			text: debugNode.debugOwnerName ?? `${debugNode.fiber.elementType} (${debugNode.debugOwnerSymbolType})`, 
+			text: debugNode.debugOwnerName, 
 			subtext: debugNode.renderedByFileName, 
 			onTextClick: (e) => refreshFigmaNodes({debugNode, menu}),
 			onSubTextClick: (e) => openSourceFileInVsCode({debugNode, e}),
@@ -80,27 +79,36 @@ function renderMenu(debugTree, figmaData) {
 		})
 
 		menu.AddItem(item)
-
-		//display a "rendered by" tree in a sub-menu
-		// debugNode.renderTree.forEach(({name, file}) => {
-		// 	item.AddSubMenuItem(new MenuItem({ text: name }))
-		// })
 	})
 
 	menu.AddSeparator()
-	let container = menu.AddScrollingContainer({maxHeight: '150px'})
+	let container = menu.AddScrollingContainer({extraClasses: 'react-render-branch'})
 
 	debugTree[0].betterRenderTree.forEach(node => {
 		let isDomElement = node.stateNode instanceof HTMLElement
-		menu.AddItem(new MenuItem({ 
+		let shortFilePath = node.file?.substr(node.file.lastIndexOf('/')+1)
+		let item = new MenuItem({ 
+			extraClasses: isDomElement && ['is-dom-element'],
 			text: node.type, 
-			textClass: isDomElement && 'state-node',
-			subtext: node.file?.substr(node.file.lastIndexOf('/')+1), 
+			textClass: node.kind,
+			textData: node.kind,
+			subtext: shortFilePath, 
 			onTextClick: (e) => refreshFigmaNodes({name: node.type, menu}),
 			onSubTextClick: node.file && ((e) => openSourceFileInVsCode({file: node.file, e})),
 			mouseEnter: isDomElement && ((e) => componentMenuItemHover({e, node: node.stateNode, label: node.debugOwnerType})),
 			mouseLeave: isDomElement && ((e) => componentMenuItemHover({e, hovering: false})),
-		}), container)
+		})
+		menu.AddItem(item, container)
+
+		let span = document.createElement('span')
+		span.innerText = node.kind
+		span.className = node.kind
+		item.AddExpandoItem(span)
+		Object.keys(node.fiber.memoizedProps).forEach(p => {
+			let span = document.createElement('span')
+			span.innerText = `${p}: ${node.fiber.memoizedProps[p]}`
+			item.AddExpandoItem(span)
+		})
 	})
 
 	if (figmaData?.recordCount) {
@@ -112,14 +120,10 @@ function renderMenu(debugTree, figmaData) {
 
 function componentMenuItemHover({ e, node, label, debugNode, hovering = true }) {
 	if (hovering) {
-		e.target.classList.add('comp-menu-item-hover')
 		FigmentOutline.highlightElement({
 			node: node || (debugNode?.stateNode.getBoundingClientRect ? debugNode.stateNode : debugNode.element),
 			label: label || (debugNode?.debugOwnerName)
 		})
-	}
-	else {
-		e.target.classList.remove('comp-menu-item-hover')
 	}
 }
 
