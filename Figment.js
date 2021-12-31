@@ -53,7 +53,7 @@ function onOverlayClick (e, debugTree) {
 }
 
 function onMouseUp(e) {
-	if(!e.path[0].classList.contains('menu-keep-open')){
+	if (!e.path.some(node => node.classList?.contains('menu-keep-open'))) {
 		Menu.Hide()
 		document.removeEventListener('mouseup', onMouseUp);
 	}
@@ -63,8 +63,6 @@ function renderMenu(debugTree, figmaData) {
 	Menu.RemoveOld()
 	let menu = new Menu()
 
-	//todo: let the user choose the react render tree or the element tree...
-	
 	//menu for the stack of elements under the mouse
 	// only get the first one (for now)
 	debugTree.slice(0,1).forEach(debugNode => {
@@ -104,6 +102,7 @@ function renderMenu(debugTree, figmaData) {
 		span.innerText = node.kind
 		span.className = node.kind
 		item.AddExpandoItem(span)
+
 		Object.keys(node.fiber.memoizedProps).forEach(p => {
 			let span = document.createElement('span')
 			span.innerText = `${p}: ${node.fiber.memoizedProps[p]}`

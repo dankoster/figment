@@ -147,7 +147,7 @@ export class MenuItem {
 			this.li.prepend(checkbox)
 
 			let content = document.createElement('div')
-			content.className = 'menu-item-grid-expando collapsible-content'
+			content.className = 'menu-item-grid-expando collapsible-content menu-keep-open'
 			this.li.appendChild(content)
 			let inner = document.createElement('div')
 			inner.className = 'content-inner'
