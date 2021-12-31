@@ -137,6 +137,7 @@
     text-overflow: ellipsis;
     background: #dbdbdb;
     border-bottom: 1px solid darkgray;
+    cursor: initial;
     padding: 3px;
     padding-left: 10px;
     margin-top: 3px;
