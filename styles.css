@@ -48,6 +48,17 @@
     overflow: scroll;
 }
 
+    .menu-scrolling-container.react-render-branch {
+        resize: vertical;
+        height: 150px;
+        max-height: 500px;
+    }
+
+    .menu-scrolling-container.figma-info {
+        max-height: 300px;
+        resize: vertical;
+    }
+
 .menu-item-grid-prefix    { grid-area:prefix; }
 .menu-item-grid-component { grid-area:component; }
 .menu-item-grid-expando   { grid-area:expando; }

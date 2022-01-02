@@ -61,7 +61,7 @@ function onMouseUp(e) {
 
 function renderMenu(debugTree, figmaData) {
 	Menu.RemoveOld()
-	let menu = new Menu()
+	let menu = new Menu({extraClasses: 'menu-keep-open'})
 
 	//menu for the stack of elements under the mouse
 	// only get the first one (for now)
@@ -124,6 +124,7 @@ function componentMenuItemHover({ e, node, label, debugNode, hovering = true }) 
 			label: label || (debugNode?.debugOwnerName)
 		})
 	}
+	else FigmentOutline.removeHighlight()
 }
 
 function openSourceFileInVsCode({file, debugNode, e}) {

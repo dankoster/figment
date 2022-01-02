@@ -3,11 +3,22 @@
 let styleToInt = (value) => Number.parseInt(value.replaceAll('px', ''))
 let getTotal = (style, properties) => properties.reduce((total, property) => total + styleToInt(style[property]), 0)
 
+function AddExtraClasses(target, extraClasses) {
+	if (extraClasses) {
+		if (!target.classList) throw `${target} does not have a classList`
+		if (typeof extraClasses === 'string') extraClasses = extraClasses.split(' ')
+		if (Array.isArray(extraClasses)) extraClasses.forEach(c => target.classList.add(c))
+		else throw `${extraClasses} is not of a valid type`
+	}
+}
+
 export class Menu {
-	constructor() {
+	constructor({extraClasses}) {
 		this.ul = document.createElement('ul')
 		this.ul.className = 'figment-menu'
 		this.items = []
+
+		AddExtraClasses(this.ul, extraClasses)
 
 		document.body.appendChild(this.ul)
 	}
@@ -41,7 +52,7 @@ export class Menu {
 	AddSeparator({extraClasses} = {}) {
 		let sep = document.createElement('li')
 		sep.className = 'menu-separator'
-		if(extraClasses) sep.classList.add(extraClasses)
+		AddExtraClasses(sep, extraClasses)
 		this.ul.appendChild(sep)
 	}
 
@@ -49,7 +60,7 @@ export class Menu {
 		let container = document.createElement('div')
 		container.className = 'menu-scrolling-container'
 		if(maxHeight) container.style.maxHeight = maxHeight
-		if(extraClasses) container.classList.add(extraClasses)
+		AddExtraClasses(container, extraClasses)
 		this.ul.appendChild(container);
 		return container;
 	}
@@ -61,7 +72,8 @@ export class MenuItem {
 		this.id = id
 		this.li = document.createElement('li')
 		this.li.classList.add('menu-item')
-		Array.isArray(extraClasses) && extraClasses.forEach(c => this.li.classList.add(c))
+		
+		AddExtraClasses(this.li, extraClasses)
 
 		this.content = document.createElement('div')
 		this.content.className = 'menu-item-content menu-item-grid-component'
