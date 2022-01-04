@@ -1,7 +1,7 @@
 import DebugNode from './DebugNode.js'
 import FigmentOutline from './FigmentOutline.js'
 import { Menu, MenuItem } from './Menu.js'
-import { SearchFigmaData, GetFigmaImageLinks } from './LocalApi.js'
+import { SearchFigmaData, GetFigmaImageLinks } from './BackgroundApi.js'
 
 //get the ID of the browser plugin
 export const figmentId = document.head.getElementsByTagName('figment')[0].id 

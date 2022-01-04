@@ -18,7 +18,7 @@
 		{
 			"resources": [ 
 				"Figment.js", 
-				"LocalApi.js",
+				"BackgroundApi.js",
 				"Menu.js",
 				"DebugNode.js", 
 				"FigmentOutline.js",
