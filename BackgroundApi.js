@@ -13,6 +13,11 @@ export function GetFigmaImageLinks(ids) {
 		.then(response => response?.images?.result)
 }
 
+export function FigmaEnabled() {
+	return SendQuery({ settings: 'enabled' })
+		.then(response => response?.settings?.result)
+}
+
 function SendQuery(query) {
 	return new Promise((resolve) => {
 		//this should be returning a promise, according to the docs?
