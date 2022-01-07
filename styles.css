@@ -45,7 +45,7 @@
 
 .menu-scrolling-container {
     max-height: 300px;
-    overflow: scroll;
+    overflow-y: auto;
 }
 
     .menu-scrolling-container.react-render-branch {
