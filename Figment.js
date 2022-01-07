@@ -7,7 +7,7 @@ import { SearchFigmaData, GetFigmaImageLinks, FigmaEnabled } from './BackgroundA
 export const figmentId = document.head.getElementsByTagName('figment')[0].id 
 console.log(figmentId, 'Figment!')
 
-const delayMs = 50
+const delayMs = 100
 let timeout = null;
 let debugTree = null;
 
@@ -15,10 +15,10 @@ document.addEventListener('mousemove', e => {
 	if (timeout) clearTimeout(timeout)
 	timeout = setTimeout(() => {
 		FigmaEnabled().then(enabled => {
-			if(enabled) HighlightNodeUnderMouse(e), delayMs
+			if(enabled) HighlightNodeUnderMouse(e)
 			else FigmentOutline.removeHighlight()
 		})
-	})
+	}, delayMs)
 })
 
 function HighlightNodeUnderMouse(e) {
