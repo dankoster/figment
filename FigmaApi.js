@@ -51,7 +51,7 @@ async function UpdateLocalStorageFigmaNode(node) {
 
 export async function GetLocalFigmaData() {
 	return chrome.storage.local.get(["figma"]).then((data) => {
-		data.figma.nodes = data.figma.frames.map(f => new FigmaNode(f))
+		if(data.figma) data.figma.nodes = data.figma.frames.map(f => new FigmaNode(f))
 		return data.figma
 	})
 }
