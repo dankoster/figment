@@ -2,7 +2,7 @@ import DebugNode from './DebugNode.js'
 import FigmentOutline from './FigmentOutline.js'
 import Trace from './Trace.js'
 import { Menu, MenuItem } from './Menu.js'
-import { SearchFigmaData, GetFigmaImageLinks, FigmaEnabled } from './BackgroundApi.js'
+import { SearchFigmaData, GetFigmaImageLinks, GetSettings } from './BackgroundApi.js'
 
 //get the ID of the browser plugin
 export const figmentId = document.head.getElementsByTagName('figment')[0].id 
@@ -15,8 +15,9 @@ let debugTree = null;
 document.addEventListener('mousemove', e => {
 	if (timeout) clearTimeout(timeout)
 	timeout = setTimeout(() => {
-		FigmaEnabled().then(enabled => {
-			if(enabled) HighlightNodeUnderMouse(e)
+		GetSettings().then(settings => {
+			console.log('got settings', settings)
+			if(settings.enabled) HighlightNodeUnderMouse(e)
 			else FigmentOutline.removeHighlight()
 		})
 	}, delayMs)

@@ -1,4 +1,4 @@
-import { GetExtensionSetting, settings } from "./ExtensionApi.js";
+import { GetSettings, SaveSettings } from "./ExtensionApi.js";
 import { FigmaNode, FigmaSearch, GetFigmentImages, GetLocalFigmaData } from "./FigmaApi.js"
 
 //listen for requests from the web page
@@ -7,12 +7,8 @@ chrome.runtime.onMessageExternal.addListener(
 		console.log('request', request)
 
 		if(request.settings) {
-			GetExtensionSetting(settings.enabled).then(enabled => {
-				let result = {}
-				result.settings = {...request.settings, result: enabled}
-
-				console.log(result)
-				sendResponse(result)
+			GetSettings().then(settings => {
+				sendResponse({settings: settings})
 			})
 		}
 

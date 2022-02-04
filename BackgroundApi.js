@@ -13,9 +13,9 @@ export function GetFigmaImageLinks(ids) {
 		.then(response => response?.images?.result)
 }
 
-export function FigmaEnabled() {
-	return SendQuery({ settings: 'enabled' })
-		.then(response => response?.settings?.result)
+export function GetSettings() {
+	return SendQuery({ settings: true })
+		.then(response => response?.settings)
 }
 
 function SendQuery(query) {

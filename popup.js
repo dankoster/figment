@@ -1,4 +1,4 @@
-import { GetExtensionSetting, SetExtensionSetting, settings } from './ExtensionApi.js'
+import { GetSettings, SetExtensionSetting, settings } from './ExtensionApi.js'
 import { GetLocalFigmaData, LoadFigmaData } from './FigmaApi.js'
 
 let loadFigmaDoc = document.getElementById("loadFigmaDoc")
@@ -16,13 +16,14 @@ GetLocalFigmaData().then((figma) => {
 	statusText.innerText = figma?.loaded ? 'Loaded ' + new Date(figma?.loaded).toLocaleString() : ''
 })
 
-GetExtensionSetting(settings.enabled).then((enabled) => {
-	console.log(enabled)
-	chkEnabled.checked = enabled;
+GetSettings().then(settings => {
+	console.log('got settings', settings)
+	chkEnabled.checked = settings?.enabled ?? false
 });
 
-chkEnabled.addEventListener('change', (e) => {
-	SetExtensionSetting(settings.enabled, e.target?.checked)
+chkEnabled.addEventListener('change', async (e) => {
+	const newSettings = await SetExtensionSetting(settings.enabled, e.target?.checked)
+	console.log(`set enabled ${e.target?.checked}`, newSettings)
 })
 
 loadFigmaDoc.addEventListener('click', async (e) => {
