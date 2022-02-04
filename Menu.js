@@ -23,8 +23,6 @@ export class Menu {
 		document.body.appendChild(this.ul)
 	}
 
-	static Hide() { Menu.Current?.classList.remove('menu-show') }
-
 	static get Current() { return document.querySelector('.figment-menu') }
 
 	static RemoveOld () {

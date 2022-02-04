@@ -12,11 +12,12 @@ const delayMs = 100
 let timeout = null;
 let debugTree = null;
 
+//TODO: figure out how to communicate from the popup to this embedded script
+// so we can add or remove this event listener when the enabled setting is toggled
 document.addEventListener('mousemove', e => {
 	if (timeout) clearTimeout(timeout)
 	timeout = setTimeout(() => {
 		GetSettings().then(settings => {
-			console.log('got settings', settings)
 			if(settings.enabled) HighlightNodeUnderMouse(e)
 			else FigmentOutline.removeHighlight()
 		})
@@ -61,7 +62,7 @@ function onOverlayClick (e, debugTree) {
 
 function onMouseUp(e) {
 	if (!e.path.some(node => node.classList?.contains('menu-keep-open'))) {
-		Menu.Hide()
+		Menu.RemoveOld()
 		document.removeEventListener('mouseup', onMouseUp);
 	}
 }

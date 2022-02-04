@@ -55,7 +55,7 @@ export default class FigmentOutline extends HTMLElement {
 
 	static removeHighlight() {
 		let overlay = document.querySelector('figment-outline')
-		if(overlay) overlay.setStyles({opacity: 0})
+		if(overlay) overlay.remove()
 	}
 
 	static highlightElement({node, label, onClick}) {
@@ -72,7 +72,6 @@ export default class FigmentOutline extends HTMLElement {
 				overlay = document.createElement('figment-outline')
 				document.body.appendChild(overlay)
 			}
-			else overlay.setStyles({opacity: '100%'})
 	
 			overlay.setLabel({label, onClick})
 			overlay.setLocation(node.getBoundingClientRect())
