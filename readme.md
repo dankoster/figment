@@ -13,12 +13,17 @@ A developer tool to correlate React components and Figma designs
 * Click a Figma reference to open the figma document to that point
 
 # TODO
-* WIP - react node "rendered by" submenu
-* Enable/Disable from popup
-* Multiple Figma files
-* Figma Frame search box (don't require clicking on a node)
+* React node "rendered by" submenu
+	* When hovering over a non-host component, highlight the next HostComponent up the tree
+	* When clicking a compnent name, highlight the figma search terms
+* Popup
+	* Multiple Figma files
+	* Figma Frame search box (don't require clicking on a node)
+* Enable/Disable from context menu
 * Configurable file open target (VSCode, VIM, etc)
 * Add support for other design tools? (whimsical?)
+* Add shadow dom for menu
+* Better icon(s)
 
 # Install
 1) Load the extension in a chromium browser
