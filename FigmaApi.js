@@ -123,5 +123,8 @@ async function FetchFigmaJson(url, userToken) {
 
 	let request = new Request(url);
 	let response = await fetch(request, init)
+
+	if(!response.ok && response.status === 403) throw 'Not Authorized!'
+
 	return response.json()
 }

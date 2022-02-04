@@ -1,29 +1,28 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <link rel="stylesheet" href="popup.css">
-  </head>
-  <body>
-    <div>
-      <label for="enabled">Extension Enabled</label>
-      <input type="checkbox" id="enabled" />
-    </div>
-    <div>
-      <span>Document ID</span>
-      <input type="text" id="docId" value="1iE2CJgCM89YMv4o4h52VH" />
-    </div>
-    <div>
-      <span>Document Name</span>
-      <input type="text" id="docName" value="Production---My-Driveway" />
-    </div>
-    <div>
-      <span>User Token</span>
-      <input type="text" id="userToken" placeholder="User Token" />
-    </div>
-    <div>
-      <button id="loadFigmaDoc">Load Figma Doc</button>
-      <span class="status" id="status"></span>
-    </div>
+
+<head>
+	<link rel="stylesheet" href="popup.css">
+</head>
+
+<body>
+	<div class="settings">
+		<label for="enabled">Extension Enabled</label>
+		<input type="checkbox" id="enabled" />
+
+		<label for="docId">Document ID</label>
+		<input type="text" id="docId" value="1iE2CJgCM89YMv4o4h52VH" />
+		
+		<label for="docName">Document Name</label>
+		<input type="text" id="docName" value="Production---My-Driveway" />
+		
+		<label for="userToken">User Token</label>
+		<input type="text" id="userToken" placeholder="User Token" />
+		
+		<button id="loadFigmaDoc">Load Figma Doc</button>
+		<span class="status" id="status"></span>
+	</div>
 	<script src="popup.js" type="module"></script>
-  </body>
+</body>
+
 </html>

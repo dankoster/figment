@@ -31,15 +31,22 @@ loadFigmaDoc.addEventListener('click', async (e) => {
 	loadFigmaDoc.disabled = true
 	statusText.innerText = 'Loading...'
 
-	let figma = await LoadFigmaData({
-		docId: docIdInput.value,
-		docName: docNameInput.value,
-		userToken: userTokenInput.value
-	})
+	try {
+		let figma = await LoadFigmaData({
+			docId: docIdInput.value,
+			docName: docNameInput.value,
+			userToken: userTokenInput.value
+		})
 
-	console.log(`got figma doc ${docName}!`, figma)
-	userTokenInput.value = figma?.userToken ?? ''
-	statusText.innerText = 'Loaded ' + new Date(figma?.loaded).toLocaleString()
-
-	loadFigmaDoc.disabled = false
+		console.log(`got figma doc ${docName}!`, figma)
+		userTokenInput.value = figma?.userToken ?? ''
+		statusText.innerText = 'Loaded ' + new Date(figma?.loaded).toLocaleString()
+	}
+	catch (error) {
+		console.log(error)
+		statusText.innerText = error
+	}
+	finally {
+		loadFigmaDoc.disabled = false
+	}
 })
