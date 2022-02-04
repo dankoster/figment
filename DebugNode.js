@@ -23,12 +23,12 @@ export default class DebugNode {
 	}
 
 	get renderedByFileName() {
-		let ds = this.renderTree[1]
-		return ds.file.substr(ds.file.lastIndexOf('/')+1)
+		let ds = this.renderTree[1] ?? this.renderTree[0]
+		return ds && ds.file.substr(ds.file.lastIndexOf('/')+1)
 	}
 
 	get renderedByVsCodeLink() { 
-		let ds = this.renderTree[1]
+		let ds = this.renderTree[1] ?? this.renderTree[0] 
 		return ds && `vscode://file${ds.file}`
 	}
 
