@@ -13,11 +13,6 @@ export function GetFigmaImageLinks(ids) {
 		.then(response => response?.images?.result)
 }
 
-export function GetSettings() {
-	return SendQuery({ settings: true })
-		.then(response => response?.settings)
-}
-
 function SendQuery(query) {
 	return new Promise((resolve) => {
 		//this should be returning a promise, according to the docs?

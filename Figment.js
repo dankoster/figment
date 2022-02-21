@@ -2,7 +2,7 @@ import DebugNode from './DebugNode.js'
 import FigmentOutline from './FigmentOutline.js'
 import Trace from './Trace.js'
 import { Menu, MenuItem } from './Menu.js'
-import { SearchFigmaData, GetFigmaImageLinks, GetSettings } from './BackgroundApi.js'
+import { SearchFigmaData, GetFigmaImageLinks } from './BackgroundApi.js'
 
 //get the ID of the browser plugin
 export const figmentId = document.head.getElementsByTagName('figment')[0].id 
@@ -12,17 +12,28 @@ const delayMs = 100
 let timeout = null;
 let debugTree = null;
 
-//TODO: figure out how to communicate from the popup to this embedded script
-// so we can add or remove this event listener when the enabled setting is toggled
-document.addEventListener('mousemove', e => {
-	if (timeout) clearTimeout(timeout)
-	timeout = setTimeout(() => {
-		GetSettings().then(settings => {
-			if(settings.enabled) HighlightNodeUnderMouse(e)
-			else FigmentOutline.removeHighlight()
-		})
-	}, delayMs)
+//connect a port to the background service worker
+var backgroundPort = chrome.runtime.connect(figmentId, {name: "injected-background"})
+
+//listen for messages from the background service worker
+backgroundPort.onMessage.addListener((message) => {	
+	if(message?.settings?.enabled) {
+		document.addEventListener('mousemove', mouseMoved)
+	}
+	else {
+		document.removeEventListener('mousemove', mouseMoved)
+		FigmentOutline.removeHighlight()
+	}
 })
+
+//we're starting up, so ask for the current state of the settings
+backgroundPort.postMessage({request: 'settings'})
+
+
+function mouseMoved(e) {
+	if (timeout) clearTimeout(timeout)
+	timeout = setTimeout(() => { HighlightNodeUnderMouse(e) }, delayMs)
+}
 
 function HighlightNodeUnderMouse(e) {
 	if (!Array.isArray(debugTree)

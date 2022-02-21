@@ -1,16 +1,36 @@
 import { GetSettings, SaveSettings } from "./ExtensionApi.js";
 import { FigmaNode, FigmaSearch, GetFigmentImages, GetLocalFigmaData } from "./FigmaApi.js"
 
+//listen for the injected script to open a port
+let injectedScriptPort = null
+chrome.runtime.onConnectExternal.addListener((port) => {
+	if (port.name === "injected-background") {
+		injectedScriptPort = port
+
+		//listen for requests from the injected script
+		port.onMessage.addListener(function (message) {
+			if (message.request === 'settings') {
+				GetSettings().then(settings => {
+					port.postMessage({ settings })
+				})
+			}
+		})
+	}
+});
+
+//if the settings change, send that info to the injected script
+//https://developer.chrome.com/docs/extensions/reference/storage/#synchronous-response-to-storage-updates
+chrome.storage.onChanged.addListener(function (changes, namespace) {
+	for (let [key, { oldValue, newValue }] of Object.entries(changes)) {
+		if(key === 'settings')
+			injectedScriptPort?.postMessage({settings: newValue})
+	}
+});
+
 //listen for requests from the web page
 chrome.runtime.onMessageExternal.addListener(
 	function (request, sender, sendResponse) {
 		console.log('request', request)
-
-		if(request.settings) {
-			GetSettings().then(settings => {
-				sendResponse({settings: settings})
-			})
-		}
 
 		if (request.search || request.images) {
 			GetLocalFigmaData().then((figma) => {
