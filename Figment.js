@@ -6,33 +6,49 @@ import { SearchFigmaData, GetFigmaImageLinks } from './BackgroundApi.js'
 
 //get the ID of the browser plugin
 export const figmentId = document.head.getElementsByTagName('figment')[0].id 
-console.log(figmentId, 'Figment!')
+console.log('Figment!', figmentId)
 
 const delayMs = 100
 let timeout = null;
 let debugTree = null;
 
 //connect a port to the background service worker
-var backgroundPort = chrome.runtime.connect(figmentId, {name: "injected-background"})
+var backgroundPort
+const connectToBackend = () => {
+	if (!backgroundPort) {
+		backgroundPort = chrome.runtime.connect(figmentId, { name: "injected-background" })
 
-//listen for messages from the background service worker
-backgroundPort.onMessage.addListener((message) => {	
-	if(message?.settings?.enabled) {
-		document.addEventListener('mousemove', mouseMoved)
-	}
-	else {
-		document.removeEventListener('mousemove', mouseMoved)
-		FigmentOutline.removeHighlight()
-	}
-})
+		//listen for messages from the background service worker
+		backgroundPort.onMessage.addListener((message) => {
+			if (message?.settings?.enabled) {
+				document.addEventListener('mousemove', mouseMoved)
+			}
+			else {
+				document.removeEventListener('mousemove', mouseMoved)
+				FigmentOutline.removeHighlight()
+			}
+		})
 
-//we're starting up, so ask for the current state of the settings
+		//chrome appears to disconnect after 5:30 of inactivity
+		backgroundPort.onDisconnect.addListener((event) => {
+			backgroundPort = undefined
+			connectToBackend() //just immediately reconnect
+		})
+	}
+}
+
+//we're starting up, so connect to the backend
+// and ask for the current state of the settings
+connectToBackend()
 backgroundPort.postMessage({request: 'settings'})
 
 
 function mouseMoved(e) {
 	if (timeout) clearTimeout(timeout)
-	timeout = setTimeout(() => { HighlightNodeUnderMouse(e) }, delayMs)
+	timeout = setTimeout(() => { 
+		HighlightNodeUnderMouse(e) 
+
+	}, delayMs)
 }
 
 function HighlightNodeUnderMouse(e) {
