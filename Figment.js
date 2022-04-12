@@ -42,6 +42,13 @@ const connectToBackend = () => {
 connectToBackend()
 backgroundPort.postMessage({request: 'settings'})
 
+//hotkey: [alt/option + f] to toggle enabled state
+document.addEventListener('keyup', (e) => {
+	if(e.altKey && e.code === 'KeyF') {
+		backgroundPort.postMessage({command: 'toggle', setting: 'enabled'})
+	}
+});
+
 
 function mouseMoved(e) {
 	if (timeout) clearTimeout(timeout)

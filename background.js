@@ -1,5 +1,5 @@
-import { GetSettings, SaveSettings } from "./ExtensionApi.js";
-import { FigmaNode, FigmaSearch, GetFigmentImages, GetLocalFigmaData } from "./FigmaApi.js"
+import { GetSettings, SetExtensionSetting } from "./ExtensionApi.js";
+import { FigmaSearch, GetFigmentImages, GetLocalFigmaData } from "./FigmaApi.js"
 
 //listen for the injected script to open a port
 let injectedScriptPort = null
@@ -13,6 +13,17 @@ chrome.runtime.onConnectExternal.addListener((port) => {
 				GetSettings().then(settings => {
 					port.postMessage({ settings })
 				})
+			}
+
+			if(message.command) {
+				switch(message.command) {
+					case 'toggle': 
+						GetSettings().then(settings => {
+							let settingValue = settings[message.setting]
+							SetExtensionSetting(message.setting, !settingValue)
+						})
+					break;
+				}
 			}
 		})
 	}
