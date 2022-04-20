@@ -74,10 +74,12 @@ function HighlightNodeUnderMouse(e) {
 					&& e2.debugOwner?._debugSource?.lineNumber === e1.debugOwner?._debugSource?.lineNumber) //there is not another one of these ahead in the list
 			)
 
-		if (usefulTree[0]?.stateNode) {
+		//show the overlay for the first element that has a react statenode
+		let firstStateNodeIndex = usefulTree.findIndex(node => node.stateNode)
+		if (firstStateNodeIndex >= 0 && firstStateNodeIndex < usefulTree.length) {
 			FigmentOutline.highlightElement({
-				node: usefulTree[0].stateNode,
-				label: usefulTree[0].debugOwnerName ?? usefulTree[0].element.name,
+				node: usefulTree[firstStateNodeIndex].stateNode,
+				label: usefulTree[firstStateNodeIndex].debugOwnerName ?? usefulTree[firstStateNodeIndex].element.name,
 				onClick: (e) => { onOverlayClick(e, usefulTree) }
 			})
 		}
@@ -162,7 +164,7 @@ function renderMenu(debugTree, figmaData) {
 function componentMenuItemHover({ e, node, label, debugNode, hovering = true }) {
 	if (hovering) {
 		FigmentOutline.highlightElement({
-			node: node || (debugNode?.stateNode.getBoundingClientRect ? debugNode.stateNode : debugNode.element),
+			node: node || (debugNode?.stateNode?.getBoundingClientRect ? debugNode.stateNode : debugNode.element),
 			label: label || (debugNode?.debugOwnerName)
 		})
 	}
@@ -229,8 +231,10 @@ function renderFigmaMenuItems(figmaData, menu) {
 		GetFigmaImageLinks(ids).then(linkById => {
 			//update each search result with it's image url 
 			menu.items.forEach(m => {
-				m.imageSrc = linkById[m.id]
-				m.imageHeight = container.offsetTop + 30 //set the height of the image so it's bottom doesnt' overlap the top of the scrolling container
+				if(m.id !== undefined) {
+					m.imageSrc = linkById[m.id]
+					m.imageHeight = container.offsetTop + 30 //set the height of the image so it's bottom doesnt' overlap the top of the scrolling container
+				}
 			})
 			trace.elapsed('got image links')
 		})

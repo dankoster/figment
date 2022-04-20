@@ -99,9 +99,10 @@
   }
   
   .lbl-toggle {
-      padding-inline: 10px;
+    padding-inline: 10px;
     cursor: pointer;
     transition: all 0.25s ease-out;
+    color: initial;
   }
   
   .lbl-toggle:hover {
@@ -146,6 +147,7 @@
     flex-direction: column;
     overflow: hidden;
     text-overflow: ellipsis;
+    color: initial;
     background: #dbdbdb;
     border-bottom: 1px solid darkgray;
     cursor: initial;
@@ -231,6 +233,7 @@ a.menu-btn {
     cursor: pointer;
     overflow: hidden;
     text-overflow: ellipsis;
+    color: initial;
 }
 
 [class*="Component "]::after {
