@@ -2,7 +2,7 @@ import DebugNode from './DebugNode.js'
 import FigmentOutline from './FigmentOutline.js'
 import Trace from './Trace.js'
 import { Menu, MenuItem } from './Menu.js'
-import { SearchFigmaData, GetFigmaImageLinks } from './BackgroundApi.js'
+import Backend, { SearchFigmaData, GetFigmaImageLinks } from './BackgroundApi.js'
 
 //get the ID of the browser plugin
 export const figmentId = document.head.getElementsByTagName('figment')[0].id 
@@ -12,43 +12,26 @@ const delayMs = 100
 let timeout = null;
 let debugTree = null;
 
-//connect a port to the background service worker
-var backgroundPort
-const connectToBackend = () => {
-	if (!backgroundPort) {
-		backgroundPort = chrome.runtime.connect(figmentId, { name: "injected-background" })
-
-		//listen for messages from the background service worker
-		backgroundPort.onMessage.addListener((message) => {
-			if (message?.settings?.enabled) {
-				document.addEventListener('mousemove', mouseMoved)
-			}
-			else {
-				document.removeEventListener('mousemove', mouseMoved)
-				FigmentOutline.removeHighlight()
-			}
-		})
-
-		//chrome appears to disconnect after 5:30 of inactivity
-		backgroundPort.onDisconnect.addListener((event) => {
-			backgroundPort = undefined
-			connectToBackend() //just immediately reconnect
-		})
-	}
-}
-
 //we're starting up, so connect to the backend
 // and ask for the current state of the settings
-connectToBackend()
-backgroundPort.postMessage({request: 'settings'})
+Backend.connect(handleBackgroundMessage).requestSettings()
 
 //hotkey: [alt/option + f] to toggle enabled state
 document.addEventListener('keyup', (e) => {
 	if(e.altKey && e.code === 'KeyF') {
-		backgroundPort.postMessage({command: 'toggle', setting: 'enabled'})
+		Backend.toggleEnabled()
 	}
 });
 
+function handleBackgroundMessage(message) {
+	if (message?.settings?.enabled) {
+		document.addEventListener('mousemove', mouseMoved)
+	}
+	else {
+		document.removeEventListener('mousemove', mouseMoved)
+		FigmentOutline.removeHighlight()
+	}
+}
 
 function mouseMoved(e) {
 	if (timeout) clearTimeout(timeout)

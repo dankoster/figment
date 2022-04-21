@@ -3,6 +3,63 @@ import { figmentId } from './Figment.js';
 //this code is responsible for talking to the service worker (background.js)
 // which has access to the extension local storage
 
+//connect a port to the background service worker
+
+class Backend {
+	constructor() {
+	}
+
+	backgroundPort
+	onMessage
+
+	toggleEnabled = () => this.sendMessage({command: 'toggle', setting: 'enabled'})
+	requestSettings = () => this.sendMessage({request: 'settings'})
+
+	connect(onMessage) {
+		this.onMessage = onMessage
+		if (!this.backgroundPort) {
+			this.backgroundPort = chrome.runtime.connect(figmentId, { name: "injected-background" })
+	
+			//listen for messages from the background service worker
+			this.backgroundPort.onMessage.addListener(onMessage)
+	
+			//chrome appears to disconnect after 5:30 of inactivity
+			this.backgroundPort.onDisconnect.addListener((event) => {
+				this.backgroundPort = undefined
+				this.connect(onMessage) //just immediately reconnect
+			})
+		}
+
+		return this
+	}
+	
+	reconnect() {
+		console.log('Attempting to reconnect...')
+		if(this.onMessage) this.connect(this.onMessage)
+		else throw 'call Connect first to set onMessage'
+	}
+	
+	sendMessage(message) {
+		try {
+			this.backgroundPort.postMessage(message)
+		} catch(e) {
+			if(e.message === `Attempting to use a disconnected port object`) {
+				console.warn(e.message)
+				this.backgroundPort = undefined
+				this.reconnect()
+				this.backgroundPort.postMessage(message) //try one more time
+			}
+			else throw e
+		}
+	}
+}
+
+export default new Backend()
+
+
+
+//---------FIGMA-----------------
+
 export function SearchFigmaData({ name, id }) {
 	return SendQuery({ search: { name, id } })
 		.then(response => response?.search?.result)
