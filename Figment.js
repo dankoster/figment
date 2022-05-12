@@ -100,7 +100,6 @@ function renderMenu(debugTree, figmaData) {
 			onTextClick: (e) => refreshFigmaNodes({debugNode, menu}),
 			onSubTextClick: (e) => openSourceFileInVsCode({debugNode, e}),
 			mouseEnter: (e) => componentMenuItemHover({e, debugNode}),
-			mouseLeave: (e) => componentMenuItemHover({e, hovering: false}),
 		})
 
 		menu.AddItem(item)
@@ -109,10 +108,11 @@ function renderMenu(debugTree, figmaData) {
 	menu.AddSeparator()
 	let container = menu.AddScrollingContainer({extraClasses: 'react-render-branch'})
 
-	debugTree[0].betterRenderTree.forEach(node => {
-		let isDomElement = node.stateNode instanceof HTMLElement
-		let shortFilePath = node.file?.substr(node.file.lastIndexOf('/')+1)
-		let item = new MenuItem({ 
+	debugTree[0].betterRenderTree.forEach((node, index, array) => {
+		const isDomElement = node.stateNode instanceof HTMLElement
+		const domElement = isDomElement ? node.stateNode : array.slice(0, index).reverse().find(x => x.stateNode instanceof HTMLElement).stateNode
+		const shortFilePath = node.file?.substr(node.file.lastIndexOf('/')+1)
+		const item = new MenuItem({ 
 			extraClasses: isDomElement && ['is-dom-element'],
 			text: node.type, 
 			textClass: node.kind,
@@ -120,18 +120,17 @@ function renderMenu(debugTree, figmaData) {
 			subtext: shortFilePath, 
 			onTextClick: (e) => refreshFigmaNodes({name: node.type, menu}),
 			onSubTextClick: node.file && ((e) => openSourceFileInVsCode({file: node.file, e})),
-			mouseEnter: isDomElement && ((e) => componentMenuItemHover({e, node: node.stateNode, label: node.debugOwnerType})),
-			mouseLeave: isDomElement && ((e) => componentMenuItemHover({e, hovering: false})),
+			mouseEnter: ((e) => componentMenuItemHover({e, domNode: domElement, label: node.debugOwnerType})),
 		})
 		menu.AddItem(item, container)
 
-		let span = document.createElement('span')
+		const span = document.createElement('span')
 		span.innerText = node.kind
 		span.className = node.kind
 		item.AddExpandoItem(span)
 
 		Object.keys(node.fiber.memoizedProps).forEach(p => {
-			let span = document.createElement('span')
+			const span = document.createElement('span')
 			span.innerText = `${p}: ${node.fiber.memoizedProps[p]}`
 			item.AddExpandoItem(span)
 		})
@@ -144,14 +143,11 @@ function renderMenu(debugTree, figmaData) {
 	return menu;
 }
 
-function componentMenuItemHover({ e, node, label, debugNode, hovering = true }) {
-	if (hovering) {
-		FigmentOutline.highlightElement({
-			node: node || (debugNode?.stateNode?.getBoundingClientRect ? debugNode.stateNode : debugNode.element),
-			label: label || (debugNode?.debugOwnerName)
-		})
-	}
-	else FigmentOutline.removeHighlight()
+function componentMenuItemHover({ e, domNode, label, debugNode }) {
+	FigmentOutline.highlightElement({
+		node: domNode || (debugNode?.stateNode?.getBoundingClientRect ? debugNode.stateNode : debugNode.element),
+		label: label || (debugNode?.debugOwnerName)
+	})
 }
 
 function openSourceFileInVsCode({file, debugNode, e}) {
