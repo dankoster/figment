@@ -1,7 +1,7 @@
 import DebugNode from './DebugNode.js'
 import FigmentOutline from './FigmentOutline.js'
 import Trace from './Trace.js'
-import { Menu, MenuItem } from './Menu.js'
+import { FigmentMenu, MenuItem } from './Menu.js'
 import Backend, { SearchFigmaData, GetFigmaImageLinks } from './BackgroundApi.js'
 
 //get the ID of the browser plugin
@@ -81,14 +81,14 @@ function onOverlayClick (e, debugTree) {
 
 function onMouseUp(e) {
 	if (!e.path.some(node => node.classList?.contains('menu-keep-open'))) {
-		Menu.RemoveOld()
+		FigmentMenu.RemoveOld()
 		document.removeEventListener('mouseup', onMouseUp);
 	}
 }
 
 function renderMenu(debugTree, figmaData) {
-	Menu.RemoveOld()
-	let menu = new Menu({extraClasses: 'menu-keep-open'})
+	FigmentMenu.RemoveOld()
+	let menu = FigmentMenu.Create({extraClasses: 'menu-keep-open'})
 
 	//menu for the stack of elements under the mouse
 	// only get the first one (for now)

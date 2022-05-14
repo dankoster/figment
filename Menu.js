@@ -1,4 +1,5 @@
 //inspired by https://codepen.io/ryanmorr/pen/JdOvYR
+import { figmentId } from './Figment.js'
 
 let styleToInt = (value) => Number.parseInt(value.replaceAll('px', ''))
 let getTotal = (style, properties) => properties.reduce((total, property) => total + styleToInt(style[property]), 0)
@@ -12,28 +13,54 @@ function AddExtraClasses(target, extraClasses) {
 	}
 }
 
-export class Menu {
-	constructor({extraClasses}) {
+export class FigmentMenu extends HTMLElement{
+
+	constructor() {
+		super();
+
+		this.shadow = this.attachShadow({ mode: 'open' })
+
 		this.ul = document.createElement('ul')
 		this.ul.className = 'figment-menu'
 		this.items = []
 
-		AddExtraClasses(this.ul, extraClasses)
+		// Apply external styles to the shadow dom
+		const cssLink = document.createElement('link')
+		cssLink.setAttribute('rel', 'stylesheet')
+		cssLink.setAttribute('href', `chrome-extension://${figmentId}/styles.css`)
 
-		document.body.appendChild(this.ul)
+		// Attach the created elements to the shadow dom
+		this.shadow.appendChild(cssLink)
+		this.shadow.appendChild(this.ul)
+
+		//document.body.appendChild(this.ul)
 	}
 
-	static get Current() { return document.querySelector('.figment-menu') }
+	static Create({extraClasses}) {
+		if(!customElements.get('figment-menu'))
+			customElements.define('figment-menu', FigmentMenu)
+
+		let menu = document.createElement('figment-menu')
+
+		AddExtraClasses(menu, extraClasses)
+		document.body.appendChild(menu)
+
+		return menu
+	}
 
 	static RemoveOld () {
 		//remove old menu(s)
-		document.querySelectorAll('.figment-menu').forEach(element => element.remove())
+		document.querySelectorAll('figment-menu').forEach(element => element.remove())
 	}
 
 	Show(x, y) {
 		if (this.ul) {
-			let overflowX = x + getTotal(getComputedStyle(this.ul), ['width']) - window.innerWidth
-			if (overflowX > 0) x -= (overflowX + 50)
+			//there is some issue with computing width in the shadow dom...
+			//const ulWidth = getTotal(getComputedStyle(this.ul), ['width'])
+			//use maxWidth instead
+			const ulWidth = 400 
+			const overflowX = (x + ulWidth) - window.innerWidth
+			if (overflowX > 0) x -= overflowX
 
 			this.ul.style.left = x + 'px';
 			this.ul.style.top = y + 'px';
@@ -137,7 +164,7 @@ export class MenuItem {
 
 	get SubMenu () {
 		if(!this.subMenu) {
-			this.subMenu = new Menu()
+			this.subMenu = new FigmentMenu()
 			this.li.appendChild(this.subMenu.ul)
 		}
 		return this.subMenu
