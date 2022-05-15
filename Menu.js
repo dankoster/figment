@@ -1,15 +1,17 @@
 //inspired by https://codepen.io/ryanmorr/pen/JdOvYR
 import { figmentId } from './Figment.js'
 
-let styleToInt = (value) => Number.parseInt(value.replaceAll('px', ''))
-let getTotal = (style, properties) => properties.reduce((total, property) => total + styleToInt(style[property]), 0)
+function styleToInt(value) { Number.parseInt(value.replaceAll('px', '')) }
+function getTotal(style, properties) { properties.reduce((total, property) => total + styleToInt(style[property]), 0) }
 
 function AddExtraClasses(target, extraClasses) {
 	if (extraClasses) {
 		if (!target.classList) throw `${target} does not have a classList`
 		if (typeof extraClasses === 'string') extraClasses = extraClasses.split(' ')
-		if (Array.isArray(extraClasses)) extraClasses.forEach(c => target.classList.add(c))
-		else throw `${extraClasses} is not of a valid type`
+		if (!Array.isArray(extraClasses) || extraClasses.some(c => typeof c !== 'string')) 
+			throw `${extraClasses} must be a string or an array of strings`
+
+		extraClasses.forEach(c => target.classList.add(c))
 	}
 }
 

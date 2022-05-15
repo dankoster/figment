@@ -3,15 +3,15 @@ import { figmentId } from './Figment.js';
 //this code is responsible for talking to the service worker
 // which has access to the extension local storage
 
-class Backend {
+class ServiceWorkerApi {
 	constructor() {
 	}
 
 	backgroundPort
 	onMessage
 
-	toggleEnabled = () => this.sendMessage({command: 'toggle', setting: 'enabled'})
-	requestSettings = () => this.sendMessage({request: 'settings'})
+	toggleEnabled () { this.sendMessage({command: 'toggle', setting: 'enabled'}) }
+	requestSettings () { this.sendMessage({request: 'settings'}) }
 
 	connect(onMessage) {
 		this.onMessage = onMessage
@@ -52,7 +52,9 @@ class Backend {
 	}
 }
 
-export default new Backend()
+//Use a module scoped instance to deliver a singleton: only one  
+// instance is constructed regardless of how many imports there are
+export default new ServiceWorkerApi()
 
 
 

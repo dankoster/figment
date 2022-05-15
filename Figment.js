@@ -2,7 +2,7 @@ import DebugNode from './DebugNode.js'
 import FigmentOutline from './FigmentOutline.js'
 import Trace from './Trace.js'
 import { FigmentMenu, MenuItem } from './Menu.js'
-import Backend, { SearchFigmaData, GetFigmaImageLinks } from './serviceWorkerApi.js'
+import ServiceWorkerApi, { SearchFigmaData, GetFigmaImageLinks } from './serviceWorkerApi.js'
 
 //get the ID of the browser plugin
 export const figmentId = document.head.getElementsByTagName('figment')[0].id 
@@ -14,17 +14,21 @@ let debugTree = null;
 
 //we're starting up, so connect to the backend
 // and ask for the current state of the settings
-Backend.connect(handleBackgroundMessage).requestSettings()
+ServiceWorkerApi.connect(handleMessageFromServiceWorker).requestSettings()
 
 //hotkey: [alt/option + f] to toggle enabled state
 document.addEventListener('keyup', (e) => {
 	if(e.altKey && e.code === 'KeyF') {
-		Backend.toggleEnabled()
+		ServiceWorkerApi.toggleEnabled()
 	}
 });
 
-function handleBackgroundMessage(message) {
-	if (message?.settings?.enabled) {
+function handleMessageFromServiceWorker(message) {
+	enableOverlay(message?.settings?.enabled)
+}
+
+function enableOverlay(enable) {
+	if (enable) {
 		document.addEventListener('mousemove', mouseMoved)
 	}
 	else {
@@ -36,15 +40,15 @@ function handleBackgroundMessage(message) {
 function mouseMoved(e) {
 	if (timeout) clearTimeout(timeout)
 	timeout = setTimeout(() => { 
-		HighlightNodeUnderMouse(e) 
+		highlightNodeUnderMouse(e) 
 
 	}, delayMs)
 }
 
-function HighlightNodeUnderMouse(e) {
+function highlightNodeUnderMouse(e) {
 	if (!Array.isArray(debugTree)
 		|| debugTree[0]?.element !== e.path[0] //are we already on this thing?
-		&& !e.path.some(b => b.className?.includes && b.className?.includes('figment'))) //is this a figment thing?
+		&& !e.path.some(b => b.localName?.includes('figment-'))) //is this a figment thing?
 	{
 		debugTree = e.path.map(element => new DebugNode(element))
 
