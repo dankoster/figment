@@ -1,9 +1,7 @@
 import { figmentId } from './Figment.js';
 
-//this code is responsible for talking to the service worker (background.js)
+//this code is responsible for talking to the service worker
 // which has access to the extension local storage
-
-//connect a port to the background service worker
 
 class Backend {
 	constructor() {

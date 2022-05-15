@@ -2,7 +2,7 @@ import DebugNode from './DebugNode.js'
 import FigmentOutline from './FigmentOutline.js'
 import Trace from './Trace.js'
 import { FigmentMenu, MenuItem } from './Menu.js'
-import Backend, { SearchFigmaData, GetFigmaImageLinks } from './BackgroundApi.js'
+import Backend, { SearchFigmaData, GetFigmaImageLinks } from './serviceWorkerApi.js'
 
 //get the ID of the browser plugin
 export const figmentId = document.head.getElementsByTagName('figment')[0].id 
