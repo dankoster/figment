@@ -7,19 +7,44 @@ class ServiceWorkerApi {
 	constructor() {
 	}
 
+	#onPushMessage
 	backgroundPort
-	onMessage
+	messageQueue = {}
 
-	toggleEnabled () { this.sendMessage({command: 'toggle', setting: 'enabled'}) }
-	requestSettings () { this.sendMessage({request: 'settings'}) }
+	toggleEnabled () { return this.sendMessage({command: 'toggle', setting: 'enabled'}) }
+	requestSettings = () => this.sendMessage({request: 'settings'}) 
 
-	connect(onMessage) {
-		this.onMessage = onMessage
+	sendMessage(message) {
+		return new Promise((resolve, reject) => {
+			try {
+				message.id = Date.now();
+				this.messageQueue[message.id] = { message, resolve, reject }
+				this.backgroundPort.postMessage(message)
+			} catch(error) {
+				reject(error)
+			}
+		})
+	}
+
+	onResponse = (message) => {
+		if (!message.request?.id && typeof this.#onPushMessage === 'function')
+			this.#onPushMessage(message)
+		else {
+			if (!this.messageQueue[message.request.id]) 
+				throw `${message.request.id}: no message found for id`
+
+			this.messageQueue[message.request.id].resolve(message.response)
+			delete this.messageQueue[message.request.id]
+		}
+	}
+
+	connect({runtimeId, onUnrequestedMessage}) {
+		this.#onPushMessage = onUnrequestedMessage
 		if (!this.backgroundPort) {
-			this.backgroundPort = chrome.runtime.connect(figmentId, { name: "injected-background" })
+			this.backgroundPort = chrome.runtime.connect(runtimeId, { name: "injected-background" })
 	
 			//listen for messages from the background service worker
-			this.backgroundPort.onMessage.addListener(onMessage)
+			this.backgroundPort.onMessage.addListener(this.onResponse)
 	
 			//chrome appears to disconnect after 5:30 of inactivity
 			this.backgroundPort.onDisconnect.addListener((event) => {
@@ -29,26 +54,6 @@ class ServiceWorkerApi {
 		}
 
 		return this
-	}
-	
-	reconnect() {
-		console.log('Attempting to reconnect...')
-		if(this.onMessage) this.connect(this.onMessage)
-		else throw 'call Connect first to set onMessage'
-	}
-	
-	sendMessage(message) {
-		try {
-			this.backgroundPort.postMessage(message)
-		} catch(e) {
-			if(e.message === `Attempting to use a disconnected port object`) {
-				console.warn(e.message)
-				this.backgroundPort = undefined
-				this.reconnect()
-				this.backgroundPort.postMessage(message) //try one more time
-			}
-			else throw e
-		}
 	}
 }
 

@@ -11,7 +11,7 @@ chrome.runtime.onConnectExternal.addListener((port) => {
 		port.onMessage.addListener(function (message) {
 			if (message.request === 'settings') {
 				GetSettings().then(settings => {
-					port.postMessage({ settings })
+					port.postMessage({ request: message, response: { settings } })
 				})
 			}
 
@@ -20,7 +20,9 @@ chrome.runtime.onConnectExternal.addListener((port) => {
 					case 'toggle': 
 						GetSettings().then(settings => {
 							let settingValue = settings[message.setting]
-							SetExtensionSetting(message.setting, !settingValue)
+							SetExtensionSetting(message.setting, !settingValue).then(newSettings => {
+								port.postMessage({ request: message, response: { settings: newSettings} })
+							})
 						})
 					break;
 				}
@@ -33,8 +35,9 @@ chrome.runtime.onConnectExternal.addListener((port) => {
 //https://developer.chrome.com/docs/extensions/reference/storage/#synchronous-response-to-storage-updates
 chrome.storage.onChanged.addListener(function (changes, namespace) {
 	for (let [key, { oldValue, newValue }] of Object.entries(changes)) {
-		if(key === 'settings')
-			injectedScriptPort?.postMessage({settings: newValue})
+		const message = {}
+		message[key] = newValue
+		injectedScriptPort?.postMessage(message)
 	}
 });
 
@@ -46,7 +49,7 @@ chrome.runtime.onMessageExternal.addListener(
 		if (request.search || request.images) {
 			GetLocalFigmaData().then((figma) => {
 				console.log('got figma data', figma)
-				let result = {}
+				let result = { }
 
 				if (request.search) {
 					let searchResult = SearchFigmaData(figma, request.search);

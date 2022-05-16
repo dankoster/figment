@@ -14,7 +14,12 @@ let debugTree = null;
 
 //we're starting up, so connect to the backend
 // and ask for the current state of the settings
-ServiceWorkerApi.connect(handleMessageFromServiceWorker).requestSettings()
+ServiceWorkerApi.connect({runtimeId: figmentId, onUnrequestedMessage: handleMessageFromServiceWorker})
+ServiceWorkerApi.requestSettings().then(handleMessageFromServiceWorker)
+
+function handleMessageFromServiceWorker(message) {
+	enableOverlay(message?.settings?.enabled)
+}
 
 //hotkey: [alt/option + f] to toggle enabled state
 document.addEventListener('keyup', (e) => {
@@ -22,10 +27,6 @@ document.addEventListener('keyup', (e) => {
 		ServiceWorkerApi.toggleEnabled()
 	}
 });
-
-function handleMessageFromServiceWorker(message) {
-	enableOverlay(message?.settings?.enabled)
-}
 
 function enableOverlay(enable) {
 	if (enable) {
