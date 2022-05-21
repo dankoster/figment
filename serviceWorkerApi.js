@@ -7,28 +7,40 @@ class ServiceWorkerApi {
 	constructor() {
 	}
 
-	#onPushMessage
+	onPushMessage 
 	backgroundPort
 	messageQueue = {}
 
-	toggleEnabled () { return this.sendMessage({command: 'toggle', setting: 'enabled'}) }
-	requestSettings = () => this.sendMessage({request: 'settings'}) 
+	//TODO: implement a strategy pattern for the different message types
+	toggleEnabled = () => this.sendMessage({command: 'toggle', setting: 'enabled'})
+	requestSettings = () => this.sendMessage({request: 'settings'})
 
+	//TODO: make this a better message queueing situation: sendMessage should probably just enque
 	sendMessage(message) {
 		return new Promise((resolve, reject) => {
 			try {
 				message.id = Date.now();
-				this.messageQueue[message.id] = { message, resolve, reject }
 				this.backgroundPort.postMessage(message)
+				this.messageQueue[message.id] = { message, resolve, reject }
 			} catch(error) {
-				reject(error)
+				if(error.message == 'Attempting to use a disconnected port object') {
+					this.reconnect()
+					//we failed before this message got into the queue, so we can retry
+					if ((message.retries ?? 0) < 10) {
+						message.retries ? message.retries++ : message.retries = 1
+						console.warn(`retrying`, message)
+						this.sendMessage(message)
+					}
+				}
+				else
+					reject(error)
 			}
 		})
 	}
 
 	onResponse = (message) => {
-		if (!message.request?.id && typeof this.#onPushMessage === 'function')
-			this.#onPushMessage(message)
+		if (!message.request?.id && typeof this.onPushMessage === 'function')
+			this.onPushMessage(message)
 		else {
 			if (!this.messageQueue[message.request.id]) 
 				throw `${message.request.id}: no message found for id`
@@ -38,19 +50,26 @@ class ServiceWorkerApi {
 		}
 	}
 
+	reconnect() {
+		if(!this.runtimeId) throw 'missing runtimeId'
+		if(!this.onPushMessage) throw 'missing onPushMessage'
+
+		this.backgroundPort = undefined
+		this.connect({ runtimeId: this.runtimeId, onUnrequestedMessage: this.onPushMessage })
+	}
+
 	connect({runtimeId, onUnrequestedMessage}) {
-		this.#onPushMessage = onUnrequestedMessage
+		this.runtimeId = runtimeId
+		this.onPushMessage = onUnrequestedMessage
 		if (!this.backgroundPort) {
 			this.backgroundPort = chrome.runtime.connect(runtimeId, { name: "injected-background" })
 	
 			//listen for messages from the background service worker
 			this.backgroundPort.onMessage.addListener(this.onResponse)
 	
-			//chrome appears to disconnect after 5:30 of inactivity
-			this.backgroundPort.onDisconnect.addListener((event) => {
-				this.backgroundPort = undefined
-				this.connect(onMessage) //just immediately reconnect
-			})
+			//chrome appears to disconnect after 5:30 of inactivity. We need to remain
+			// connected or we can miss messages that are triggered by the popup window
+			this.backgroundPort.onDisconnect.addListener(this.reconnect)
 		}
 
 		return this
@@ -64,6 +83,7 @@ export default new ServiceWorkerApi()
 
 
 //---------FIGMA-----------------
+// TODO: migrate this into the port based API above
 
 export function SearchFigmaData({ name, id }) {
 	return SendQuery({ search: { name, id } })
