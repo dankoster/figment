@@ -46,12 +46,28 @@ function mouseMoved(e) {
 	}, delayMs)
 }
 
+function getElementPath(element) {
+    var path = [];
+    var currentElem = element;
+    while (currentElem) {
+      path.push(currentElem);
+      currentElem = currentElem.parentElement;
+    }
+    if (path.indexOf(window) === -1 && path.indexOf(document) === -1)
+      path.push(document);
+    if (path.indexOf(window) === -1)
+      path.push(window);
+    return path;
+  }
+
 function highlightNodeUnderMouse(e) {
+	const path = e.path || getElementPath(e.target);
+
 	if (!Array.isArray(debugTree)
-		|| debugTree[0]?.element !== e.path[0] //are we already on this thing?
-		&& !e.path.some(b => b.localName?.includes('figment-'))) //is this a figment thing?
+		|| debugTree[0]?.element !== path[0] //are we already on this thing?
+		&& !path.some(b => b.localName?.includes('figment-'))) //is this a figment thing?
 	{
-		debugTree = e.path.map(element => new DebugNode(element))
+		debugTree = path.map(element => new DebugNode(element))
 
 		let usefulTree = debugTree
 			.filter((e1, index, array) =>
@@ -85,7 +101,9 @@ function onOverlayClick (e, debugTree) {
 }
 
 function onMouseUp(e) {
-	if (!e.path.some(node => node.classList?.contains('menu-keep-open'))) {
+	const path = e.path || getElementPath(e.target);
+
+	if (!path.some(node => node.classList?.contains('menu-keep-open'))) {
 		FigmentMenu.RemoveOld()
 		document.removeEventListener('mouseup', onMouseUp);
 	}
@@ -213,14 +231,22 @@ function renderFigmaMenuItems(figmaData, menu) {
 	if(Array.isArray(ids) && ids.length) {
 		let trace = Trace('request image links')
 		GetFigmaImageLinks(ids).then(linkById => {
+			trace.elapsed('got image links')
+			console.log({ linkById })
 			//update each search result with it's image url 
 			menu.items.forEach(m => {
-				if(m.id !== undefined) {
+				if(m.id !== undefined && linkById.hasOwnProperty(m.id)) {
 					m.imageSrc = linkById[m.id]
 					m.imageHeight = container.offsetTop + 30 //set the height of the image so it's bottom doesnt' overlap the top of the scrolling container
 				}
+				else {
+					console.warn(`linkById does not have property m.id which is ${m.id}`, {m})
+				}
 			})
-			trace.elapsed('got image links')
+		}).catch(e => {
+			console.warn(e)
+		}).finally(() => {
+			trace.elapsed('done processing images')
 		})
 	}
 
