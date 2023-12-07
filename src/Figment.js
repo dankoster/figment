@@ -1,8 +1,9 @@
-import DebugNode from './DebugNode.js'
 import FigmentOutline from './FigmentOutline.js'
 import Trace from './Trace.js'
 import { FigmentMenu, MenuItem } from './Menu.js'
 import ServiceWorkerApi, { SearchFigmaData, GetFigmaImageLinks } from './serviceWorkerApi.js'
+
+import { getElementPath, getRenderTree } from "./elementFunctions.js"
 
 //get the ID of the browser plugin
 export const figmentId = document.head.getElementsByTagName('figment')[0].id 
@@ -41,63 +42,49 @@ function enableOverlay(enable) {
 function mouseMoved(e) {
 	if (timeout) clearTimeout(timeout)
 	timeout = setTimeout(() => { 
-		highlightNodeUnderMouse(e) 
+		handleMouseMoved(e) 
 
 	}, delayMs)
 }
 
-function getElementPath(element) {
-    var path = [];
-    var currentElem = element;
-    while (currentElem) {
-      path.push(currentElem);
-      currentElem = currentElem.parentElement;
-    }
-    if (path.indexOf(window) === -1 && path.indexOf(document) === -1)
-      path.push(document);
-    if (path.indexOf(window) === -1)
-      path.push(window);
-    return path;
-  }
+let frozenTree = undefined;
+function handleMouseMoved(e) {
 
-function highlightNodeUnderMouse(e) {
-	const path = e.path || getElementPath(e.target);
+	const element = e?.target;
+	if(element?.localName?.includes("figment-")) return 
 
-	if (!Array.isArray(debugTree)
-		|| debugTree[0]?.element !== path[0] //are we already on this thing?
-		&& !path.some(b => b.localName?.includes('figment-'))) //is this a figment thing?
-	{
-		debugTree = path.map(element => new DebugNode(element))
+	console.log('handleMouseMoved', element)
 
-		let usefulTree = debugTree
-			.filter((e1, index, array) =>
-				e1.debugOwnerName //we do have a debug name (the component name)
-				&& e1.fiber
-				&& !array.slice(index + 1).find(e2 => e2.debugOwnerName === e1.debugOwnerName
-					&& e2.debugOwner?._debugSource?.fileName === e1.debugOwner?._debugSource?.fileName
-					&& e2.debugOwner?._debugSource?.lineNumber === e1.debugOwner?._debugSource?.lineNumber) //there is not another one of these ahead in the list
-			)
+	if (element) {
+		const renderTree = frozenTree || getRenderTree(element);
 
-		//show the overlay for the first element that has a react statenode
-		let firstStateNodeIndex = usefulTree.findIndex(node => node.stateNode)
-		if (firstStateNodeIndex >= 0 && firstStateNodeIndex < usefulTree.length) {
-			FigmentOutline.highlightElement({
-				node: usefulTree[firstStateNodeIndex].stateNode,
-				label: usefulTree[firstStateNodeIndex].debugOwnerName ?? usefulTree[firstStateNodeIndex].element.name,
-				onClick: (e) => { onOverlayClick(e, usefulTree) }
-			})
-		}
-	}
+		FigmentOutline.highlightElement({
+			node: renderTree[0].stateNode,
+			label: renderTree[0]?.type,
+			onClick: (e) => { onOverlayClick(e, renderTree) }
+		})
+	} else throw `element is ${element}`
 }
 
-function onOverlayClick (e, debugTree) {
+function onOverlayClick (e, renderTree) {
 	e.preventDefault(true)
-	let comp = debugTree[0]
-	SearchFigmaData({ name: comp.debugOwnerName, id: comp.figmaId }).then((figmaData) => {
-		let menu = renderMenu(debugTree, figmaData)
-		menu.Show(e.pageX, e.pageY);
-		document.addEventListener('mouseup', onMouseUp, false);
-	})
+	
+	//save this tree so we can keep displaying it until the menu closes
+	frozenTree = renderTree
+
+	//create a menu UI from this tree
+	let menu = renderMenu({renderTree})
+	menu.Show(e.pageX, e.pageY);
+	document.addEventListener('mouseup', onMouseUp, false);
+
+	//TODO: refactor figma stuff
+
+	// let comp = renderTree[0]
+	// SearchFigmaData({ name: comp.debugOwnerName, id: comp.figmaId }).then((figmaData) => {
+	// 	let menu = renderMenu({renderTree, figmaData})
+	// 	menu.Show(e.pageX, e.pageY);
+	// 	document.addEventListener('mouseup', onMouseUp, false);
+	// })
 }
 
 function onMouseUp(e) {
@@ -105,45 +92,30 @@ function onMouseUp(e) {
 
 	if (!path.some(node => node.classList?.contains('menu-keep-open'))) {
 		FigmentMenu.RemoveOld()
+		frozenTree = undefined
 		document.removeEventListener('mouseup', onMouseUp);
 	}
 }
 
-function renderMenu(debugTree, figmaData) {
+function renderMenu({renderTree, figmaData}) {
 	FigmentMenu.RemoveOld()
 	let menu = FigmentMenu.Create({extraClasses: 'menu-keep-open'})
 
-	//menu for the stack of elements under the mouse
-	// only get the first one (for now)
-	debugTree.slice(0,1).forEach(debugNode => {
-
-		let item = new MenuItem({ 
-			text: debugNode.debugOwnerName, 
-			subtext: debugNode.renderedByFileName, 
-			onTextClick: (e) => refreshFigmaNodes({debugNode, menu}),
-			onSubTextClick: (e) => openSourceFileInVsCode({debugNode, e}),
-			mouseEnter: (e) => componentMenuItemHover({e, debugNode}),
-		})
-
-		menu.AddItem(item)
-	})
-
-	menu.AddSeparator()
 	let container = menu.AddScrollingContainer({extraClasses: 'react-render-branch'})
 
-	debugTree[0].betterRenderTree.forEach((node, index, array) => {
+	renderTree.forEach((node, index, array) => {
 		const isDomElement = node.stateNode instanceof HTMLElement
-		const domElement = isDomElement ? node.stateNode : array.slice(0, index).reverse().find(x => x.stateNode instanceof HTMLElement).stateNode
-		const shortFilePath = node.file?.substr(node.file.lastIndexOf('/')+1)
+		// const domElement = isDomElement ? node.stateNode : array.slice(0, index).reverse().find(x => x.stateNode instanceof HTMLElement).stateNode
+		// const shortFilePath = node.debugSource?.fileName?.substr(node.debugSource.fileName.lastIndexOf('/')+1)
 		const item = new MenuItem({ 
 			extraClasses: isDomElement && ['is-dom-element'],
 			text: node.type, 
 			textClass: node.kind,
 			textData: node.kind,
-			subtext: shortFilePath, 
-			onTextClick: (e) => refreshFigmaNodes({name: node.type, menu}),
-			onSubTextClick: node.file && ((e) => openSourceFileInVsCode({file: node.file, e})),
-			mouseEnter: ((e) => componentMenuItemHover({e, domNode: domElement, label: node.debugOwnerType})),
+			subtext: node.fileName, 
+			//onTextClick: (e) => refreshFigmaNodes({name: node.type, menu}),
+			onSubTextClick: (e) => open(node.vsCodeUrl),
+			mouseEnter: ((e) => componentMenuItemHover({e, domNode: node.stateNode, label: node.type})),
 		})
 		menu.AddItem(item, container)
 
@@ -166,19 +138,11 @@ function renderMenu(debugTree, figmaData) {
 	return menu;
 }
 
-function componentMenuItemHover({ e, domNode, label, debugNode }) {
+function componentMenuItemHover({ domNode, label }) {
 	FigmentOutline.highlightElement({
-		node: domNode || (debugNode?.stateNode?.getBoundingClientRect ? debugNode.stateNode : debugNode.element),
-		label: label || (debugNode?.debugOwnerName)
+		node: domNode,
+		label: label
 	})
-}
-
-function openSourceFileInVsCode({file, debugNode, e}) {
-	//todo: make this configurable to support other editors
-	//todo: don't close the menu
-	if (file) open(`vscode://file${file}`)
-	else if(debugNode) open(debugNode?.renderedByVsCodeLink)
-	else throw `can't open file`
 }
 
 function refreshFigmaNodes({debugNode, name, figmaId, menu}) {

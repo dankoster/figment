@@ -1,3 +1,4 @@
+//DEPRICATED for RenderTreeNode
 export default class DebugNode {
 	constructor(element) {
 		this.element = element

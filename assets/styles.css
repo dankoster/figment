@@ -1,0 +1,369 @@
+.figment-outline {
+	position: absolute;
+	pointer-events: none;
+	outline: 2px dashed #ff000091;
+	z-index: 30000;
+	position: absolute;
+	border-radius: 5px;
+	outline-offset: -2px;
+	transition: all 0.2s ease-in-out;
+}
+
+.figment-outline-label {
+	cursor: pointer;
+	pointer-events: all;
+	content: attr(figment);
+	position: absolute;
+	right: 0;
+	top: 0;
+	background: #ff000091;
+	padding-left: 5px;
+	padding-right: 5px;
+	border-bottom-left-radius: 5px;
+	border-top-right-radius: 5px;
+	font-size: 13px;
+	z-index: 1;
+	color: #ffffff
+}
+
+.figment-menu {
+	position: absolute;
+	padding: 2px;
+	margin: 0;
+	border: 1px solid #bbb;
+	color: black;
+	background: white;
+	background: linear-gradient(to bottom, #fff 0%, #e5e5e5 100px, #e5e5e5 100%);
+	z-index: 111111;
+	border-radius: 3px;
+	box-shadow: 0px 5px 20px #000000a3;
+	opacity: 0;
+	transform: translate(0, 15px) scale(.95);
+	transition: transform 0.1s ease-out, opacity 0.1s ease-out;
+	pointer-events: none;
+	max-width: 400px;
+}
+
+.menu-scrolling-container {
+	max-height: 300px;
+	overflow-y: auto;
+}
+
+.menu-scrolling-container.react-render-branch {
+	resize: vertical;
+	height: 150px;
+	max-height: 500px;
+}
+
+.menu-scrolling-container.figma-info {
+	max-height: 300px;
+	resize: vertical;
+}
+
+.menu-item-grid-prefix {
+	grid-area: prefix;
+}
+
+.menu-item-grid-component {
+	grid-area: component;
+}
+
+.menu-item-grid-expando {
+	grid-area: expando;
+}
+
+.menu-item {
+
+	display: grid;
+	grid-template-columns: 25px 1fr;
+	grid-template-areas:
+		"prefix component"
+		"expando expando";
+
+	margin: 0;
+	padding: 0;
+	white-space: nowrap;
+	overflow-y: hidden;
+	text-overflow: ellipsis;
+}
+
+.menu-item-content {
+	align-items: center;
+	display: flex;
+	gap: 20px;
+	overflow: hidden;
+}
+
+
+
+
+
+
+.wrap-collabsible {
+	margin-bottom: 1.2rem 0;
+}
+
+input[type='checkbox'] {
+	display: none;
+}
+
+.lbl-toggle {
+	padding-inline: 10px;
+	cursor: pointer;
+	transition: all 0.25s ease-out;
+	color: #282828;
+}
+
+.lbl-toggle:hover {
+	color: #7C5A0B;
+}
+
+.lbl-toggle::before {
+	content: ' ';
+	display: inline-block;
+
+	border-top: 5px solid transparent;
+	border-bottom: 5px solid transparent;
+	border-left: 5px solid currentColor;
+	vertical-align: middle;
+	margin-right: .7rem;
+	transform: translateY(-2px);
+
+	transition: transform .2s ease-out;
+}
+
+.toggle:checked+.lbl-toggle::before {
+	transform: rotate(90deg) translateX(-3px);
+}
+
+.collapsible-content {
+	max-height: 0px;
+	overflow: hidden;
+	transition: max-height .5s ease-out;
+	color: #282828;
+}
+
+.toggle:checked~.collapsible-content {
+	max-height: 100vh;
+}
+
+.toggle:checked+.lbl-toggle {
+	border-bottom-right-radius: 0;
+	border-bottom-left-radius: 0;
+}
+
+.collapsible-content .content-inner {
+	display: flex;
+	flex-direction: column;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	background: #dbdbdb;
+	border-bottom: 1px solid darkgray;
+	cursor: initial;
+	padding: 3px;
+	padding-left: 10px;
+	margin-top: 3px;
+	margin-bottom: 5px;
+	-webkit-box-shadow: inset 0px 5px 10px -7px rgb(0 0 0 / 75%);
+	-moz-box-shadow: inset 0px 5px 10px -7px rgba(0, 0, 0, 0.75);
+	box-shadow: inset 0px 5px 10px -7px rgb(0 0 0 / 75%);
+	/* transition: max-height .25s ease-in-out; */
+}
+
+
+.menu-item:hover .menu-image {
+	visibility: visible;
+}
+
+.menu-image {
+	visibility: hidden;
+	pointer-events: none;
+	border: 1px solid darkgray;
+	position: fixed;
+	top: -33px;
+	left: -15px;
+	object-fit: contain;
+	width: calc(100% + 30px);
+	border-radius: 5px;
+	box-shadow: 1px 1px 5px #1f1f1f2b;
+	backdrop-filter: blur(5px) saturate(0.5) brightness(0.95);
+	padding: 4px;
+}
+
+.menu-item:hover {
+	outline: 2px dashed darkgray;
+	outline-offset: -2px;
+	border-radius: 4px;
+}
+
+.menu-item.is-dom-element:hover {
+	outline: 1px dashed #ff000091;
+	cursor: pointer;
+	outline-width: 2px;
+	outline-offset: -2px;
+	border-radius: 4px;
+}
+
+.menu-btn {
+	display: block;
+	color: #444;
+	font-family: 'Roboto', sans-serif;
+	font-size: 13px;
+	cursor: pointer;
+	border: 1px solid transparent;
+	white-space: nowrap;
+	padding: 6px 8px;
+	border-radius: 3px;
+	flex-grow: 1;
+}
+
+button.menu-btn {
+	background: none;
+	line-height: normal;
+	overflow: visible;
+	-webkit-user-select: none;
+	-moz-user-select: none;
+	-ms-user-select: none;
+	width: 100%;
+	text-align: left;
+}
+
+a.menu-btn {
+	outline: 0 none;
+	text-decoration: none;
+}
+
+.menu-info {
+	font-size: 11px;
+	text-align: center;
+}
+
+.menu-text {
+	cursor: pointer;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	color: #282828;
+}
+
+[class*="Component "]::after {
+	color: blue;
+	margin-left: 10px;
+}
+
+/* 
+[data-text]::after {
+	content:attr(data-text);
+	color:blue;
+	margin-left:10px;
+} */
+
+.menu-text.HostComponent {
+	font-weight: bolder;
+}
+
+.menu-text.HostComponent::before {
+	color: blue;
+	content: "<";
+}
+
+.menu-text.HostComponent::after {
+	content: "/>";
+	margin-left: 0px;
+}
+
+.menu-item-grid-expando span.HostComponent::before {
+	content: "</>";
+	color: blue;
+	padding-right: 10px;
+}
+
+.menu-item-grid-expando span.FunctionComponent::before {
+	content: "\0192";
+	color: blue;
+	padding-right: 10px;
+}
+
+.menu-item-grid-expando span.ClassComponent::before {
+	content: "\269b";
+	color: blue;
+	padding-right: 10px;
+}
+
+.state-node {
+	font-weight: bold;
+}
+
+.menu-subtext {
+	cursor: pointer;
+	color: darkgrey;
+	flex-grow: 1;
+	text-align: end;
+	font-size: smaller;
+	margin-right: 15px;
+}
+
+.comp-menu-item-hover .menu-subtext {
+	color: #ff00009e;
+}
+
+.menu-btn .fa {
+	position: absolute;
+	left: 8px;
+	top: 50%;
+	transform: translateY(-50%);
+}
+
+.menu-item:hover>.menu-btn {
+	color: #fff;
+	outline: none;
+	background-color: #2E3940;
+	background: linear-gradient(to bottom, #5D6D79, #2E3940);
+	border: 1px solid #2E3940;
+}
+
+.menu-item-disabled {
+	opacity: .5;
+	pointer-events: none;
+}
+
+.menu-item-disabled .menu-btn {
+	cursor: default;
+}
+
+.menu-separator {
+	display: block;
+	margin: 7px 5px;
+	height: 1px;
+	border-bottom: 1px solid #b3b3b3;
+	background-color: #aaa;
+}
+
+.menu-item-submenu::after {
+	content: "";
+	position: absolute;
+	right: 6px;
+	top: 50%;
+	transform: translateY(-50%);
+	border: 5px solid transparent;
+	border-left-color: #808080;
+}
+
+.menu-item-submenu:hover::after {
+	border-left-color: #fff;
+}
+
+.figment-menu .figment-menu {
+	top: 4px;
+	left: 99%;
+}
+
+.menu-show,
+.menu-item:hover>.figment-menu {
+	opacity: 1;
+	transform: translate(0, 0) scale(1);
+	pointer-events: auto;
+}
+
+.menu-item:hover>.figment-menu {
+	transition-delay: 300ms;
+}

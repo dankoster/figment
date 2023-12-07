@@ -18,9 +18,9 @@
 		{
 			"resources": [ 
 				"Figment.js", 
+				"elementFunctions.js",
 				"serviceWorkerApi.js",
 				"Menu.js",
-				"DebugNode.js", 
 				"FigmentOutline.js",
 				"Trace.js",
 				"styles.css" 
