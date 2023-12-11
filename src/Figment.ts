@@ -52,8 +52,6 @@ function mouseMoved(e: MouseEvent)  {
 }
 
 function handleMouseMoved(e: MouseEvent) {
-	if(frozenRenderTree) return
-
 	const element = e?.target as HTMLElement
 	if(element?.localName?.includes("figment-")) return 
 
@@ -110,7 +108,7 @@ function renderMenu({renderTree, figmaData}: {renderTree: RenderTreeNode[], figm
 		// const domElement = isDomElement ? node.stateNode : array.slice(0, index).reverse().find(x => x.stateNode instanceof HTMLElement).stateNode
 		// const shortFilePath = node.debugSource?.fileName?.substr(node.debugSource.fileName.lastIndexOf('/')+1)
 		const item = new MenuItem({ 
-			extraClasses: isDomElement && ['is-dom-element'],
+			extraClasses: isDomElement ? ['is-dom-element'] : undefined,
 			text: node.type, 
 			textClass: node.kind,
 			textData: node.kind,
@@ -121,11 +119,7 @@ function renderMenu({renderTree, figmaData}: {renderTree: RenderTreeNode[], figm
 				node: node.stateNode,
 				label: node.type, 
 				onClick: undefined
-			})),
-			id: undefined, 
-			href: undefined, 
-			imageSrc: undefined, 
-			mouseLeave: undefined, 
+			}))
 		})
 		menu.AddItem(item, container)
 

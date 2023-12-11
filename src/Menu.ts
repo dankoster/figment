@@ -1,10 +1,13 @@
 //inspired by https://codepen.io/ryanmorr/pen/JdOvYR
 import { figmentId } from './Figment.js'
 
-function styleToInt(value) { Number.parseInt(value.replaceAll('px', '')) }
-function getTotal(style, properties) { properties.reduce((total, property) => total + styleToInt(style[property]), 0) }
+type ExtraClasses = string | string[]
 
-function AddExtraClasses(target, extraClasses) {
+
+function styleToInt(value: string): number { return Number.parseInt(value.replaceAll('px', '')) }
+//function getTotal(style: CSSStyleDeclaration, properties: string[]) { return properties.reduce((total, property) => total + styleToInt(style[property]), 0) }
+
+function AddExtraClasses(target: HTMLElement, extraClasses?: string | string[]) {
 	if (extraClasses) {
 		if (!target.classList) throw `${target} does not have a classList`
 		if (typeof extraClasses === 'string') extraClasses = extraClasses.split(' ')
@@ -17,10 +20,13 @@ function AddExtraClasses(target, extraClasses) {
 
 export class FigmentMenu extends HTMLElement {
 
+	ul: HTMLUListElement
+	items: MenuItem[]
+
 	constructor() {
 		super();
 
-		this.shadow = this.attachShadow({ mode: 'open' })
+		this.attachShadow({ mode: 'open' })
 
 		this.ul = document.createElement('ul')
 		this.ul.className = 'figment-menu'
@@ -32,13 +38,13 @@ export class FigmentMenu extends HTMLElement {
 		cssLink.setAttribute('href', `chrome-extension://${figmentId}/styles.css`)
 
 		// Attach the created elements to the shadow dom
-		this.shadow.appendChild(cssLink)
-		this.shadow.appendChild(this.ul)
+		this.shadowRoot?.appendChild(cssLink)
+		this.shadowRoot?.appendChild(this.ul)
 
 		//document.body.appendChild(this.ul)
 	}
 
-	static Create({ extraClasses }) {
+	static Create({ extraClasses }: { extraClasses: ExtraClasses }) {
 		if (!customElements.get('figment-menu'))
 			customElements.define('figment-menu', FigmentMenu)
 
@@ -55,7 +61,7 @@ export class FigmentMenu extends HTMLElement {
 		document.querySelectorAll('figment-menu').forEach(element => element.remove())
 	}
 
-	Show(x, y) {
+	Show(x: number, y: number) {
 		if (this.ul) {
 			//there is some issue with computing width in the shadow dom...
 			//const ulWidth = getTotal(getComputedStyle(this.ul), ['width'])
@@ -70,20 +76,20 @@ export class FigmentMenu extends HTMLElement {
 		}
 	}
 
-	AddItem(item, container) {
+	AddItem(item: MenuItem, container: HTMLElement) {
 		this.items.push(item)
 		if (container) container.appendChild(item.li)
 		else this.ul.appendChild(item.li)
 	}
 
-	AddSeparator({ extraClasses } = {}) {
+	AddSeparator({ extraClasses }: { extraClasses?: ExtraClasses } = {}) {
 		let sep = document.createElement('li')
 		sep.className = 'menu-separator'
 		AddExtraClasses(sep, extraClasses)
 		this.ul.appendChild(sep)
 	}
 
-	AddScrollingContainer({ extraClasses, maxHeight } = {}) {
+	AddScrollingContainer({ extraClasses, maxHeight }: { extraClasses?: ExtraClasses, maxHeight?: string } = {}) {
 		let container = document.createElement('div')
 		container.className = 'menu-scrolling-container'
 		if (maxHeight) container.style.maxHeight = maxHeight
@@ -94,7 +100,30 @@ export class FigmentMenu extends HTMLElement {
 
 }
 
+type MenuItemOptions = {
+	id?: string,
+	text: string,
+	textClass: string,
+	textData: string,
+	onTextClick?: (this: HTMLSpanElement, ev: MouseEvent) => any,
+	subtext: string,
+	href?: string,
+	extraClasses?: ExtraClasses,
+	imageSrc?: string,
+	onSubTextClick: (this: HTMLSpanElement, ev: MouseEvent) => any,
+	mouseEnter: (this: HTMLSpanElement, ev: MouseEvent) => any,
+	mouseLeave?: (this: HTMLSpanElement, ev: MouseEvent) => any,
+}
+
 export class MenuItem {
+
+	id?: string
+	li: HTMLLIElement
+	content: HTMLDivElement
+	img?: HTMLImageElement
+	subMenu?: FigmentMenu
+	expando?: HTMLDivElement
+
 	constructor({
 		id,
 		text,
@@ -108,7 +137,7 @@ export class MenuItem {
 		onSubTextClick,
 		mouseEnter,
 		mouseLeave
-	}) {
+	}: MenuItemOptions) {
 		this.id = id
 		this.li = document.createElement('li')
 		this.li.classList.add('menu-item')
@@ -173,7 +202,7 @@ export class MenuItem {
 		else if (this.img) this.img.remove()
 	}
 
-	set imageHeight(value) {
+	set imageHeight(value: number) {
 		if (Number.isSafeInteger(value) && this.img) this.img.height = value
 	}
 
@@ -210,12 +239,12 @@ export class MenuItem {
 		return this.expando
 	}
 
-	AddExpandoItem(item) {
+	AddExpandoItem(item: HTMLElement) {
 		this.Expando.appendChild(item)
 	}
 
-	AddSubMenuItem(item) {
-		this.SubMenu.AddItem(item)
-		this.li.className = 'menu-item menu-item-submenu'
-	}
+	// AddSubMenuItem(item: MenuItem) {
+	// 	this.SubMenu.AddItem(item)
+	// 	this.li.className = 'menu-item menu-item-submenu'
+	// }
 }
