@@ -2,10 +2,13 @@ import { figmentId } from './Figment.js'
 
 export default class FigmentOutline extends HTMLElement {
 	
+	overlay: HTMLDivElement
+	label?: HTMLSpanElement
+
 	constructor() {
 		super();
 
-		this.shadow = this.attachShadow({ mode: 'open' })
+		this.attachShadow({ mode: 'open' })
 
 		this.overlay = document.createElement('div')
 		this.overlay.className = 'figment-outline'
@@ -16,14 +19,14 @@ export default class FigmentOutline extends HTMLElement {
 		cssLink.setAttribute('href', `chrome-extension://${figmentId}/styles.css`)
 
 		// Attach the created elements to the shadow dom
-		this.shadow.appendChild(cssLink)
-		this.shadow.appendChild(this.overlay)
+		this.shadowRoot?.appendChild(cssLink)
+		this.shadowRoot?.appendChild(this.overlay)
 	}
 
-	setLabel({label, onClick}) {
+	setLabel({label, onClick}: {label: string, onClick?: (this: HTMLSpanElement, ev: MouseEvent) => any}) {
 
 		//remove the old label to avoid accumulating event handlers
-		this.shadow.querySelectorAll('.figment-outline-label').forEach(e => e.remove())
+		this.shadowRoot?.querySelectorAll('.figment-outline-label').forEach(e => e.remove())
 		
 		this.label = document.createElement('span')
 		this.label.className = 'figment-outline-label'
@@ -32,19 +35,19 @@ export default class FigmentOutline extends HTMLElement {
 		this.overlay.appendChild(this.label)
 	}
 
-	setStyles(styles) {
+	// setAttributes(attributes: {[key: string]:any}) {
+	// 	for(const attribute in attributes) {
+	// 		this.overlay.setAttribute(attribute, attributes[attribute])
+	// 	}
+	// }
+
+	setStyles(styles: {[key in keyof CSSStyleDeclaration]?:any}) {
 		for(const style in styles) {
 			this.overlay.style[style] = styles[style]
 		}
 	}
 
-	setAttributes(attributes) {
-		for(const attribute in attributes) {
-			this.overlay.setAttribute(attribute, attributes[attribute])
-		}
-	}
-
-	setLocation(rect) {
+	setLocation(rect: DOMRect) {
 		this.setStyles({
 			top: window.scrollY + rect.top + 'px'
 			, left: rect.left + 'px'
@@ -58,18 +61,18 @@ export default class FigmentOutline extends HTMLElement {
 		if(overlay) overlay.remove()
 	}
 
-	static highlightElement({node, label, onClick}) {
+	static highlightElement({node, label, onClick}: {node: HTMLElement, label: string, onClick?: (this: HTMLElement, ev: MouseEvent) => any}) {
 
 		if (node && node.getBoundingClientRect) {
 	
-			let overlay = document.querySelector('figment-outline')
+			let overlay = document.querySelector('figment-outline') as FigmentOutline
 	
 			if(!overlay) {
 				// Define the outline element
 				if (!customElements.get('figment-outline'))
 					customElements.define('figment-outline', FigmentOutline);
 
-				overlay = document.createElement('figment-outline')
+				overlay = document.createElement('figment-outline') as FigmentOutline
 				document.body.appendChild(overlay)
 			}
 	
