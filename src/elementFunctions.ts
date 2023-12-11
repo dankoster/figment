@@ -35,7 +35,7 @@ const tags: { [key: number]: string } = {
 	16: 'LazyComponent',
 };
 
-class RenderTreeNode {
+export class RenderTreeNode {
 	type: string;
 	tag: string;
 	kind: string;

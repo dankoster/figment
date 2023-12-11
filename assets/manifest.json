@@ -19,6 +19,7 @@
 			"resources": [ 
 				"Figment.js", 
 				"elementFunctions.js",
+				"figmaFunctions.js",
 				"serviceWorkerApi.js",
 				"Menu.js",
 				"FigmentOutline.js",
