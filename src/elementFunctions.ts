@@ -15,7 +15,7 @@ export function getElementPath(element: any) {
 }
 
 
- const tags: { [key: number]: string } = {
+const tags: { [key: number]: string } = {
 	0: 'FunctionComponent',
 	1: 'ClassComponent',
 	2: 'IndeterminateComponent',
@@ -66,7 +66,7 @@ class RenderTreeNode {
 
 	get filePath() {
 		return this.fiber?._debugSource &&
-		[this.fiber._debugSource?.fileName, this.fiber._debugSource?.lineNumber, this.fiber._debugSource?.columnNumber].join(':');
+			[this.fiber._debugSource?.fileName, this.fiber._debugSource?.lineNumber, this.fiber._debugSource?.columnNumber].join(':');
 	}
 
 	get fileName() {
@@ -77,7 +77,7 @@ class RenderTreeNode {
 		return `vsCode://file${this.filePath}`;
 	}
 
-	fiberTypeName(f: any):string {
+	fiberTypeName(f: any): string {
 		let t = typeof f?.type;
 		let result;
 
@@ -130,7 +130,7 @@ export function getRenderTree(element: HTMLElement) {
 	return tree;
 }
 
-export function FindReactFiber(dom: any) {
+function FindReactFiber(dom: any) {
 	//https://stackoverflow.com/a/39165137
 	//https://github.com/Venryx/mobx-devtools-advanced/blob/master/Docs/TreeTraversal.md
 	const key: string | undefined = Object.keys(dom).find(key => {

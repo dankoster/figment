@@ -2,16 +2,20 @@ import FigmentOutline from './FigmentOutline.js'
 import Trace from './Trace.js'
 import { FigmentMenu, MenuItem } from './Menu.js'
 import ServiceWorkerApi, { SearchFigmaData, GetFigmaImageLinks } from './serviceWorkerApi.js'
-
 import { getElementPath, getRenderTree } from "./elementFunctions.js"
+
+//This code runs in the context of the page
+// - set up hotkeys
+// - handle mousemove and clicks
+// - show and hide overlays and menus
 
 //get the ID of the browser plugin
 export const figmentId = document.head.getElementsByTagName('figment')[0].id 
-console.log('Figment!', figmentId)
+//console.log('Figment!', figmentId)
 
-const delayMs = 100
+const delayMs = 50
 let timeout = null;
-let debugTree = null;
+let frozenTree = undefined;
 
 //we're starting up, so connect to the backend
 // and ask for the current state of the settings
@@ -47,13 +51,9 @@ function mouseMoved(e) {
 	}, delayMs)
 }
 
-let frozenTree = undefined;
 function handleMouseMoved(e) {
-
 	const element = e?.target;
 	if(element?.localName?.includes("figment-")) return 
-
-	console.log('handleMouseMoved', element)
 
 	if (element) {
 		const renderTree = frozenTree || getRenderTree(element);
