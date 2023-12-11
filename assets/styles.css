@@ -33,7 +33,6 @@
 	border: 1px solid #bbb;
 	color: black;
 	background: white;
-	background: linear-gradient(to bottom, #fff 0%, #e5e5e5 100px, #e5e5e5 100%);
 	z-index: 111111;
 	border-radius: 3px;
 	box-shadow: 0px 5px 20px #000000a3;
@@ -103,9 +102,7 @@
 	margin-bottom: 1.2rem 0;
 }
 
-input[type='checkbox'] {
-	display: none;
-}
+
 
 .lbl-toggle {
 	padding-inline: 10px;
@@ -132,15 +129,12 @@ input[type='checkbox'] {
 	transition: transform .2s ease-out;
 }
 
-.toggle:checked+.lbl-toggle::before {
-	transform: rotate(90deg) translateX(-3px);
+input[type="checkbox"].toggle {
+	display: none;
 }
 
-.collapsible-content {
-	max-height: 0px;
-	overflow: hidden;
-	transition: max-height .5s ease-out;
-	color: #282828;
+.toggle:checked+.lbl-toggle::before {
+	transform: rotate(90deg) translateX(-3px);
 }
 
 .toggle:checked~.collapsible-content {
@@ -150,6 +144,13 @@ input[type='checkbox'] {
 .toggle:checked+.lbl-toggle {
 	border-bottom-right-radius: 0;
 	border-bottom-left-radius: 0;
+}
+
+.collapsible-content {
+	max-height: 0px;
+	overflow: hidden;
+	transition: max-height .5s ease-out;
+	color: #282828;
 }
 
 .collapsible-content .content-inner {
@@ -295,11 +296,15 @@ a.menu-btn {
 
 .menu-subtext {
 	cursor: pointer;
-	color: darkgrey;
+	color: #0b5bda;
 	flex-grow: 1;
 	text-align: end;
 	font-size: smaller;
 	margin-right: 15px;
+}
+
+.menu-subtext :hover {
+	color: #095bda;
 }
 
 .comp-menu-item-hover .menu-subtext {
