@@ -14,8 +14,8 @@ export const figmentId = document.head.getElementsByTagName('figment')[0].id
 //console.log('Figment!', figmentId)
 
 const mouseMoveDetectionDelayMs = 50
-let timeout: number | undefined = undefined
-let frozenTree: RenderTreeNode[] | undefined = undefined
+let mouseMoveDelayTimeout: number | undefined = undefined
+let frozenRenderTree: RenderTreeNode[] | undefined = undefined
 
 //we're starting up, so connect to the backend
 // and ask for the current state of the settings
@@ -31,7 +31,7 @@ document.addEventListener('keyup', (e) => {
 	if(e.altKey && e.code === 'KeyF') {
 		ServiceWorkerApi.toggleEnabled()
 	}
-});
+})
 
 function enableOverlay(enable: boolean) {
 	if (enable) {
@@ -44,19 +44,21 @@ function enableOverlay(enable: boolean) {
 }
 
 function mouseMoved(e: MouseEvent)  {
-	if (timeout) clearTimeout(timeout)
-	timeout = setTimeout(() => { 
+	if (mouseMoveDelayTimeout) clearTimeout(mouseMoveDelayTimeout)
+	mouseMoveDelayTimeout = setTimeout(() => { 
 		handleMouseMoved(e) 
 
 	}, mouseMoveDetectionDelayMs)
 }
 
 function handleMouseMoved(e: MouseEvent) {
-	const element = e?.target as HTMLElement;
+	if(frozenRenderTree) return
+
+	const element = e?.target as HTMLElement
 	if(element?.localName?.includes("figment-")) return 
 
 	if (element) {
-		const renderTree = frozenTree || getRenderTree(element);
+		const renderTree = frozenRenderTree || getRenderTree(element)
 
 		FigmentOutline.highlightElement({
 			node: renderTree[0].stateNode,
@@ -70,30 +72,30 @@ function onOverlayClick (e: MouseEvent, renderTree: RenderTreeNode[]) {
 	e.preventDefault()
 	
 	//save this tree so we can keep displaying it until the menu closes
-	frozenTree = renderTree
+	frozenRenderTree = renderTree
 
 	//create a menu UI from this tree
 	let menu = renderMenu({renderTree, figmaData: undefined})
-	menu.Show(e.pageX, e.pageY);
-	document.addEventListener('mouseup', onMouseUp, false);
+	menu.Show(e.pageX, e.pageY)
+	document.addEventListener('mouseup', onMouseUp, false)
 
 	//TODO: refactor figma stuff
 
 	// let comp = renderTree[0]
 	// SearchFigmaData({ name: comp.debugOwnerName, id: comp.figmaId }).then((figmaData) => {
 	// 	let menu = renderMenu({renderTree, figmaData})
-	// 	menu.Show(e.pageX, e.pageY);
-	// 	document.addEventListener('mouseup', onMouseUp, false);
+	// 	menu.Show(e.pageX, e.pageY)
+	// 	document.addEventListener('mouseup', onMouseUp, false)
 	// })
 }
 
 function onMouseUp(e: MouseEvent) {
-	const path = getElementPath(e.target);
+	const path = getElementPath(e.target)
 
 	if (!path.some(node => node.classList?.contains('menu-keep-open'))) {
 		FigmentMenu.RemoveOld()
-		frozenTree = undefined
-		document.removeEventListener('mouseup', onMouseUp);
+		frozenRenderTree = undefined
+		document.removeEventListener('mouseup', onMouseUp)
 	}
 }
 
@@ -115,8 +117,11 @@ function renderMenu({renderTree, figmaData}: {renderTree: RenderTreeNode[], figm
 			subtext: node.fileName, 
 			onTextClick: undefined, //(e) => refreshFigmaNodes({name: node.type, menu}),
 			onSubTextClick: () => open(node.vsCodeUrl),
-			mouseEnter: ((e: MouseEvent) => componentMenuItemHover({domNode: node.stateNode, label: node.type})),
-
+			mouseEnter: ((e: MouseEvent) => FigmentOutline.highlightElement({
+				node: node.stateNode,
+				label: node.type, 
+				onClick: undefined
+			})),
 			id: undefined, 
 			href: undefined, 
 			imageSrc: undefined, 
@@ -137,16 +142,8 @@ function renderMenu({renderTree, figmaData}: {renderTree: RenderTreeNode[], figm
 	})
 
 	if (figmaData?.recordCount) {
-		renderFigmaMenuItems(figmaData, menu);
+		renderFigmaMenuItems(figmaData, menu)
 	}
 
-	return menu;
-}
-
-function componentMenuItemHover({ domNode, label }: { domNode: HTMLElement, label: string }) {
-	FigmentOutline.highlightElement({
-		node: domNode,
-		label: label, 
-		onClick: undefined
-	})
+	return menu
 }
