@@ -27,20 +27,26 @@
 }
 
 .figment-menu {
+	cursor: default;
 	position: absolute;
 	padding: 2px;
 	margin: 0;
-	border: 1px solid #bbb;
+	border-radius: 8px;
 	color: black;
 	background: white;
 	z-index: 111111;
-	border-radius: 3px;
 	box-shadow: 0px 5px 20px #000000a3;
-	opacity: 0;
-	transform: translate(0, 15px) scale(.95);
-	transition: transform 0.1s ease-out, opacity 0.1s ease-out;
+	/* opacity: 0; */
 	pointer-events: none;
-	max-width: 400px;
+}
+
+.menu-item {
+	display: flex;
+	justify-content: space-between;
+	padding: 2px;
+	color: #353535;
+	gap: 1rem;
+	padding-inline: 0.5rem;
 }
 
 .menu-scrolling-container {
@@ -71,21 +77,6 @@
 	grid-area: expando;
 }
 
-.menu-item {
-
-	display: grid;
-	grid-template-columns: 25px 1fr;
-	grid-template-areas:
-		"prefix component"
-		"expando expando";
-
-	margin: 0;
-	padding: 0;
-	white-space: nowrap;
-	overflow-y: hidden;
-	text-overflow: ellipsis;
-}
-
 .menu-item-content {
 	align-items: center;
 	display: flex;
@@ -93,16 +84,9 @@
 	overflow: hidden;
 }
 
-
-
-
-
-
 .wrap-collabsible {
 	margin-bottom: 1.2rem 0;
 }
-
-
 
 .lbl-toggle {
 	padding-inline: 10px;
@@ -199,7 +183,7 @@ input[type="checkbox"].toggle {
 
 .menu-item.is-dom-element:hover {
 	outline: 1px dashed #ff000091;
-	cursor: pointer;
+	/* cursor: pointer; */
 	outline-width: 2px;
 	outline-offset: -2px;
 	border-radius: 4px;
@@ -240,7 +224,7 @@ a.menu-btn {
 }
 
 .menu-text {
-	cursor: pointer;
+	/* cursor: pointer; */
 	overflow: hidden;
 	text-overflow: ellipsis;
 	color: #282828;
@@ -268,6 +252,7 @@ a.menu-btn {
 }
 
 .menu-text.HostComponent::after {
+	color: blue;
 	content: "/>";
 	margin-left: 0px;
 }
@@ -300,7 +285,7 @@ a.menu-btn {
 	flex-grow: 1;
 	text-align: end;
 	font-size: smaller;
-	margin-right: 15px;
+	align-self: center;
 }
 
 .menu-subtext :hover {
@@ -364,8 +349,8 @@ a.menu-btn {
 
 .menu-show,
 .menu-item:hover>.figment-menu {
-	opacity: 1;
-	transform: translate(0, 0) scale(1);
+	/* opacity: 1; */
+	/* transform: translate(0, 0) scale(1); */
 	pointer-events: auto;
 }
 

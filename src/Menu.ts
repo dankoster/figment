@@ -5,7 +5,12 @@ type ExtraClasses = string | string[]
 
 
 function styleToInt(value: string): number { return Number.parseInt(value.replaceAll('px', '')) }
-//function getTotal(style: CSSStyleDeclaration, properties: string[]) { return properties.reduce((total, property) => total + styleToInt(style[property]), 0) }
+function getTotal(style: CSSStyleDeclaration, properties: string[]) { 
+	return properties.reduce((total, property: any) => {
+		const newTotal = total + styleToInt(style[property])
+		console.log(property, style[property], `total: ${newTotal}`)
+		return newTotal}, 0) 
+}
 
 function AddExtraClasses(target: HTMLElement, extraClasses?: string | string[]) {
 	if (extraClasses) {
@@ -20,7 +25,7 @@ function AddExtraClasses(target: HTMLElement, extraClasses?: string | string[]) 
 
 export class FigmentMenu extends HTMLElement {
 
-	ul: HTMLUListElement
+	div: HTMLDivElement
 	items: MenuItem[]
 
 	constructor() {
@@ -28,8 +33,8 @@ export class FigmentMenu extends HTMLElement {
 
 		this.attachShadow({ mode: 'open' })
 
-		this.ul = document.createElement('ul')
-		this.ul.className = 'figment-menu'
+		this.div = document.createElement('div')
+		this.div.className = 'figment-menu'
 		this.items = []
 
 		// Apply external styles to the shadow dom
@@ -39,9 +44,7 @@ export class FigmentMenu extends HTMLElement {
 
 		// Attach the created elements to the shadow dom
 		this.shadowRoot?.appendChild(cssLink)
-		this.shadowRoot?.appendChild(this.ul)
-
-		//document.body.appendChild(this.ul)
+		this.shadowRoot?.appendChild(this.div)
 	}
 
 	static Create({ extraClasses }: { extraClasses: ExtraClasses }) {
@@ -62,31 +65,55 @@ export class FigmentMenu extends HTMLElement {
 	}
 
 	Show(x: number, y: number) {
-		if (this.ul) {
-			//there is some issue with computing width in the shadow dom...
-			//const ulWidth = getTotal(getComputedStyle(this.ul), ['width'])
-			//use maxWidth instead
-			const ulWidth = 400
-			const overflowX = (x + ulWidth) - window.innerWidth
-			if (overflowX > 0) x -= overflowX
+		if (this.div) {
+			this.div.classList.add('menu-show');
+			this.div.style.left = x + 'px';
+			this.div.style.top = y + 'px';
 
-			this.ul.style.left = x + 'px';
-			this.ul.style.top = y + 'px';
-			this.ul.classList.add('menu-show');
+			//calculate max height from all the item heights
+			// const children = Array.from(this.div.children)
+			// const heightOfAllChildren = children.reduce((sum, node) => sum += node.clientHeight, children[0].clientHeight);
+			// this.div.style.maxHeight = `${heightOfAllChildren}px`
+
+			//there is a race condition when computing position of elements in the shadow dom...
+			setTimeout(() => {
+				this.FixOverflow()
+			}, 5);
 		}
 	}
 
-	AddItem(item: MenuItem, container: HTMLElement) {
+	private FixOverflow() {
+		const computedStyle = getComputedStyle(this.div)
+		const top = getTotal(computedStyle, ['top'])
+		const left = getTotal(computedStyle, ['left'])
+		const right = getTotal(computedStyle, ['left', 'width']);
+		const bottom = this.div.offsetTop + this.div.offsetHeight;
+
+		const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+		const overflowX = right - document.documentElement.clientWidth - window.scrollX + scrollbarWidth;
+		const overflowY = bottom - window.innerHeight - window.scrollY;
+
+		console.log({top, bottom, left, right, overflowX, overflowY});
+
+		if (overflowX > 0) {
+			this.div.style.left = (left - overflowX) + 'px';
+		}
+		if (overflowY > 0) {
+			this.div.style.top = (top - overflowY) + 'px';
+		}
+	}
+
+	AddItem(item: MenuItem) {
 		this.items.push(item)
-		if (container) container.appendChild(item.li)
-		else this.ul.appendChild(item.li)
+		this.div.appendChild(item.div)
 	}
 
 	AddSeparator({ extraClasses }: { extraClasses?: ExtraClasses } = {}) {
 		let sep = document.createElement('li')
 		sep.className = 'menu-separator'
 		AddExtraClasses(sep, extraClasses)
-		this.ul.appendChild(sep)
+		this.div.appendChild(sep)
 	}
 
 	AddScrollingContainer({ extraClasses, maxHeight }: { extraClasses?: ExtraClasses, maxHeight?: string } = {}) {
@@ -94,7 +121,7 @@ export class FigmentMenu extends HTMLElement {
 		container.className = 'menu-scrolling-container'
 		if (maxHeight) container.style.maxHeight = maxHeight
 		AddExtraClasses(container, extraClasses)
-		this.ul.appendChild(container);
+		this.div.appendChild(container);
 		return container;
 	}
 
@@ -118,8 +145,8 @@ type MenuItemOptions = {
 export class MenuItem {
 
 	id?: string
-	li: HTMLLIElement
-	content: HTMLDivElement
+	div: HTMLDivElement
+	// content: HTMLDivElement
 	img?: HTMLImageElement
 	subMenu?: FigmentMenu
 	expando?: HTMLDivElement
@@ -139,14 +166,14 @@ export class MenuItem {
 		mouseLeave
 	}: MenuItemOptions) {
 		this.id = id
-		this.li = document.createElement('li')
-		this.li.classList.add('menu-item')
+		this.div = document.createElement('div')
+		this.div.classList.add('menu-item')
 
-		AddExtraClasses(this.li, extraClasses)
+		AddExtraClasses(this.div, extraClasses)
 
-		this.content = document.createElement('div')
-		this.content.className = 'menu-item-content menu-item-grid-component'
-		this.li.appendChild(this.content)
+		// this.content = document.createElement('div')
+		// this.content.className = 'menu-item-content menu-item-grid-component'
+		// this.div.appendChild(this.content)
 
 		let textSpan = document.createElement('span')
 		textSpan.className = 'menu-text'
@@ -164,20 +191,20 @@ export class MenuItem {
 			a.href = href;
 			a.target = '_blank';
 			a.classList.add('menu-btn');
-			this.content.appendChild(a);
+			this.div.appendChild(a);
 			a.appendChild(textSpan);
 		}
 		else
-			this.content.appendChild(textSpan)
+			this.div.appendChild(textSpan)
 
-		if (mouseEnter) this.li.addEventListener("mouseenter", mouseEnter)
-		if (mouseLeave) this.li.addEventListener("mouseleave", mouseLeave)
+		if (mouseEnter) this.div.addEventListener("mouseenter", mouseEnter)
+		if (mouseLeave) this.div.addEventListener("mouseleave", mouseLeave)
 
 		if (subtext) {
 			let subtextSpan = document.createElement('span')
 			subtextSpan.className = 'menu-subtext'
 			subtextSpan.textContent = subtext
-			this.content.appendChild(subtextSpan)
+			this.div.appendChild(subtextSpan)
 
 			if (onSubTextClick) {
 				subtextSpan.classList.add('menu-keep-open')
@@ -194,7 +221,7 @@ export class MenuItem {
 		if (value) {
 			if (!this.img) {
 				this.img = document.createElement('img')
-				this.li.appendChild(this.img)
+				this.div.appendChild(this.img)
 				this.img.className = 'menu-image'
 			}
 			this.img.src = value ?? ''
@@ -209,7 +236,7 @@ export class MenuItem {
 	get SubMenu() {
 		if (!this.subMenu) {
 			this.subMenu = new FigmentMenu()
-			this.li.appendChild(this.subMenu.ul)
+			this.div.appendChild(this.subMenu.div)
 		}
 		return this.subMenu
 	}
@@ -224,12 +251,12 @@ export class MenuItem {
 			let label = document.createElement('label')
 			label.setAttribute('for', checkbox.id)
 			label.className = 'menu-item-grid-prefix lbl-toggle menu-keep-open'
-			this.li.prepend(label)
-			this.li.prepend(checkbox)
+			this.div.prepend(label)
+			this.div.prepend(checkbox)
 
 			let content = document.createElement('div')
 			content.className = 'menu-item-grid-expando collapsible-content menu-keep-open'
-			this.li.appendChild(content)
+			this.div.appendChild(content)
 			let inner = document.createElement('div')
 			inner.className = 'content-inner'
 			content.appendChild(inner)

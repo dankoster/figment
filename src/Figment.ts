@@ -59,7 +59,7 @@ function handleMouseMoved(e: MouseEvent) {
 		const renderTree = frozenRenderTree || getRenderTree(element)
 
 		FigmentOutline.highlightElement({
-			node: renderTree[0].stateNode,
+			node: renderTree[0]?.stateNode,
 			label: renderTree[0]?.type,
 			onClick: (e: MouseEvent) => { onOverlayClick(e, renderTree) }
 		})
@@ -74,7 +74,12 @@ function onOverlayClick (e: MouseEvent, renderTree: RenderTreeNode[]) {
 
 	//create a menu UI from this tree
 	let menu = renderMenu({renderTree, figmaData: undefined})
-	menu.Show(e.pageX, e.pageY)
+	const target = e.target as HTMLElement
+	const x = (target?.parentElement?.offsetLeft ?? 0) + target.offsetLeft + target.offsetWidth
+	const y = (target?.parentElement?.offsetTop ?? 0) + target.clientHeight
+	menu.Show(x, y)
+
+	//detect when the menu should close
 	document.addEventListener('mouseup', onMouseUp, false)
 
 	//TODO: refactor figma stuff
@@ -97,11 +102,11 @@ function onMouseUp(e: MouseEvent) {
 	}
 }
 
-function renderMenu({renderTree, figmaData}: {renderTree: RenderTreeNode[], figmaData: any | undefined}) : FigmentMenu {
+function renderMenu({renderTree, figmaData}: {renderTree: RenderTreeNode[], figmaData?: any}) : FigmentMenu {
 	FigmentMenu.RemoveOld()
 	let menu = FigmentMenu.Create({extraClasses: 'menu-keep-open'}) as FigmentMenu
 
-	let container = menu.AddScrollingContainer({extraClasses: 'react-render-branch', maxHeight: undefined})
+	//let container = menu.AddScrollingContainer({extraClasses: 'react-render-branch', maxHeight: undefined})
 
 	renderTree.forEach((node) => {
 		const isDomElement = node.stateNode instanceof HTMLElement
@@ -121,18 +126,18 @@ function renderMenu({renderTree, figmaData}: {renderTree: RenderTreeNode[], figm
 				onClick: undefined
 			}))
 		})
-		menu.AddItem(item, container)
+		menu.AddItem(item)
 
-		const span = document.createElement('span')
-		span.innerText = node.kind
-		span.className = node.kind
-		item.AddExpandoItem(span)
+		// const span = document.createElement('span')
+		// span.innerText = node.kind
+		// span.className = node.kind
+		// item.AddExpandoItem(span)
 
-		Object.keys(node.fiber.memoizedProps).forEach(p => {
-			const span = document.createElement('span')
-			span.innerText = `${p}: ${node.fiber.memoizedProps[p]}`
-			item.AddExpandoItem(span)
-		})
+		// Object.keys(node.fiber.memoizedProps).forEach(p => {
+		// 	const span = document.createElement('span')
+		// 	span.innerText = `${p}: ${node.fiber.memoizedProps[p]}`
+		// 	item.AddExpandoItem(span)
+		// })
 	})
 
 	if (figmaData?.recordCount) {
