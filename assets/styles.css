@@ -26,18 +26,26 @@
 	color: #ffffff
 }
 
+.figment-menu-container {
+	z-index: 111111;
+	max-height: 26em;
+	position: absolute;
+	border-radius: 8px;
+	overflow: hidden;
+	box-shadow: 0px 5px 20px #000000a3;
+}
+
 .figment-menu {
 	cursor: default;
-	position: absolute;
-	padding: 2px;
-	margin: 0;
-	border-radius: 8px;
 	color: black;
 	background: white;
-	z-index: 111111;
-	box-shadow: 0px 5px 20px #000000a3;
 	/* opacity: 0; */
-	pointer-events: none;
+	/* pointer-events: none; */
+	overflow-y: scroll;
+	max-height: inherit;
+	margin: 0;
+	padding-block: 0.5em;
+	padding-inline: 0.25em;
 }
 
 .menu-item {
@@ -178,7 +186,7 @@ input[type="checkbox"].toggle {
 .menu-item:hover {
 	outline: 2px dashed darkgray;
 	outline-offset: -2px;
-	border-radius: 4px;
+	border-radius: 6px;
 }
 
 .menu-item.is-dom-element:hover {
@@ -342,12 +350,12 @@ a.menu-btn {
 	border-left-color: #fff;
 }
 
+/* position a sub-menu */
 .figment-menu .figment-menu {
 	top: 4px;
 	left: 99%;
 }
 
-.menu-show,
 .menu-item:hover>.figment-menu {
 	/* opacity: 1; */
 	/* transform: translate(0, 0) scale(1); */

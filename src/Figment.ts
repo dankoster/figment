@@ -1,5 +1,4 @@
 import FigmentOutline from './FigmentOutline.js'
-import Trace from './Trace.js'
 import { FigmentMenu, MenuItem } from './Menu.js'
 import ServiceWorkerApi, { SearchFigmaData, GetFigmaImageLinks } from './serviceWorkerApi.js'
 import { RenderTreeNode, getElementPath, getRenderTree } from "./elementFunctions.js"
@@ -9,13 +8,15 @@ import { RenderTreeNode, getElementPath, getRenderTree } from "./elementFunction
 // - handle mousemove and clicks
 // - show and hide overlays and menus
 
-//get the ID of the browser plugin
+//get the ID of the browser plugin (added by contentscript.js when the plugin
+// is initialized for the page)
 export const figmentId = document.head.getElementsByTagName('figment')[0].id 
 //console.log('Figment!', figmentId)
 
 const mouseMoveDetectionDelayMs = 50
 let mouseMoveDelayTimeout: number | undefined = undefined
 let frozenRenderTree: RenderTreeNode[] | undefined = undefined
+let menu: FigmentMenu | undefined = undefined
 
 //we're starting up, so connect to the backend
 // and ask for the current state of the settings
@@ -72,11 +73,31 @@ function onOverlayClick (e: MouseEvent, renderTree: RenderTreeNode[]) {
 	//save this tree so we can keep displaying it until the menu closes
 	frozenRenderTree = renderTree
 
+	if(menu) menu.Clear()
+	else menu = FigmentMenu.Create({extraClasses: 'menu-keep-open'}) as FigmentMenu
+
 	//create a menu UI from this tree
-	let menu = renderMenu({renderTree, figmaData: undefined})
+	renderTree.forEach(node => menu?.AddItem(
+		new MenuItem({
+			extraClasses: node.stateNode instanceof HTMLElement ? ['is-dom-element'] : undefined,
+			text: node.type,
+			textClass: node.kind,
+			textData: node.kind,
+			subtext: node.fileName,
+			onTextClick: undefined, //(e) => refreshFigmaNodes({name: node.type, menu}),
+			onSubTextClick: () => open(node.vsCodeUrl),
+			mouseEnter: ((e: MouseEvent) => FigmentOutline.highlightElement({
+				node: node.stateNode,
+				label: node.type,
+				onClick: undefined
+			}))
+		})
+	))
+
 	const target = e.target as HTMLElement
 	const x = (target?.parentElement?.offsetLeft ?? 0) + target.offsetLeft + target.offsetWidth
 	const y = (target?.parentElement?.offsetTop ?? 0) + target.clientHeight
+
 	menu.Show(x, y)
 
 	//detect when the menu should close
@@ -93,56 +114,13 @@ function onOverlayClick (e: MouseEvent, renderTree: RenderTreeNode[]) {
 }
 
 function onMouseUp(e: MouseEvent) {
-	const path = getElementPath(e.target)
+	if (menu) {
+		const path = getElementPath(e.target)
 
-	if (!path.some(node => node.classList?.contains('menu-keep-open'))) {
-		FigmentMenu.RemoveOld()
-		frozenRenderTree = undefined
-		document.removeEventListener('mouseup', onMouseUp)
+		if (!path.some(node => node.classList?.contains('menu-keep-open'))) {
+			menu.Clear()
+			frozenRenderTree = undefined
+			document.removeEventListener('mouseup', onMouseUp)
+		}
 	}
-}
-
-function renderMenu({renderTree, figmaData}: {renderTree: RenderTreeNode[], figmaData?: any}) : FigmentMenu {
-	FigmentMenu.RemoveOld()
-	let menu = FigmentMenu.Create({extraClasses: 'menu-keep-open'}) as FigmentMenu
-
-	//let container = menu.AddScrollingContainer({extraClasses: 'react-render-branch', maxHeight: undefined})
-
-	renderTree.forEach((node) => {
-		const isDomElement = node.stateNode instanceof HTMLElement
-		// const domElement = isDomElement ? node.stateNode : array.slice(0, index).reverse().find(x => x.stateNode instanceof HTMLElement).stateNode
-		// const shortFilePath = node.debugSource?.fileName?.substr(node.debugSource.fileName.lastIndexOf('/')+1)
-		const item = new MenuItem({ 
-			extraClasses: isDomElement ? ['is-dom-element'] : undefined,
-			text: node.type, 
-			textClass: node.kind,
-			textData: node.kind,
-			subtext: node.fileName, 
-			onTextClick: undefined, //(e) => refreshFigmaNodes({name: node.type, menu}),
-			onSubTextClick: () => open(node.vsCodeUrl),
-			mouseEnter: ((e: MouseEvent) => FigmentOutline.highlightElement({
-				node: node.stateNode,
-				label: node.type, 
-				onClick: undefined
-			}))
-		})
-		menu.AddItem(item)
-
-		// const span = document.createElement('span')
-		// span.innerText = node.kind
-		// span.className = node.kind
-		// item.AddExpandoItem(span)
-
-		// Object.keys(node.fiber.memoizedProps).forEach(p => {
-		// 	const span = document.createElement('span')
-		// 	span.innerText = `${p}: ${node.fiber.memoizedProps[p]}`
-		// 	item.AddExpandoItem(span)
-		// })
-	})
-
-	if (figmaData?.recordCount) {
-		renderFigmaMenuItems(figmaData, menu)
-	}
-
-	return menu
 }

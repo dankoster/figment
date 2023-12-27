@@ -1,5 +1,6 @@
 //inspired by https://codepen.io/ryanmorr/pen/JdOvYR
 import { figmentId } from './Figment.js'
+import Trace from './Trace.js'
 
 type ExtraClasses = string | string[]
 
@@ -8,7 +9,7 @@ function styleToInt(value: string): number { return Number.parseInt(value.replac
 function getTotal(style: CSSStyleDeclaration, properties: string[]) { 
 	return properties.reduce((total, property: any) => {
 		const newTotal = total + styleToInt(style[property])
-		console.log(property, style[property], `total: ${newTotal}`)
+		// console.log(property, style[property], `total: ${newTotal}`)
 		return newTotal}, 0) 
 }
 
@@ -25,104 +26,101 @@ function AddExtraClasses(target: HTMLElement, extraClasses?: string | string[]) 
 
 export class FigmentMenu extends HTMLElement {
 
-	div: HTMLDivElement
-	items: MenuItem[]
+	container?: HTMLDivElement
+	menu?: HTMLDivElement
+	items: MenuItem[] = []
+
+	//observer: MutationObserver
 
 	constructor() {
 		super();
 
 		this.attachShadow({ mode: 'open' })
 
-		this.div = document.createElement('div')
-		this.div.className = 'figment-menu'
-		this.items = []
-
 		// Apply external styles to the shadow dom
 		const cssLink = document.createElement('link')
 		cssLink.setAttribute('rel', 'stylesheet')
 		cssLink.setAttribute('href', `chrome-extension://${figmentId}/styles.css`)
-
-		// Attach the created elements to the shadow dom
 		this.shadowRoot?.appendChild(cssLink)
-		this.shadowRoot?.appendChild(this.div)
 	}
 
+	Clear() {
+		Trace('FigmentMenu.Clear')
+		this.container?.remove()
+		this.items = []
+	}
+	 
 	static Create({ extraClasses }: { extraClasses: ExtraClasses }) {
 		if (!customElements.get('figment-menu'))
 			customElements.define('figment-menu', FigmentMenu)
 
-		let menu = document.createElement('figment-menu')
+		let figmentMenu = document.createElement('figment-menu')
 
-		AddExtraClasses(menu, extraClasses)
-		document.body.appendChild(menu)
+		AddExtraClasses(figmentMenu, extraClasses)
+		document.body.appendChild(figmentMenu)
 
-		return menu
+		return figmentMenu
 	}
 
-	static RemoveOld() {
-		//remove old menu(s)
-		document.querySelectorAll('figment-menu').forEach(element => element.remove())
+	HeightOfChildren(): number {
+		//calculate max height from all the item heights
+		const children = Array.from(this.menu?.children ?? [])
+		const heightOfAllChildren = children.reduce((sum, node) => sum += node.clientHeight, children[0].clientHeight);
+		//this.div.style.maxHeight = `${heightOfAllChildren}px`
+		return heightOfAllChildren;
 	}
 
 	Show(x: number, y: number) {
-		if (this.div) {
-			this.div.classList.add('menu-show');
-			this.div.style.left = x + 'px';
-			this.div.style.top = y + 'px';
+		this.container = document.createElement('div')
+		this.container.className = 'figment-menu-container'
+		this.container.style.left = x + 'px'
+		this.container.style.top = y + 'px'
+		this.shadowRoot?.appendChild(this.container)
 
-			//calculate max height from all the item heights
-			// const children = Array.from(this.div.children)
-			// const heightOfAllChildren = children.reduce((sum, node) => sum += node.clientHeight, children[0].clientHeight);
-			// this.div.style.maxHeight = `${heightOfAllChildren}px`
+		this.menu = document.createElement('div')
+		this.menu.className = 'figment-menu'
+		this.items.forEach(item => this.menu?.appendChild(item.div))
+		this.container.appendChild(this.menu)
 
-			//there is a race condition when computing position of elements in the shadow dom...
-			setTimeout(() => {
-				this.FixOverflow()
-			}, 5);
-		}
-	}
-
-	private FixOverflow() {
-		const computedStyle = getComputedStyle(this.div)
+		const computedStyle = getComputedStyle(this.container)
 		const top = getTotal(computedStyle, ['top'])
 		const left = getTotal(computedStyle, ['left'])
 		const right = getTotal(computedStyle, ['left', 'width']);
-		const bottom = this.div.offsetTop + this.div.offsetHeight;
+		const bottom = this.container.offsetTop + this.container.offsetHeight;
 
 		const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
 
 		const overflowX = right - document.documentElement.clientWidth - window.scrollX + scrollbarWidth;
 		const overflowY = bottom - window.innerHeight - window.scrollY;
 
-		console.log({top, bottom, left, right, overflowX, overflowY});
-
 		if (overflowX > 0) {
-			this.div.style.left = (left - overflowX) + 'px';
+			console.log(`Fix overflow X: ${left} - ${overflowX} = ${left - overflowY}px`)
+			this.container.style.left = (left - overflowX) + 'px';
 		}
 		if (overflowY > 0) {
-			this.div.style.top = (top - overflowY) + 'px';
+			console.log(`Fix overflow Y: ${top} - ${overflowY} = ${top - overflowY}px`)
+			this.container.style.top = (top - overflowY) + 'px';
 		}
 	}
 
 	AddItem(item: MenuItem) {
 		this.items.push(item)
-		this.div.appendChild(item.div)
 	}
 
 	AddSeparator({ extraClasses }: { extraClasses?: ExtraClasses } = {}) {
 		let sep = document.createElement('li')
 		sep.className = 'menu-separator'
 		AddExtraClasses(sep, extraClasses)
-		this.div.appendChild(sep)
+		this.menu?.appendChild(sep)
 	}
 
 	AddScrollingContainer({ extraClasses, maxHeight }: { extraClasses?: ExtraClasses, maxHeight?: string } = {}) {
-		let container = document.createElement('div')
-		container.className = 'menu-scrolling-container'
-		if (maxHeight) container.style.maxHeight = maxHeight
-		AddExtraClasses(container, extraClasses)
-		this.div.appendChild(container);
-		return container;
+		let scrollingContainer = document.createElement('div')
+		scrollingContainer.className = 'menu-scrolling-container'
+		if (maxHeight) scrollingContainer.style.maxHeight = maxHeight
+		AddExtraClasses(scrollingContainer, extraClasses)
+		this.menu?.appendChild(scrollingContainer);
+		return scrollingContainer;
 	}
 
 }
@@ -236,7 +234,8 @@ export class MenuItem {
 	get SubMenu() {
 		if (!this.subMenu) {
 			this.subMenu = new FigmentMenu()
-			this.div.appendChild(this.subMenu.div)
+			if(!this.subMenu.menu) throw new Error('failed to create submenu')
+			this.div.appendChild(this.subMenu.menu)
 		}
 		return this.subMenu
 	}
