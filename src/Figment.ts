@@ -37,6 +37,8 @@ document.addEventListener('keyup', (e) => {
 function enableOverlay(enable: boolean) {
 	if (enable) {
 		document.addEventListener('mousemove', mouseMoved)
+		//crreate the menu elements to get the CSS pre-loaded
+		menu = FigmentMenu.Create({extraClasses: 'menu-keep-open'}) as FigmentMenu 
 	}
 	else {
 		document.removeEventListener('mousemove', mouseMoved)
