@@ -1,7 +1,7 @@
 import FigmentOutline from './FigmentOutline.js'
 import { FigmentMenu, MenuItem } from './Menu.js'
 import ServiceWorkerApi, { SearchFigmaData, GetFigmaImageLinks } from './serviceWorkerApi.js'
-import { RenderTreeNode, getElementPath, getRenderTree } from "./elementFunctions.js"
+import { RenderTreeNode, getElementPath, getReactRenderTree } from "./elementFunctions.js"
 
 //This code runs in the context of the page
 // - set up hotkeys
@@ -37,12 +37,13 @@ document.addEventListener('keyup', (e) => {
 function enableOverlay(enable: boolean) {
 	if (enable) {
 		document.addEventListener('mousemove', mouseMoved)
-		//crreate the menu elements to get the CSS pre-loaded
+		//create the menu elements to get the CSS pre-loaded
 		menu = FigmentMenu.Create({extraClasses: 'menu-keep-open'}) as FigmentMenu 
 	}
 	else {
 		document.removeEventListener('mousemove', mouseMoved)
 		FigmentOutline.removeHighlight()
+		FigmentMenu.removeMenu()
 	}
 }
 
@@ -59,7 +60,7 @@ function handleMouseMoved(e: MouseEvent) {
 	if(element?.localName?.includes("figment-")) return 
 
 	if (element) {
-		const renderTree = frozenRenderTree || getRenderTree(element)
+		const renderTree = frozenRenderTree || getReactRenderTree(element)
 
 		FigmentOutline.highlightElement({
 			node: renderTree[0]?.stateNode,

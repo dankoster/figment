@@ -1,6 +1,6 @@
 //inspired by https://codepen.io/ryanmorr/pen/JdOvYR
 import { figmentId } from './Figment.js'
-import Trace from './Trace.js'
+import { removeElementsByTagName } from './elementFunctions.js'
 
 type ExtraClasses = string | string[]
 
@@ -25,7 +25,6 @@ function AddExtraClasses(target: HTMLElement, extraClasses?: string | string[]) 
 }
 
 export class FigmentMenu extends HTMLElement {
-
 	container?: HTMLDivElement
 	menu?: HTMLDivElement
 	items: MenuItem[] = []
@@ -45,9 +44,12 @@ export class FigmentMenu extends HTMLElement {
 	}
 
 	Clear() {
-		Trace('FigmentMenu.Clear')
 		this.container?.remove()
 		this.items = []
+	}
+
+	static removeMenu() {
+		removeElementsByTagName('figment-menu')
 	}
 	 
 	static Create({ extraClasses }: { extraClasses: ExtraClasses }) {

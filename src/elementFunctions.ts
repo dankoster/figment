@@ -14,6 +14,11 @@ export function getElementPath(element: any) {
 	return path;
 }
 
+export function removeElementsByTagName(tagName: string) {
+	const elements = document.getElementsByTagName(tagName)
+	Array.from(elements).forEach(element => element.remove())
+}
+
 
 const tags: { [key: number]: string } = {
 	0: 'FunctionComponent',
@@ -99,7 +104,7 @@ export class RenderTreeNode {
 	}
 };
 
-export function getRenderTree(element: HTMLElement) {
+export function getReactRenderTree(element: HTMLElement) {
 
 	const path = getElementPath(element);
 	let fiber = FindReactFiber(path[0]);

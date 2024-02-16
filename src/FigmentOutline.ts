@@ -1,4 +1,5 @@
 import { figmentId } from './Figment.js'
+import { removeElementsByTagName } from './elementFunctions.js';
 
 export default class FigmentOutline extends HTMLElement {
 	
@@ -57,8 +58,7 @@ export default class FigmentOutline extends HTMLElement {
 	}
 
 	static removeHighlight() {
-		let overlay = document.querySelector('figment-outline')
-		if(overlay) overlay.remove()
+		removeElementsByTagName('figment-outline')
 	}
 
 	static highlightElement({node, label, onClick}: {node: HTMLElement, label: string, onClick?: (this: HTMLElement, ev: MouseEvent) => any}) {
