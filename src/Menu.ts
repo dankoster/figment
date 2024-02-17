@@ -5,12 +5,9 @@ import { removeElementsByTagName } from './elementFunctions.js'
 type ExtraClasses = string | string[]
 
 
-function styleToInt(value: string): number { return Number.parseInt(value.replaceAll('px', '')) }
+function stylePxToInt(value: string): number { return Number.parseInt(value.replaceAll('px', '')) }
 function getTotal(style: CSSStyleDeclaration, properties: string[]) { 
-	return properties.reduce((total, property: any) => {
-		const newTotal = total + styleToInt(style[property])
-		// console.log(property, style[property], `total: ${newTotal}`)
-		return newTotal}, 0) 
+	return properties.reduce((total, property: any) => total + stylePxToInt(style[property]), 0) 
 }
 
 function AddExtraClasses(target: HTMLElement, extraClasses?: string | string[]) {
@@ -28,8 +25,6 @@ export class FigmentMenu extends HTMLElement {
 	container?: HTMLDivElement
 	menu?: HTMLDivElement
 	items: MenuItem[] = []
-
-	//observer: MutationObserver
 
 	constructor() {
 		super();
@@ -64,12 +59,8 @@ export class FigmentMenu extends HTMLElement {
 		return figmentMenu
 	}
 
-	HeightOfChildren(): number {
-		//calculate max height from all the item heights
-		const children = Array.from(this.menu?.children ?? [])
-		const heightOfAllChildren = children.reduce((sum, node) => sum += node.clientHeight, children[0].clientHeight);
-		//this.div.style.maxHeight = `${heightOfAllChildren}px`
-		return heightOfAllChildren;
+	GetTotalClientHeight(elements: HTMLCollection): number {
+		return Array.from(elements ?? []).reduce((sum, node) => sum += node.clientHeight, 0);
 	}
 
 	Show(x: number, y: number) {
@@ -84,23 +75,35 @@ export class FigmentMenu extends HTMLElement {
 		this.items.forEach(item => this.menu?.appendChild(item.div))
 		this.container.appendChild(this.menu)
 
-		const computedStyle = getComputedStyle(this.container)
-		const top = getTotal(computedStyle, ['top'])
-		const left = getTotal(computedStyle, ['left'])
-		const right = getTotal(computedStyle, ['left', 'width']);
+		const computedContainerStyle = getComputedStyle(this.container)
+		const top = getTotal(computedContainerStyle, ['top'])
+		const left = getTotal(computedContainerStyle, ['left'])
+		const right = getTotal(computedContainerStyle, ['left', 'width']);
 		const bottom = this.container.offsetTop + this.container.offsetHeight;
+
+		const childrenHeight = this.GetTotalClientHeight(this.menu?.children)
+		const lastChildHeight = this.menu?.children[this.menu.children.length - 1].clientHeight
+		const menuHeight = stylePxToInt(getComputedStyle(this.menu).height)
+
+		//allow a specified number of children to scroll, 
+		// but expand the menu max-height if there are fewer than that
+		const allowableOverflow = lastChildHeight * 3
+		const overflowHeight = childrenHeight - menuHeight
+		if(overflowHeight < allowableOverflow) {
+			this.menu.style.maxHeight = childrenHeight + 'px'
+		}
 
 		const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
 
 		const overflowX = right - document.documentElement.clientWidth - window.scrollX + scrollbarWidth;
-		const overflowY = bottom - window.innerHeight - window.scrollY;
+		const overflowY = bottom - document.documentElement.clientHeight - window.scrollY + (2 * scrollbarWidth);
 
 		if (overflowX > 0) {
-			console.log(`Fix overflow X: ${left} - ${overflowX} = ${left - overflowY}px`)
+			//console.log(`Fix overflow X: ${left} - ${overflowX} = ${left - overflowY}px`)
 			this.container.style.left = (left - overflowX) + 'px';
 		}
 		if (overflowY > 0) {
-			console.log(`Fix overflow Y: ${top} - ${overflowY} = ${top - overflowY}px`)
+			//console.log(`Fix overflow Y: ${top} - ${overflowY} = ${top - overflowY}px`)
 			this.container.style.top = (top - overflowY) + 'px';
 		}
 	}
