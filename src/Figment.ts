@@ -1,6 +1,5 @@
 import FigmentOutline from './FigmentOutline.js'
 import { FigmentMenu, MenuItem } from './Menu.js'
-import ServiceWorkerApi, { SearchFigmaData, GetFigmaImageLinks } from './serviceWorkerApi.js'
 import { RenderTreeNode, getElementPath, getReactRenderTree } from "./elementFunctions.js"
 
 //This code runs in the context of the page
@@ -18,26 +17,29 @@ let mouseMoveDelayTimeout: number | undefined = undefined
 let frozenRenderTree: RenderTreeNode[] | undefined = undefined
 let menu: FigmentMenu | undefined = undefined
 
-//we're starting up, so connect to the backend
-// and ask for the current state of the settings
-ServiceWorkerApi.connect({runtimeId: figmentId, onUnrequestedMessage: handleMessageFromServiceWorker})
-ServiceWorkerApi.requestSettings().then(handleMessageFromServiceWorker)
-
-function handleMessageFromServiceWorker(message: any) {
-	enableOverlay(message?.settings?.enabled)
+let enabled = false;
+function toggleEnabled() {
+	enabled = !enabled
+	enableOverlay(enabled)
 }
+
+//this event is sent when clicking on the toolbar button
+document.addEventListener('toggleFigmentOverlay', (e) => toggleEnabled())
 
 //hotkey: [alt/option + f] to toggle enabled state
 document.addEventListener('keyup', (e) => {
 	if(e.altKey && e.code === 'KeyF') {
-		ServiceWorkerApi.toggleEnabled()
+		toggleEnabled()
 	}
 })
 
-function enableOverlay(enable: boolean) {
+export function enableOverlay(enable: boolean) {
 	if (enable) {
 		document.addEventListener('mousemove', mouseMoved)
-		//create the menu elements to get the CSS pre-loaded
+
+		//create the menu elements to get the CSS pre-loaded before we need it
+		// (this avoids a race condition later when using the menu for the first time, 
+		// which would cause the css to be loaded too late for that first use)
 		menu = FigmentMenu.Create({extraClasses: 'menu-keep-open'}) as FigmentMenu 
 	}
 	else {
@@ -57,7 +59,7 @@ function mouseMoved(e: MouseEvent)  {
 
 function handleMouseMoved(e: MouseEvent) {
 	const element = e?.target as HTMLElement
-	if(element?.localName?.includes("figment-")) return 
+	if(element?.localName?.includes("figment-")) return //ignore this element
 
 	if (element) {
 		const renderTree = frozenRenderTree || getReactRenderTree(element)
@@ -67,7 +69,7 @@ function handleMouseMoved(e: MouseEvent) {
 			label: renderTree[0]?.type,
 			onClick: (e: MouseEvent) => { onOverlayClick(e, renderTree) }
 		})
-	} else throw `element is ${element}`
+	} else throw new Error(`element is ${element}`)
 }
 
 function onOverlayClick (e: MouseEvent, renderTree: RenderTreeNode[]) {
@@ -87,7 +89,7 @@ function onOverlayClick (e: MouseEvent, renderTree: RenderTreeNode[]) {
 			textClass: node.kind,
 			textData: node.kind,
 			subtext: node.fileName,
-			onTextClick: undefined, //(e) => refreshFigmaNodes({name: node.type, menu}),
+			onTextClick: undefined,
 			onSubTextClick: () => open(node.vsCodeUrl),
 			mouseEnter: ((e: MouseEvent) => FigmentOutline.highlightElement({
 				node: node.stateNode,
@@ -97,23 +99,10 @@ function onOverlayClick (e: MouseEvent, renderTree: RenderTreeNode[]) {
 		})
 	))
 
-	const target = e.target as HTMLElement
-	const x = (target?.parentElement?.offsetLeft ?? 0) + target.offsetLeft + target.offsetWidth
-	const y = (target?.parentElement?.offsetTop ?? 0) + target.clientHeight
-
-	menu.Show(x, y)
+	menu.ShowFor(e.target as HTMLElement)
 
 	//detect when the menu should close
 	document.addEventListener('mouseup', onMouseUp, false)
-
-	//TODO: refactor figma stuff
-
-	// let comp = renderTree[0]
-	// SearchFigmaData({ name: comp.debugOwnerName, id: comp.figmaId }).then((figmaData) => {
-	// 	let menu = renderMenu({renderTree, figmaData})
-	// 	menu.Show(e.pageX, e.pageY)
-	// 	document.addEventListener('mouseup', onMouseUp, false)
-	// })
 }
 
 function onMouseUp(e: MouseEvent) {

@@ -63,6 +63,13 @@ export class FigmentMenu extends HTMLElement {
 		return Array.from(elements ?? []).reduce((sum, node) => sum += node.clientHeight, 0);
 	}
 
+	ShowFor(target: HTMLElement) {
+		if(!target) throw new Error('invalid target:', target)
+		const x = (target?.parentElement?.offsetLeft ?? 0) + target.offsetLeft + target.offsetWidth
+		const y = (target?.parentElement?.offsetTop ?? 0) + target.clientHeight
+		this.Show(x, y)
+	}
+
 	Show(x: number, y: number) {
 		this.container = document.createElement('div')
 		this.container.className = 'figment-menu-container'

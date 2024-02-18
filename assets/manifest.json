@@ -1,10 +1,10 @@
 {
 	"name": "Figment",
-	"description": "Inspect React components and get to their Figma designs faster!",
+	"description": "Quickly find the code for rendered react components!",
 	"version": "1.0",
 	"manifest_version": 3,
 	"action": {
-		"default_popup": "popup.html"
+		"default_title": "Click to toggle on/off"
 	},
 	"background": {
 		"service_worker": "serviceWorker.js",
@@ -12,15 +12,13 @@
 	},	
 	"content_scripts": [{
         "js": ["contentscript.js"],
-        "matches": ["http://localhost/*", "https://localhost/*"]
+        "matches": ["http://*/*", "https://*/*"]
     }],
 	"web_accessible_resources": [
 		{
 			"resources": [ 
 				"Figment.js", 
 				"elementFunctions.js",
-				"figmaFunctions.js",
-				"serviceWorkerApi.js",
 				"Menu.js",
 				"FigmentOutline.js",
 				"Trace.js",
@@ -31,7 +29,7 @@
 	],
 	"externally_connectable": {
 		"matches": [
-			"http://localhost/*"
+			"http://*/*"
 		]
 	},
 	"permissions": [
@@ -41,7 +39,7 @@
 		"unlimitedStorage"
 	],
 	"host_permissions": [
-		"http://localhost/*",
-		"https://localhost/*"
+		"http://*/*",
+		"https://*/*"
 	]
 }
