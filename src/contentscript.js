@@ -16,7 +16,7 @@ s.src = chrome.runtime.getURL('Figment.js');
 s.setAttribute('type', 'module');
 
 //cleanup 
-s.onload = function() {
+s.onload = function () {
     this.remove();
 };
 (document.head || document.documentElement).appendChild(s);

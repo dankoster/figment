@@ -4,7 +4,7 @@
 	"version": "1.0",
 	"manifest_version": 3,
 	"action": {
-		"default_title": "Click to toggle on/off"
+		"default_title": "Click to toggle ON/OFF"
 	},
 	"background": {
 		"service_worker": "serviceWorker.js",
@@ -12,7 +12,7 @@
 	},	
 	"content_scripts": [{
         "js": ["contentscript.js"],
-        "matches": ["http://*/*", "https://*/*"]
+        "matches": [ "<all_urls>" ]
     }],
 	"web_accessible_resources": [
 		{
@@ -28,9 +28,7 @@
 		}
 	],
 	"externally_connectable": {
-		"matches": [
-			"http://*/*"
-		]
+		"matches": [ "<all_urls>" ]
 	},
 	"permissions": [
 		"storage",
@@ -38,8 +36,5 @@
 		"scripting",
 		"unlimitedStorage"
 	],
-	"host_permissions": [
-		"http://*/*",
-		"https://*/*"
-	]
+	"host_permissions": [ "<all_urls>" ]
 }
