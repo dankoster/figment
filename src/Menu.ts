@@ -156,7 +156,6 @@ export class MenuItem {
 
 	id?: string
 	div: HTMLDivElement
-	// content: HTMLDivElement
 	img?: HTMLImageElement
 	subMenu?: FigmentMenu
 	expando?: HTMLDivElement
@@ -180,10 +179,6 @@ export class MenuItem {
 		this.div.classList.add('menu-item')
 
 		AddExtraClasses(this.div, extraClasses)
-
-		// this.content = document.createElement('div')
-		// this.content.className = 'menu-item-content menu-item-grid-component'
-		// this.div.appendChild(this.content)
 
 		let textSpan = document.createElement('span')
 		textSpan.className = 'menu-text'
@@ -280,9 +275,4 @@ export class MenuItem {
 	AddExpandoItem(item: HTMLElement) {
 		this.Expando.appendChild(item)
 	}
-
-	// AddSubMenuItem(item: MenuItem) {
-	// 	this.SubMenu.AddItem(item)
-	// 	this.li.className = 'menu-item menu-item-submenu'
-	// }
 }

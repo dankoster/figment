@@ -36,12 +36,6 @@ export default class FigmentOutline extends HTMLElement {
 		this.overlay.appendChild(this.label)
 	}
 
-	// setAttributes(attributes: {[key: string]:any}) {
-	// 	for(const attribute in attributes) {
-	// 		this.overlay.setAttribute(attribute, attributes[attribute])
-	// 	}
-	// }
-
 	setStyles(styles: {[key in keyof CSSStyleDeclaration]?:any}) {
 		for(const style in styles) {
 			this.overlay.style[style] = styles[style]
