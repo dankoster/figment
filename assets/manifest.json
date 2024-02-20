@@ -22,7 +22,7 @@
 				"contentscript.js"
 			],
 			"matches": [
-				"<all_urls>"
+				"http://localhost/*"
 			]
 		}
 	],
@@ -37,19 +37,16 @@
 				"styles.css"
 			],
 			"matches": [
-				"<all_urls>"
+				"http://localhost/*"
 			]
 		}
 	],
 	"externally_connectable": {
 		"matches": [
-			"<all_urls>"
+			"http://localhost/*"
 		]
 	},
 	"permissions": [
 		"scripting"
-	],
-	"host_permissions": [
-		"<all_urls>"
 	]
 }
