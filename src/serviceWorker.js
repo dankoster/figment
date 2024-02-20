@@ -6,10 +6,8 @@ chrome.action.onClicked.addListener((tab) => {
 			target: { tabId: tab.id },
 			func: () => document.dispatchEvent(new Event('toggleFigmentOverlay'))
 		})
-		.then((e) => {
-			console.log("chrome.action.onClicked", e)
-		})
-});
+	}
+);
 
 //https://developer.chrome.com/docs/extensions/develop/concepts/messaging 
 chrome.runtime.onMessageExternal.addListener(
