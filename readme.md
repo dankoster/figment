@@ -7,7 +7,9 @@ Just like the React dev tools, this tool looks at the debug data embedded in a d
 
 **Most importantly, it lets you inspect the UI to quickly figure out what code is rendering what you see. You can just click the provided link to open the source in VS Code.** 
 
-[![demo](https://img.youtube.com/vi/m-nntBWoyMg/0.jpg)](https://www.youtube.com/watch?v=m-nntBWoyMg)
+
+https://github.com/dankoster/figment/assets/9935523/d72555a0-1849-4c75-8424-01de6b23144f
+
 
 Unlike the official React Dev Tools, this tool renders elements on the same page it's inspecting. I'm using [custom components](https://developer.mozilla.org/en-US/docs/Web/API/Web_components) avoid conflicts and provide isolation between the page and the components rendered by the tool. Mostly this means making use of the [shadow dom](https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_shadow_DOM) to isolate the extension CSS from the page CSS.
 
