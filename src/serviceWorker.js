@@ -12,7 +12,6 @@ chrome.action.onClicked.addListener((tab) => {
 //https://developer.chrome.com/docs/extensions/develop/concepts/messaging 
 chrome.runtime.onMessageExternal.addListener(
 	function (request, sender, sendResponse) {
-		console.log(sender, request)
 		if (request.message.action === 'toggle_enabled') {
 			chrome.action.setBadgeText({ tabId: sender.tab.id, text: request.message.value ? "ON" : "OFF" });
 			sendResponse({ success: true })
