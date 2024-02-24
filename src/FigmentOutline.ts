@@ -55,21 +55,24 @@ export default class FigmentOutline extends HTMLElement {
 		removeElementsByTagName('figment-outline')
 	}
 
+	static Create() {
+		let overlay = document.querySelector('figment-outline') as FigmentOutline
+
+		if (!overlay) {
+			// Define the outline element
+			if (!customElements.get('figment-outline'))
+				customElements.define('figment-outline', FigmentOutline);
+
+			overlay = document.createElement('figment-outline') as FigmentOutline
+			document.body.appendChild(overlay)
+		}
+
+		return overlay
+	}
+
 	static highlightElement({node, label, onClick}: {node: HTMLElement, label: string, onClick?: (this: HTMLElement, ev: MouseEvent) => any}) {
-
 		if (node && node.getBoundingClientRect) {
-	
-			let overlay = document.querySelector('figment-outline') as FigmentOutline
-	
-			if(!overlay) {
-				// Define the outline element
-				if (!customElements.get('figment-outline'))
-					customElements.define('figment-outline', FigmentOutline);
-
-				overlay = document.createElement('figment-outline') as FigmentOutline
-				document.body.appendChild(overlay)
-			}
-	
+			let overlay = FigmentOutline.Create()	
 			overlay.setLabel({label, onClick})
 			overlay.setLocation(node.getBoundingClientRect())
 		}

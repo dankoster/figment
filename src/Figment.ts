@@ -32,6 +32,7 @@ const mouseMoveDetectionDelayMs = 50
 let mouseMoveDelayTimeout: number | undefined = undefined
 let frozenRenderTree: RenderTreeNode[] | undefined = undefined
 let menu: FigmentMenu | undefined = undefined
+let outline: FigmentOutline | undefined = undefined
 
 let enabled = false;
 function toggleEnabled() {
@@ -53,10 +54,11 @@ export function enableOverlay(enable: boolean) {
 	if (enable) {
 		document.addEventListener('mousemove', mouseMoved)
 
-		//create the menu elements to get the CSS pre-loaded before we need it
-		// (this avoids a race condition later when using the menu for the first time, 
+		//create the menu and outline elements to get the CSS pre-loaded before we need it
+		// (this avoids a race condition later when using them for the first time, 
 		// which would cause the css to be loaded too late for that first use)
 		menu = FigmentMenu.Create({ extraClasses: 'menu-keep-open' }) as FigmentMenu
+		outline = FigmentOutline.Create()
 	}
 	else {
 		document.removeEventListener('mousemove', mouseMoved)
