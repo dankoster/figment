@@ -1,7 +1,7 @@
 {
 	"name": "Figment",
 	"description": "Quickly find the code for rendered React components!",
-	"version": "0.5.2",
+	"version": "0.5.3",
 	"manifest_version": 3,
 	"icons": {
 		"16": "F.png",
