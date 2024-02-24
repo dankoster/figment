@@ -43,7 +43,8 @@
 	padding-block: 0.5em;
 	padding-inline: 0.25em;
 	max-height: 10em;
-    overflow-y: auto;
+	overflow-y: auto;
+	color-scheme: auto;
 }
 
 .menu-item {
