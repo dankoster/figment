@@ -1,3 +1,4 @@
+import { handleToolbarClicked, setToolbarEnabledState } from './Bifrost.js'
 import FigmentOutline from './FigmentOutline.js'
 import { FigmentMenu, MenuItem } from './Menu.js'
 import { RenderTreeNode, getElementPath, getReactRenderTree } from "./elementFunctions.js"
@@ -9,24 +10,6 @@ import { RenderTreeNode, getElementPath, getReactRenderTree } from "./elementFun
 
 //get the ID of the browser plugin (added by contentscript.js when the plugin is initialized for the page)
 export const figmentId = document.head.getElementsByTagName('figment')[0].id
-
-type FigmentMessage = {
-	action: "toggle_enabled",
-	value: boolean
-}
-type FigmentResponse = {
-	success: boolean,
-	response?: string
-}
-
-function sendMessageToServiceWorker(message: FigmentMessage) {
-	//@ts-ignore
-	chrome?.runtime?.sendMessage && chrome.runtime.sendMessage(figmentId, { message },
-		function (response: FigmentResponse) {
-			if (!response.success)
-				console.error(response);
-		});
-}
 
 const mouseMoveDetectionDelayMs = 50
 let mouseMoveDelayTimeout: number | undefined = undefined
@@ -41,7 +24,8 @@ function toggleEnabled() {
 }
 
 //this event is sent when clicking on the toolbar button
-document.addEventListener('toggleFigmentOverlay', (e) => toggleEnabled())
+//document.addEventListener('toggleFigmentOverlay', (e) => toggleEnabled())
+handleToolbarClicked(toggleEnabled)
 
 //hotkey: [alt/option + f] to toggle enabled state
 document.addEventListener('keyup', (e) => {
@@ -65,10 +49,8 @@ export function enableOverlay(enable: boolean) {
 		FigmentOutline.removeHighlight()
 		FigmentMenu.removeMenu()
 	}
-	sendMessageToServiceWorker({
-		action: 'toggle_enabled',
-		value: enable
-	})
+
+	setToolbarEnabledState(figmentId, enable)
 }
 
 function mouseMoved(e: MouseEvent) {

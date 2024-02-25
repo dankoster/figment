@@ -30,6 +30,7 @@
 		{
 			"resources": [
 				"Figment.js",
+				"Bifrost.js",
 				"elementFunctions.js",
 				"Menu.js",
 				"FigmentOutline.js",
@@ -43,7 +44,7 @@
 	],
 	"externally_connectable": {
 		"matches": [
-			"*://localhost/*"
+			"http://localhost/*"
 		]
 	},
 	"permissions": [
