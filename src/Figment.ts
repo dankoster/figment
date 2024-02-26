@@ -1,4 +1,4 @@
-import { handleToolbarClicked, setToolbarEnabledState } from './Bifrost.js'
+import { handleExtensionAction, setToolbarEnabledState } from './Bifrost.js'
 import FigmentOutline from './FigmentOutline.js'
 import { FigmentMenu, MenuItem } from './Menu.js'
 import { RenderTreeNode, getElementPath, getReactRenderTree } from "./elementFunctions.js"
@@ -23,16 +23,8 @@ function toggleEnabled() {
 	enableOverlay(enabled)
 }
 
-//this event is sent when clicking on the toolbar button
-//document.addEventListener('toggleFigmentOverlay', (e) => toggleEnabled())
-handleToolbarClicked(toggleEnabled)
-
-//hotkey: [alt/option + f] to toggle enabled state
-document.addEventListener('keyup', (e) => {
-	if (e.altKey && e.code === 'KeyF') {
-		toggleEnabled()
-	}
-})
+//this event is sent when clicking on the toolbar button or using the configured keyboard shortcut
+handleExtensionAction(toggleEnabled)
 
 export function enableOverlay(enable: boolean) {
 	if (enable) {

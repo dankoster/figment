@@ -42,7 +42,7 @@ We're keeping it simple here. There are no dependencies except for [git](https:/
 
 1) Clone the repo locally: `git clone https://github.com/dankoster/figment.git`
 1) Navigate to the folder that was created by git: `cd figment`
-1) run the terminal command: `mkdir -p dist && cp -rv ./assets/* ./dist && tsc` 
+1) Run the terminal command: `mkdir -p dist && cp -rv ./assets/* ./dist && tsc` 
    * `mkdir -p dist` makes the dist folder
    * `cp -rv ./assets/* ./dist` verbosely copies the contents of the assets folder into dist
    * `tsc` compiles the typescript (or use `tsc -w` to watch for changes)
@@ -52,3 +52,5 @@ We're keeping it simple here. There are no dependencies except for [git](https:/
 1) Choose the `figment/dist` folder
 1) Find the figment extension in your browser extensions toolbar and pin it
 1) Have fun hacking!
+   * Use `tsc -w` to watch for changes while working
+   * Use `cp -rv ./assets/* ./dist` to copy asset files into dist

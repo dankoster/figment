@@ -3,8 +3,8 @@
 //https://developer.chrome.com/docs/extensions/reference/api/action
 
 //communicate serviceWorker events to the injected content script
-export const sendToolbarClicked = () => document.dispatchEvent(new Event('TOOLBAR_CLICKED'))
-export const handleToolbarClicked = (handler: ()=>void) => document.addEventListener('TOOLBAR_CLICKED', (e) => handler())
+export const dispatchExtensionAction = () => document.dispatchEvent(new Event('TOOLBAR_CLICKED'))
+export const handleExtensionAction = (handler: ()=>void) => document.addEventListener('TOOLBAR_CLICKED', (e) => handler())
 
 type FigmentMessageAction = "toggle_enabled"
 
