@@ -104,7 +104,14 @@ export class RenderTreeNode {
 	}
 };
 
+const cache: {
+	element?: HTMLElement,
+	tree?: RenderTreeNode[],
+} = {}
+
 export function getReactRenderTree(element: HTMLElement) {
+
+	if(cache.element === element && cache.tree) return cache.tree
 
 	const path = getElementPath(element);
 	let fiber = FindReactFiber(path[0]);
@@ -132,6 +139,10 @@ export function getReactRenderTree(element: HTMLElement) {
 	let normalized = ft.map(f => new RenderTreeNode(f));
 
 	const tree = normalized.filter(f => f.type);
+
+	cache.element = element
+	cache.tree = tree
+
 	return tree;
 }
 

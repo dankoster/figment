@@ -49,7 +49,6 @@ function mouseMoved(e: MouseEvent) {
 	if (mouseMoveDelayTimeout) clearTimeout(mouseMoveDelayTimeout)
 	mouseMoveDelayTimeout = setTimeout(() => {
 		handleMouseMoved(e)
-
 	}, mouseMoveDetectionDelayMs)
 }
 
@@ -107,6 +106,7 @@ function onMouseUp(e: MouseEvent) {
 	if (menu) {
 		const path = getElementPath(e.target)
 
+		//don't close the menu when clicking on it
 		if (!path.some(node => node.classList?.contains('menu-keep-open'))) {
 			menu.Clear()
 			frozenRenderTree = undefined
