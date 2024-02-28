@@ -10,6 +10,11 @@
 }
 
 .figment-outline-label {
+	font-family: system-ui;
+    font-size: medium;
+	line-height: 1.4;
+    font-weight: 600;
+
 	cursor: pointer;
 	pointer-events: all;
 	content: attr(figment);
@@ -21,7 +26,6 @@
 	padding-right: 5px;
 	border-bottom-left-radius: 5px;
 	border-top-right-radius: 5px;
-	font-size: 13px;
 	z-index: 1;
 	color: #ffffff
 }
@@ -35,6 +39,9 @@
 }
 
 .figment-menu {
+	font-family: system-ui;
+    font-size: medium;
+	line-height: normal;
 	cursor: default;
 	color: black;
 	background: white;
