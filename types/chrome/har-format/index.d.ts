@@ -1,6 +1,6 @@
-import { Entry, Log } from "har-format";
+// import { Entry, Log } from "har-format";
 
-declare global {
-    export type HARFormatEntry = Entry;
-    export type HARFormatLog = Log;
-}
+// declare global {
+//     export type HARFormatEntry = Entry;
+//     export type HARFormatLog = Log;
+// }

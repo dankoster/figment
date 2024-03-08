@@ -2499,24 +2499,24 @@ declare namespace chrome.devtools.inspectedWindow {
  */
 declare namespace chrome.devtools.network {
     /** Represents a HAR entry for a specific finished request. */
-    export interface HAREntry extends HARFormatEntry {}
+    // export interface HAREntry extends HARFormatEntry {}
     /** Represents a HAR log that contains all known network requests. */
-    export interface HARLog extends HARFormatLog {}
+    // export interface HARLog extends HARFormatLog {}
     /** Represents a network request for a document resource (script, image and so on). See HAR Specification for reference. */
-    export interface Request extends chrome.devtools.network.HAREntry {
-        /**
-         * Returns content of the response body.
-         * @param callback A function that receives the response body when the request completes.
-         */
-        getContent(
-            callback: (
-                /** Content of the response body (potentially encoded) */
-                content: string,
-                /** Empty if content is not encoded, encoding name otherwise. Currently, only base64 is supported */
-                encoding: string,
-            ) => void,
-        ): void;
-    }
+    // export interface Request extends chrome.devtools.network.HAREntry {
+    //     /**
+    //      * Returns content of the response body.
+    //      * @param callback A function that receives the response body when the request completes.
+    //      */
+    //     getContent(
+    //         callback: (
+    //             /** Content of the response body (potentially encoded) */
+    //             content: string,
+    //             /** Empty if content is not encoded, encoding name otherwise. Currently, only base64 is supported */
+    //             encoding: string,
+    //         ) => void,
+    //     ): void;
+    // }
 
     export interface RequestFinishedEvent extends chrome.events.Event<(request: Request) => void> {}
 
@@ -2527,7 +2527,7 @@ declare namespace chrome.devtools.network {
      * @param callback A function that receives the HAR log when the request completes.
      * Parameter harLog: A HAR log. See HAR specification for details.
      */
-    export function getHAR(callback: (harLog: HARLog) => void): void;
+    // export function getHAR(callback: (harLog: HARLog) => void): void;
 
     /** Fired when a network request is finished and all request data are available. */
     export var onRequestFinished: RequestFinishedEvent;
