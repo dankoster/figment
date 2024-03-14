@@ -13,7 +13,7 @@ import { GetFigmaDocument, GetFigmaImages } from './figmaApi.js'
 
 //TODO: promot the user for a figma personal access token (with instructions!!!)
 //@ts-ignore
-import { userToken } from "../../.env/figmaToken.js"
+import { userToken } from "../figma/.env/figmaToken.js"
 //figmaToken.js
 //export const userToken = '<paste personal access token here>'
 
@@ -42,6 +42,7 @@ async function overlayImageOnCurTab(imgSrc: string) {
 			args: ["overlay_image", imgSrc]
 		})
 	}
+	else console.warn('overlayImageOnCurTab', 'could not get current tab')
 }
 
 const handleUrl: sidePanelUrlHandler = function (url: URL) {
