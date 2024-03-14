@@ -1,4 +1,5 @@
-import { handleExtensionAction, setToolbarEnabledState } from './Bifrost.js'
+import { handleExtensionEvent, setToolbarEnabledState } from './Bifrost.js'
+import FigmentDragable from './FigmentDragable.js'
 import FigmentOutline from './FigmentOutline.js'
 import { FigmentMenu, MenuItem } from './Menu.js'
 import { RenderTreeNode, getElementPath, getReactRenderTree } from "./elementFunctions.js"
@@ -16,6 +17,7 @@ let mouseMoveDelayTimeout: number | undefined = undefined
 let frozenRenderTree: RenderTreeNode[] | undefined = undefined
 let menu: FigmentMenu | undefined = undefined
 let outline: FigmentOutline | undefined = undefined
+let dragable: FigmentDragable | undefined = undefined
 
 let enabled = false;
 function toggleEnabled() {
@@ -23,10 +25,17 @@ function toggleEnabled() {
 	enableOverlay(enabled)
 }
 
-//this event is sent when clicking on the toolbar button or using the configured keyboard shortcut
-handleExtensionAction(toggleEnabled)
+function handleOverlayImageEvent (e: CustomEventInit) {
+	console.log(e.detail)
+	if(!dragable) dragable = FigmentDragable.Create()
+	dragable?.show(new DOMRect(100, 100, 300), e.detail)
+}
 
-export function enableOverlay(enable: boolean) {
+//this event is sent when clicking on the toolbar button or using the configured keyboard shortcut
+handleExtensionEvent("toggle_enabled", toggleEnabled)
+handleExtensionEvent("overlay_image", handleOverlayImageEvent)
+
+function enableOverlay(enable: boolean) {
 	if (enable) {
 		document.addEventListener('mousemove', mouseMoved)
 
@@ -35,6 +44,7 @@ export function enableOverlay(enable: boolean) {
 		// which would cause the css to be loaded too late for that first use)
 		menu = FigmentMenu.Create({ extraClasses: 'menu-keep-open' }) as FigmentMenu
 		outline = FigmentOutline.Create()
+		dragable = FigmentDragable.Create()
 	}
 	else {
 		document.removeEventListener('mousemove', mouseMoved)
@@ -84,9 +94,6 @@ function onOverlayClick(e: MouseEvent, renderTree: RenderTreeNode[]) {
 			textClass: node.kind,
 			textData: node.kind,
 			subtext: node.fileName,
-			// onTextClick: () => { 
-			// 	console.log(node.stateNode)
-			// },
 			onSubTextClick: () => open(node.vsCodeUrl),
 			mouseEnter: ((e: MouseEvent) => FigmentOutline.highlightElement({
 				node: node.stateNode,

@@ -147,7 +147,7 @@ type MenuItemOptions = {
 	href?: string,
 	extraClasses?: ExtraClasses,
 	imageSrc?: string,
-	onSubTextClick: (this: HTMLSpanElement, ev: MouseEvent) => any,
+	onSubTextClick?: (this: HTMLSpanElement, ev: MouseEvent) => any,
 	mouseEnter: (this: HTMLSpanElement, ev: MouseEvent) => any,
 	mouseLeave?: (this: HTMLSpanElement, ev: MouseEvent) => any,
 }

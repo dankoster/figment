@@ -3,10 +3,12 @@
 //https://developer.chrome.com/docs/extensions/reference/api/action
 
 //communicate serviceWorker events to the injected content script
-export const dispatchExtensionAction = () => document.dispatchEvent(new Event('TOOLBAR_CLICKED'))
-export const handleExtensionAction = (handler: ()=>void) => document.addEventListener('TOOLBAR_CLICKED', (e) => handler())
+export const dispatchExtensionAction = () => document.dispatchEvent(new Event("toggle_enabled"))
+export const handleExtensionEvent = (event: FigmentMessageAction, handler: EventListenerOrEventListenerObject) => document.addEventListener(event, handler)
 
-type FigmentMessageAction = "toggle_enabled"
+export const dispatchExtensionEvent = (event: FigmentMessageAction, detail: string) => document.dispatchEvent(new CustomEvent(event, { detail }))
+
+type FigmentMessageAction = "toggle_enabled" | "overlay_image"
 
 //communicate from the page to the service worker
 export type FigmentMessage = {
@@ -20,7 +22,6 @@ export type FigmentResponse = {
 }
 
 function sendMessageToServiceWorker(message: FigmentMessage) {
-	//@ts-ignore
 	chrome?.runtime?.sendMessage && chrome.runtime.sendMessage(message.figmentId, { message },
 		function (response: FigmentResponse) {
 			if (!response.success)
@@ -39,7 +40,6 @@ export function setToolbarEnabledState (figmentId: string, enabled: boolean) {
 export function handleMessageFromPage (request: any, sender: any, sendResponse: (response: FigmentResponse)=>void) {
     const action = request.message.action as FigmentMessageAction
     if (action === 'toggle_enabled') {
-        //@ts-ignore
         chrome.action.setBadgeText({ tabId: sender.tab.id, text: request.message.value ? "ON" : "OFF" });
         sendResponse({ success: true })
     }

@@ -1,0 +1,10 @@
+.figment-dragable {
+    position: absolute;
+    cursor: move;
+    user-select: none;
+	z-index: 30000;
+	outline-offset: -2px;
+    width: 300px;
+    opacity: 0.5;
+    transition: all 0.2s ease-in-out;
+}

@@ -3,7 +3,6 @@
 	pointer-events: none;
 	outline: 2px dashed #ff000091;
 	z-index: 30000;
-	position: absolute;
 	border-radius: 5px;
 	outline-offset: -2px;
 	transition: all 0.2s ease-in-out;
