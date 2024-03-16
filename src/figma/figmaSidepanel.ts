@@ -79,12 +79,12 @@ async function handleFile({ params }: FigmaHandlerParams) {
 	}
 }
 
-const childNodeHandlers = new Map<string, (docId: string, node: any, parent: HTMLElement) => void>()
+const childNodeHandlers = new Map<figma.Node['type'], (docId: string, node: any, parent: HTMLElement) => void>()
 childNodeHandlers.set('CANVAS', handleCanvasNode)
 childNodeHandlers.set('FRAME', handleFrameNode)
 childNodeHandlers.set('SECTION', handleSectionNode)
 
-function handleChildNode(docId: string, node: any, parent: HTMLElement) {
+function handleChildNode(docId: string, node: figma.Node, parent: HTMLElement) {
 	const handler = childNodeHandlers.get(node.type)
 	if (handler) handler(docId, node, parent)
 }
