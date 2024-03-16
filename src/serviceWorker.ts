@@ -1,4 +1,4 @@
-import { dispatchExtensionAction, handleMessageFromPage } from "./Bifrost.js";
+import { dispatchExtensionAction, handleMessageFromPage } from "./Bifrost.js"
 
 //https://developer.chrome.com/docs/extensions/reference/api/scripting#runtime_functions
 //https://developer.chrome.com/docs/extensions/reference/api/action

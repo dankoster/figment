@@ -25,15 +25,62 @@ function toggleEnabled() {
 	enableOverlay(enabled)
 }
 
-function handleOverlayImageEvent (e: CustomEventInit) {
+function handleOverlayImageEvent(e: CustomEventInit) {
 	console.log(e.detail)
-	if(!dragable) dragable = FigmentDragable.Create()
-	dragable?.show(new DOMRect(100, 100, 300), e.detail)
+	ShowDragableImage(e.detail)
+}
+
+function ShowDragableImage(imgSrc: any, x: number = 100, y: number = 100) {
+	if (!dragable) dragable = FigmentDragable.Create()
+	dragable?.show(new DOMRect(x, y, 300), imgSrc)
+}
+
+function handleDragFromSidePanel(e: CustomEventInit) {
+	console.log('handleDragStart', e.detail)
+
+	function dragoverHandler(ev: DragEvent) {
+		ev.preventDefault();
+		if (ev.dataTransfer)
+			ev.dataTransfer.dropEffect = "copy"
+	}
+
+	function dropHandler(ev: DragEvent) {
+		console.log("Drop");
+		ev.preventDefault();
+		const data = ev.dataTransfer?.items;
+		if (!data) throw new Error('no data in drop')
+		// Loop through the dropped items and log their data
+		for (let i = 0; i < data.length; i++) {
+			if (data[i].kind === "string" && data[i].type.match("^text/plain")) {
+				// This item is the target node
+				data[i].getAsString((s) => {
+					console.log('got string', s);
+				});
+			} else if (data[i].kind === "string" && data[i].type.match("^text/html")) {
+				// Drag data item is HTML
+				data[i].getAsString((s) => {
+					console.log(`… Drop: HTML = ${s}`);
+				});
+			} else if (
+				data[i].kind === "string" &&
+				data[i].type.match("^text/uri-list")
+			) {
+				// Drag data item is URI
+				data[i].getAsString((s) => {
+					console.log(`… Drop: URI = ${s}`);
+					ShowDragableImage(s, ev.clientX - 150, ev.clientY - 100);
+				});
+			}
+		}
+	}
+	document.ondragover = dragoverHandler
+	document.ondrop = dropHandler
 }
 
 //this event is sent when clicking on the toolbar button or using the configured keyboard shortcut
 handleExtensionEvent("toggle_enabled", toggleEnabled)
 handleExtensionEvent("overlay_image", handleOverlayImageEvent)
+handleExtensionEvent("start_drag_from_side_panel", handleDragFromSidePanel)
 
 function enableOverlay(enable: boolean) {
 	if (enable) {

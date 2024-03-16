@@ -6,9 +6,9 @@
 export const dispatchExtensionAction = () => document.dispatchEvent(new Event("toggle_enabled"))
 export const handleExtensionEvent = (event: FigmentMessageAction, handler: EventListenerOrEventListenerObject) => document.addEventListener(event, handler)
 
-export const dispatchExtensionEvent = (event: FigmentMessageAction, detail: string) => document.dispatchEvent(new CustomEvent(event, { detail }))
+const dispatchExtensionEvent = (event: FigmentMessageAction, detail: string) => document.dispatchEvent(new CustomEvent(event, { detail }))
 
-type FigmentMessageAction = "toggle_enabled" | "overlay_image"
+type FigmentMessageAction = "toggle_enabled" | "overlay_image" | "start_drag_from_side_panel"
 
 //communicate from the page to the service worker
 export type FigmentMessage = {
@@ -19,6 +19,16 @@ export type FigmentMessage = {
 export type FigmentResponse = {
 	success: boolean,
 	response?: string
+}
+
+export async function SendMessageToCurrentTab(event: FigmentMessageAction, detail: string) {
+	let [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true })
+    if(!tab?.id) throw new Error('could not get current tab')
+	chrome.scripting.executeScript({
+		target: { tabId: tab.id },
+		func: dispatchExtensionEvent,
+		args: [event, detail]
+	})
 }
 
 function sendMessageToServiceWorker(message: FigmentMessage) {

@@ -1,4 +1,3 @@
-import { dispatchExtensionEvent } from '../Bifrost.js'
 import {
 	clearChildren,
 	displayString,
@@ -14,6 +13,7 @@ import { GetFigmaDocument, GetFigmaImages } from './figmaApi.js'
 //TODO: promot the user for a figma personal access token (with instructions!!!)
 //@ts-ignore
 import { userToken } from "../figma/.env/figmaToken.js"
+import { SendMessageToCurrentTab } from '../Bifrost.js'
 //figmaToken.js
 //export const userToken = '<paste personal access token here>'
 
@@ -32,18 +32,6 @@ import { userToken } from "../figma/.env/figmaToken.js"
 
 type FigmaHandlerParams = { path: string, params: string[] }
 type FigmaHandlerFunction = (params: FigmaHandlerParams) => void | Promise<void>
-
-async function overlayImageOnCurTab(imgSrc: string) {
-	const tab = await getCurrentTab()
-	if (tab && tab.id) {
-		chrome.scripting.executeScript({
-			target: { tabId: tab.id },
-			func: dispatchExtensionEvent,
-			args: ["overlay_image", imgSrc]
-		})
-	}
-	else console.warn('overlayImageOnCurTab', 'could not get current tab')
-}
 
 const handleUrl: sidePanelUrlHandler = function (url: URL) {
 
@@ -120,26 +108,41 @@ function handleFrameNode(docId: string, node: figma.FrameNode, parent: HTMLEleme
 	span.innerText = node.name
 	div.appendChild(span)
 
-	enqueueImageRequest(docId, userToken, node.id).then(result => {
-		const checkboxDiv = document.createElement('div')
-		const checkbox = document.createElement('input')
-		checkbox.type = "checkbox"
-		checkbox.id = Date.now().toString()
-		const label = document.createElement('label')
-		label.htmlFor = checkbox.id
-		label.innerText = "Snap to elements"
-		checkboxDiv.appendChild(checkbox)
-		checkboxDiv.appendChild(label)
-		div.appendChild(checkboxDiv)
-
-		const img = document.createElement('img')
-		img.src = result[node.id]
-		img.onclick = () => overlayImageOnCurTab(img.src)
-
-		div.appendChild(img)
-	})
+	enqueueImageRequest(docId, userToken, node.id)
+		.then(result => handleGotFigmaFrameImage(div, result[node.id]))
 
 	parent.appendChild(div)
+}
+
+function handleGotFigmaFrameImage(parent: HTMLDivElement, imgSrc: string) {
+	const checkboxDiv = document.createElement('div')
+	const checkbox = document.createElement('input')
+	checkbox.type = "checkbox"
+	checkbox.id = Date.now().toString()
+	const label = document.createElement('label')
+	label.htmlFor = checkbox.id
+	label.innerText = "Snap to elements"
+	checkboxDiv.appendChild(checkbox)
+	checkboxDiv.appendChild(label)
+	parent.appendChild(checkboxDiv)
+
+	const img = document.createElement('img')
+	img.src = imgSrc
+	img.draggable = true
+	img.onclick = () => SendMessageToCurrentTab("overlay_image", img.src)
+	img.ondragstart = async (ev: DragEvent) => {
+		//tell the target tab that we're starting a drag
+		//NOTE: we don't need to send any DataTransfer stuff because we're 
+		// dragging an html element and that brings all of it's props with it
+		// https://developer.mozilla.org/en-US/docs/Web/API/DataTransferItemList/add#javascript
+		await SendMessageToCurrentTab('start_drag_from_side_panel', 'figment/imgSrc')
+	}
+	img.ondragend = (ev: DragEvent) => {
+		//TODO: change the style of the dragged thing?
+		console.log('drag end', ev)
+	}
+
+	parent.appendChild(img)
 }
 
 function handleSectionNode(docId: string, node: figma.SectionNode, parent: HTMLElement) {

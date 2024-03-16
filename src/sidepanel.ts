@@ -12,7 +12,7 @@ async function handleTabUpdated(tab: chrome.tabs.Tab) {
 	const url = new URL(tab.url ?? '')
 	clearChildren(getContentElement('URL'))
 	//clearChildren(getContentElement('content'))
-	//clearChildren(getContentElement('json'))
+	clearChildren(getContentElement('json'))
 	const handler = handlers.get(url.host) ?? handlers.get('*')
 	if(handler) handler(url)
 }
