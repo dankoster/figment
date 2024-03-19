@@ -105,26 +105,23 @@ function handleFrameNode(docId: string, node: figma.FrameNode, parent: HTMLEleme
 	div.className = node.type
 
 	const span = document.createElement('span')
-	span.innerText = node.name
+	span.innerText = node.name + ' - ' + 'requesting data...'
 	div.appendChild(span)
 
 	enqueueImageRequest(docId, userToken, node.id)
-		.then(result => handleGotFigmaFrameImage(div, result[node.id]))
+		.then(result => handleGotFigmaFrameImage(node, div, result[node.id]))
 
 	parent.appendChild(div)
 }
 
-function handleGotFigmaFrameImage(parent: HTMLDivElement, imgSrc: string) {
-	const checkboxDiv = document.createElement('div')
-	const checkbox = document.createElement('input')
-	checkbox.type = "checkbox"
-	checkbox.id = Date.now().toString()
-	const label = document.createElement('label')
-	label.htmlFor = checkbox.id
-	label.innerText = "Snap to elements"
-	checkboxDiv.appendChild(checkbox)
-	checkboxDiv.appendChild(label)
-	parent.appendChild(checkboxDiv)
+function handleGotFigmaFrameImage(node: figma.FrameNode, parent: HTMLDivElement, imgSrc: string) {
+	clearChildren(parent)
+
+	const span = document.createElement('span')
+	span.innerText = node.name
+	parent.appendChild(span)
+
+	// parent.appendChild(Component.Checkbox("Snap to elements", ev => console.log(node.name, (ev.target as HTMLInputElement)?.checked)))
 
 	const img = document.createElement('img')
 	img.src = imgSrc
@@ -174,4 +171,24 @@ function enqueueImageRequest(docId: string, userToken: string, nodeId: string): 
 	}
 
 	return imageRequest;
+}
+
+
+class Component {
+
+	static Checkbox(labelText: string, onchange: (ev: Event) => void) {
+		const checkboxId = Math.random().toString()
+		const div = document.createElement('div')
+		div.className = "checkbox"
+		const checkbox = document.createElement('input')
+		checkbox.type = "checkbox"
+		checkbox.id = checkboxId
+		checkbox.onchange = onchange
+		const label = document.createElement('label')
+		label.htmlFor = checkbox.id
+		label.innerText = labelText
+		div.appendChild(checkbox)
+		div.appendChild(label)
+		return div
+	}	
 }
