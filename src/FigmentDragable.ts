@@ -4,7 +4,7 @@ import { removeElementsByTagName } from './elementFunctions.js';
 
 export default class FigmentDragable extends HTMLElement {
 
-	overlay?: HTMLDivElement
+	overlay?: HTMLImageElement
 	label?: HTMLSpanElement
 
 	constructor() {
@@ -25,7 +25,7 @@ export default class FigmentDragable extends HTMLElement {
 	show(target: DOMRect, imgSrc: string) {
 		this.overlay = document.createElement('img')
 		this.overlay.className = 'figment-dragable'
-		this.overlay.setAttribute('draggable', "false")
+		this.overlay.setAttribute('draggable', "false") //turn off drag/drop
 		this.overlay.setAttribute('src', imgSrc)
 		this.shadowRoot?.appendChild(this.overlay)
 
@@ -40,32 +40,46 @@ export default class FigmentDragable extends HTMLElement {
 
 		function onMouseMove(event: MouseEvent) {
 
-			//Just drag the thing around
-			// const { movementX, movementY } = event;
-			// let getContainerStyle = window.getComputedStyle(overlayRef);
-			// let leftValue = parseInt(getContainerStyle.left);
-			// let topValue = parseInt(getContainerStyle.top);
-			// overlayRef.style.left = `${leftValue + movementX}px`;
-			// overlayRef.style.top = `${topValue + movementY}px`;
+			if (event.altKey) {
+				//snap to the element under the mouse (after a delay)
+				if (mouseMoveDelayTimeout) 
+					clearTimeout(mouseMoveDelayTimeout)
 
-			//snap to the element under the mouse
-			if (mouseMoveDelayTimeout) clearTimeout(mouseMoveDelayTimeout)
-			mouseMoveDelayTimeout = setTimeout(() => {
-				const target = document.elementsFromPoint(event.clientX, event.clientY)[1]
-				const targetRect = target.getBoundingClientRect();
+				mouseMoveDelayTimeout = setTimeout(() => {
+					const target = document.elementsFromPoint(event.clientX, event.clientY)[1]
+					const targetRect = target.getBoundingClientRect();
 
-				overlayRef.style.left = targetRect.left + 'px'
-				overlayRef.style.top = targetRect.top + 'px'
-				overlayRef.style.width = targetRect.width + 'px'
-				overlayRef.style.height = targetRect.height + 'px'
-			}, mouseMoveDetectionDelayMs)
+					//snap smoothly
+					if(!overlayRef.classList.contains('with-transition')) 
+						overlayRef.classList.add('with-transition')
+
+					overlayRef.style.left = targetRect.left + 'px'
+					overlayRef.style.top = targetRect.top + 'px'
+					overlayRef.style.width = targetRect.width + 'px'
+					overlayRef.style.height = targetRect.height + 'px'
+				}, mouseMoveDetectionDelayMs)
+			} else {
+				//remove css transition or dragging is broken
+				if(overlayRef.classList.contains('with-transition')) 
+					overlayRef.classList.remove('with-transition')
+
+				//add mouse displacement to object position
+				const getContainerStyle = window.getComputedStyle(overlayRef);
+				const leftValue = parseInt(getContainerStyle.left);
+				const topValue = parseInt(getContainerStyle.top);
+				const newLeft = `${leftValue + event.movementX}px`
+				const newTop = `${topValue + event.movementY}px`
+				console.log(event.movementX, event.movementY, {leftValue, topValue, newLeft, newTop})
+				overlayRef.style.left = newLeft;
+				overlayRef.style.top = newTop;
+			}
 		}
 
 		this.overlay.addEventListener("mousedown", () => {
-			document.addEventListener("mousemove", onMouseMove);
+						document.addEventListener("mousemove", onMouseMove);
 		});
 		document.addEventListener("mouseup", () => {
-			document.removeEventListener("mousemove", onMouseMove);
+						document.removeEventListener("mousemove", onMouseMove);
 		});
 	}
 

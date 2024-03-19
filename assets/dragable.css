@@ -6,5 +6,8 @@
 	outline-offset: -2px;
     width: 300px;
     opacity: 0.5;
+}
+
+.with-transition {
     transition: all 0.2s ease-in-out;
 }
