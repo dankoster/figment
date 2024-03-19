@@ -1,3 +1,9 @@
+
+//This file is intended to consolidate the functions that handle message 
+// passing communication between the page and the service worker. 
+// This file contains functions that are used in both places. 
+
+
 //https://developer.chrome.com/docs/extensions/develop/concepts/messaging 
 //https://developer.chrome.com/docs/extensions/reference/api/scripting#runtime_functions
 //https://developer.chrome.com/docs/extensions/reference/api/action
@@ -22,6 +28,10 @@ export type FigmentResponse = {
 }
 
 export async function SendMessageToCurrentTab(event: FigmentMessageAction, detail: string) {
+	
+	//chrome.tabs.sendMessage ???
+	//https://developer.chrome.com/docs/extensions/reference/api/runtime#event-onMessage
+
 	let [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true })
     if(!tab?.id) throw new Error('could not get current tab')
 	chrome.scripting.executeScript({
