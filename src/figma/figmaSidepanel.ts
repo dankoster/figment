@@ -172,23 +172,3 @@ function enqueueImageRequest(docId: string, userToken: string, nodeId: string): 
 
 	return imageRequest;
 }
-
-
-class Component {
-
-	static Checkbox(labelText: string, onchange: (ev: Event) => void) {
-		const checkboxId = Math.random().toString()
-		const div = document.createElement('div')
-		div.className = "checkbox"
-		const checkbox = document.createElement('input')
-		checkbox.type = "checkbox"
-		checkbox.id = checkboxId
-		checkbox.onchange = onchange
-		const label = document.createElement('label')
-		label.htmlFor = checkbox.id
-		label.innerText = labelText
-		div.appendChild(checkbox)
-		div.appendChild(label)
-		return div
-	}	
-}
