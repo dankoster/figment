@@ -2,21 +2,14 @@ import {
 	clearChildren,
 	displayString,
 	getContentElement,
-	getCurrentTab,
 	sidePanelUrlHandler,
 	splitUrlPath
 } from '../sidepanel.js'
 import { GetFigmaDocument, GetFigmaImages } from './figmaApi.js'
-
-
+import { SendMessageToCurrentTab } from '../Bifrost.js'
 
 //TODO: promot the user for a figma personal access token (with instructions!!!)
-//@ts-ignore
 import { userToken } from "../figma/.env/figmaToken.js"
-import { SendMessageToCurrentTab } from '../Bifrost.js'
-//figmaToken.js
-//export const userToken = '<paste personal access token here>'
-
 
 
 //see api docs here for return data structure: https://www.figma.com/developers/api#files
@@ -28,6 +21,9 @@ import { SendMessageToCurrentTab } from '../Bifrost.js'
 //subtree stemming from a canvas node will represent a layer (e.g an object) on the canvas.
 
 
+//const figmaNodeLink = (id: string) => `https://www.figma.com/file/${CurrentDocument.id}/${CurrentDocument.name}?node-id=${id}`
+
+
 //TODO: prompt the user and save this in local storage
 
 type FigmaHandlerParams = { path: string, params: string[] }
@@ -36,8 +32,7 @@ type FigmaHandlerFunction = (params: FigmaHandlerParams) => void | Promise<void>
 const handleUrl: sidePanelUrlHandler = function (url: URL) {
 
 	const handlers = new Map<string, FigmaHandlerFunction>()
-	handlers.set('file', handleFile)
-	handlers.set('developers', () => displayString(`[FIGMA] welcome to the api docs!`))
+	handlers.set('file', renderFigmaFileUI)
 	handlers.set('*', ({ path }) => displayString(`[FIGMA] no handler for path: ${path}`))
 
 	//file d8BAC23FK8bcpIGmkgwjYk Figma-basics
@@ -54,7 +49,7 @@ const CurrentDocument = {
 	name: '',
 }
 
-async function handleFile({ params }: FigmaHandlerParams) {
+async function renderFigmaFileUI({ params }: FigmaHandlerParams) {
 	const [docId, docName] = params
 
 	CurrentDocument.id = docId;
@@ -66,12 +61,41 @@ async function handleFile({ params }: FigmaHandlerParams) {
 	try {
 		contentElement.innerHTML = `Requesting Figma Data for "${docName}"...`
 
+		//TODO: save figma data locally and only request stuff that has been updated
 		const response = await GetFigmaDocument({ userToken, docId, depth: 3 })
 		clearChildren(contentElement)
 
 		console.log('got figma file', response)
 
-		response.document.children.forEach(node => handleChildNode(docId, node, contentElement))
+		function childrenHavingClass(elements: HTMLCollection, className: string) {
+			const result: HTMLElement[] = []
+			for(const element of elements) {
+				if(element.classList.contains(className)) result.push(element as HTMLElement)
+				result.push(... childrenHavingClass(element.children, className))
+			}
+			return result
+		}
+
+		//Render filter box
+		const div = document.createElement('div')
+		const input = document.createElement('input')
+		input.type = 'text'
+		input.placeholder = 'filter'
+		input.onkeyup = (ev) => {
+			const test = childrenHavingClass(contentElement.children, 'figma')
+			for (const element of test) {
+				if (element.textContent?.includes(input.value))
+					element.classList.remove('filtered')
+				else
+					element.classList.add('filtered')
+			}
+		}
+		div.appendChild(input)
+		contentElement.appendChild(div)
+
+		//render children
+		const children = renderChildNodes(response.document)
+		for(const child of children) div.appendChild(child)
 
 	} catch (err) {
 		console.error(err)
@@ -79,39 +103,50 @@ async function handleFile({ params }: FigmaHandlerParams) {
 	}
 }
 
-const childNodeHandlers = new Map<figma.Node['type'], (docId: string, node: any, parent: HTMLElement) => void>()
-childNodeHandlers.set('CANVAS', handleCanvasNode)
-childNodeHandlers.set('FRAME', handleFrameNode)
-childNodeHandlers.set('SECTION', handleSectionNode)
+const childNodeHandlers = new Map<figma.Node['type'], (node: any) => HTMLElement>()
+childNodeHandlers.set('CANVAS', renderCanvasNode)
+childNodeHandlers.set('FRAME', renderFrameNode)
+childNodeHandlers.set('SECTION', renderSectionNode)
 
-function handleChildNode(docId: string, node: figma.Node, parent: HTMLElement) {
-	const handler = childNodeHandlers.get(node.type)
-	if (handler) handler(docId, node, parent)
+function renderChildNodes(node: figma.DocumentNode | figma.CanvasNode | figma.SectionNode) {
+	const children: HTMLElement[] = []
+	node.children?.forEach(figmaNode => {
+		const handler = childNodeHandlers.get(figmaNode.type)
+		const child = handler && handler(figmaNode)
+	
+		//if (child) div.appendChild(child)
+		if(child) children.push(child)
+	})
+
+	return children
 }
 
-function handleCanvasNode(docId: string, node: figma.CanvasNode, parent: HTMLElement) {
+
+function renderCanvasNode(node: figma.CanvasNode) {
 	const div = document.createElement('div')
+	div.classList.add('figma')
+	div.classList.add(node.type)
 	div.innerText = node.type + ' - ' + node.name
 
-	node.children?.forEach(child => handleChildNode(docId, child, div))
+	const children = renderChildNodes(node)
+	for(const child of children) div.appendChild(child)
 
-	parent.appendChild(div)
+	return div
 }
 
-const figmaNodeLink = (id: string) => `https://www.figma.com/file/${CurrentDocument.id}/${CurrentDocument.name}?node-id=${id}`
-
-function handleFrameNode(docId: string, node: figma.FrameNode, parent: HTMLElement) {
+function renderFrameNode(node: figma.FrameNode) {
 	const div = document.createElement('div')
-	div.className = node.type
+	div.classList.add('figma')
+	div.classList.add(node.type)
 
 	const span = document.createElement('span')
 	span.innerText = node.name + ' - ' + 'requesting data...'
 	div.appendChild(span)
 
-	enqueueImageRequest(docId, userToken, node.id)
+	enqueueImageRequest(node.id)
 		.then(result => handleGotFigmaFrameImage(node, div, result[node.id]))
 
-	parent.appendChild(div)
+	return div
 }
 
 function handleGotFigmaFrameImage(node: figma.FrameNode, parent: HTMLDivElement, imgSrc: string) {
@@ -142,19 +177,22 @@ function handleGotFigmaFrameImage(node: figma.FrameNode, parent: HTMLDivElement,
 	parent.appendChild(img)
 }
 
-function handleSectionNode(docId: string, node: figma.SectionNode, parent: HTMLElement) {
+function renderSectionNode(node: figma.SectionNode) {
 	const div = document.createElement('div')
+	div.classList.add('figma')
+	div.classList.add(node.type)
 	div.innerText = node.type + ' - ' + node.name + ' - ' + node.devStatus?.type
 
-	node.children?.forEach(child => handleChildNode(docId, child, div))
+	const children = renderChildNodes(node)
+	for(const child of children) div.appendChild(child)
 
-	parent.appendChild(div)
+	return div
 }
 
 //figma api is really slow, but we can query for multiple images at once.
 const imageRequestIds: string[] = []
 let imageRequest: Promise<{ [key: string]: string }> | undefined
-function enqueueImageRequest(docId: string, userToken: string, nodeId: string): Promise<{ [key: string]: string }> {
+function enqueueImageRequest(nodeId: string): Promise<{ [key: string]: string }> {
 	imageRequestIds.push(nodeId)
 
 	if (!imageRequest) {
@@ -162,7 +200,7 @@ function enqueueImageRequest(docId: string, userToken: string, nodeId: string): 
 			//wait for all the requests to come in and THEN send the api request
 			setTimeout(() => {
 				//TODO: cache the results in local storage and don't re-request images until the old ones expire or the source node has a more recent change date
-				GetFigmaImages({ docId, userToken, ids: imageRequestIds })
+				GetFigmaImages({ docId: CurrentDocument.id, userToken, ids: imageRequestIds })
 					.then(result => resolve(result))
 					.catch(reason => reject(reason))
 					.finally(() => { imageRequest = undefined })
