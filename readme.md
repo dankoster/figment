@@ -54,3 +54,6 @@ We're keeping it simple here. There are no dependencies except for [git](https:/
 1) Have fun hacking!
    * Use `tsc -w` to watch for changes while working
    * Use `cp -rv ./assets/* ./dist` to copy asset files into dist
+
+I added a simple Deno script to watch and copy those asset files... 
+`deno run --allow-read --allow-write watchAndCopy.ts ./assets ./dist`
