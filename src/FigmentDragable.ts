@@ -26,6 +26,7 @@ export default class FigmentDragable extends HTMLElement {
 
 		const img = this.image(imgSrc)
 		div.appendChild(img)
+
 		div.appendChild(this.label({ textContent: 'remove', onClick: () => div.remove() }))
 		div.appendChild(this.range({ onchange: (value) => this.setStyles(img, {opacity: Number.parseInt(value)/100}) }))
 
@@ -72,11 +73,16 @@ export default class FigmentDragable extends HTMLElement {
 			}
 		}
 
-		div.addEventListener("mousedown", () => {
+		img.addEventListener("mousedown", () => {
 			document.addEventListener("mousemove", onMouseMove);
 		});
 		document.addEventListener("mouseup", () => {
 			document.removeEventListener("mousemove", onMouseMove);
+
+			//remove css transition or some mouse-over effects can act weird
+			if (overlayRef.classList.contains('with-transition'))
+				overlayRef.classList.remove('with-transition')
+		
 		});
 	}
 
@@ -93,8 +99,7 @@ export default class FigmentDragable extends HTMLElement {
 		range.setAttribute('min', '0')
 		range.setAttribute('max', '100')
 		range.setAttribute('value', '50')
-		range.onchange = (ev) => {
-			ev.preventDefault()
+		range.oninput = (ev) => {
 			onchange(range.value)
 		}
 		return range
