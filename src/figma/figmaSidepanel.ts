@@ -29,31 +29,47 @@ import { userToken } from "../figma/.env/figmaToken.js"
 type FigmaHandlerParams = { path: string, params: string[] }
 type FigmaHandlerFunction = (params: FigmaHandlerParams) => void | Promise<void>
 
+const figmaUrlHandlers = new Map<string, FigmaHandlerFunction>()
+figmaUrlHandlers.set('file', renderFigmaFileUI) //handle https://www.figma.com/file....
+figmaUrlHandlers.set('*', ({ path }) => displayString(`[FIGMA] no handler for path: ${path}`))
+
+const childNodeHandlers = new Map<figma.Node['type'], (node: any) => HTMLElement>()
+childNodeHandlers.set('CANVAS', renderCanvasNode)
+childNodeHandlers.set('FRAME', renderFrameNode)
+childNodeHandlers.set('SECTION', renderSectionNode)
+
+
 const handleUrl: sidePanelUrlHandler = function (url: URL) {
-
-	const handlers = new Map<string, FigmaHandlerFunction>()
-	handlers.set('file', renderFigmaFileUI)
-	handlers.set('*', ({ path }) => displayString(`[FIGMA] no handler for path: ${path}`))
-
-	//file d8BAC23FK8bcpIGmkgwjYk Figma-basics
-	const [path, ...params] = splitUrlPath(url)
-	const handler = handlers.get(path) ?? handlers.get('*')
+	const [path, ...params] = splitUrlPath(url)	//file d8BAC23FK8bcpIGmkgwjYk Figma-basics
+	const handler = figmaUrlHandlers.get(path) ?? figmaUrlHandlers.get('*')
 
 	if (handler) handler({ path, params })
-	else throw new Error(`Could not find handler for ${path}`)
+	//else throw new Error(`Could not find handler for ${path}`)
 }
 export default handleUrl
 
+function renderChildNodes(node: figma.DocumentNode | figma.CanvasNode | figma.SectionNode) {
+	const children: HTMLElement[] = []
+	node.children?.forEach(figmaNode => {
+		const handler = childNodeHandlers.get(figmaNode.type)
+		const child = handler && handler(figmaNode)
+	
+		//if (child) div.appendChild(child)
+		if(child) children.push(child)
+	})
+
+	return children
+}
+
+
 const CurrentDocument = {
 	id: '',
-	name: '',
 }
 
 async function renderFigmaFileUI({ params }: FigmaHandlerParams) {
 	const [docId, docName] = params
 
 	CurrentDocument.id = docId;
-	CurrentDocument.name = docName;
 
 	const contentElement = getContentElement()
 	clearChildren(contentElement)
@@ -102,25 +118,6 @@ async function renderFigmaFileUI({ params }: FigmaHandlerParams) {
 		contentElement.innerHTML = "Requesting Figma Data..."
 	}
 }
-
-const childNodeHandlers = new Map<figma.Node['type'], (node: any) => HTMLElement>()
-childNodeHandlers.set('CANVAS', renderCanvasNode)
-childNodeHandlers.set('FRAME', renderFrameNode)
-childNodeHandlers.set('SECTION', renderSectionNode)
-
-function renderChildNodes(node: figma.DocumentNode | figma.CanvasNode | figma.SectionNode) {
-	const children: HTMLElement[] = []
-	node.children?.forEach(figmaNode => {
-		const handler = childNodeHandlers.get(figmaNode.type)
-		const child = handler && handler(figmaNode)
-	
-		//if (child) div.appendChild(child)
-		if(child) children.push(child)
-	})
-
-	return children
-}
-
 
 function renderCanvasNode(node: figma.CanvasNode) {
 	const div = document.createElement('div')
