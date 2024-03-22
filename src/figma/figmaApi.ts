@@ -1,5 +1,6 @@
 const figmaApiUrl = `https://api.figma.com/v1`
 import { userToken } from "../figma/.env/figmaToken.js"
+import * as local from "../localStorage.js"
 
 export class FigmaSearch {
 	// static FindByExactNameOrId({figma, name, id}) { return figma?.frames?.find(frame => frame.name === name || frame.id === decodeURIComponent(id)) }
@@ -7,39 +8,52 @@ export class FigmaSearch {
 	// static SplitByCaps(searchTerm) { return new RegExp(searchTerm.split(/(?=[A-Z])/).map(str => str.toLowerCase()).join('|')) }
 }
 
-export async function GetFigmaDocument({ docId, userToken, depth = 3 }: { docId: string, userToken: string, depth?: number }) {
+export function GetFigmaDocument({ docId, userToken, depth = 3 }: { docId: string, userToken: string, depth?: number }) {
 
-	let json = await FetchFigmaJson(`${figmaApiUrl}/files/${docId}?depth=${depth}`, userToken)
-	return json as figma.GetFileResponse
+	const request = FetchFigmaJson(`${figmaApiUrl}/files/${docId}?depth=${depth}`, userToken) as Promise<figma.GetFileResponse>
+	request.then(doc => local.setDocument(docId, doc))
+	
+	return { cached: local.getDocument(docId), request }
 }
 
 //figma api is really slow, but we can query for multiple images at once.
-const imageRequestIds: string[] = []
+const imageRequestIds = new Set<string>()
 let imageRequest: Promise<{ [key: string]: string }> | undefined
-export function enqueueImageRequest(docId: string, nodeId: string): Promise<{ [key: string]: string }> {
-	imageRequestIds.push(nodeId)
+export function enqueueImageRequest(docId: string, nodeId: string): {cachedResult: string | null; imageRequest: Promise<{ [key: string]: string }>} {
+	imageRequestIds.add(nodeId)
 
 	if (!imageRequest) {
 		imageRequest = new Promise((resolve, reject) => {
 			//wait for all the requests to come in and THEN send the api request
 			setTimeout(() => {
-				//TODO: cache the results in local storage and don't re-request images until the old ones expire or the source node has a more recent change date
-				GetFigmaImages({ docId, userToken, ids: imageRequestIds })
+				//dequeue the ids collected so far
+				const ids = [...imageRequestIds]
+				imageRequestIds.clear()
+
+				//make a single request for the dequeued ids
+				GetFigmaImages({ docId, userToken, ids })
+					.then(result => {
+						for(const nodeId in result) 
+							local.setImage({docId, nodeId, url: result[nodeId]})
+						return result
+					})
 					.then(result => resolve(result))
 					.catch(reason => reject(reason))
 					.finally(() => { imageRequest = undefined })
-			}, 500)
+			})
 		})
 	}
 
-	return imageRequest;
+	const cachedResult = local.getImage(docId, nodeId)
+
+	return { cachedResult, imageRequest };
 }
 
 
 async function GetFigmaImages({ docId, userToken, ids }: { docId: string, userToken: string, ids: string[] }) {
 
-	if(!Array.isArray(ids)) throw `${ids} is not an array`
-	if(!ids.length) throw `${ids} can not be empty`
+	if (!Array.isArray(ids)) throw `${ids} is not an array`
+	if (!ids.length) throw `${ids} can not be empty`
 
 	let idCsv = ids.map(id => encodeURIComponent(id)).join(',')
 	let url = `${figmaApiUrl}/images/${docId}?ids=${idCsv}`
@@ -53,10 +67,10 @@ async function GetFigmaImages({ docId, userToken, ids }: { docId: string, userTo
 	// 	  "1382:106541": "https://s3-us-west-2.amazonaws.com/figma-alpha-api/img/a491/8f09/ffb0d33e7aa56fc4448a0e29cc45de9d"
 	// 	}
 	// }
-	
-	if(json.err) throw json.err 
 
-	return json.images as {[key:string]:string}
+	if (json.err) throw json.err
+
+	return json.images as { [key: string]: string }
 }
 
 async function FetchFigmaJson(url: string, userToken: string) {
@@ -72,7 +86,7 @@ async function FetchFigmaJson(url: string, userToken: string) {
 		cache: 'default'
 	})
 
-	if(!response.ok && response.status === 403) throw 'Not Authorized!'
+	if (!response.ok && response.status === 403) throw 'Not Authorized!'
 
 	return response.json()
 }

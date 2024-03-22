@@ -52,9 +52,8 @@ function renderChildNodes(docId: string, node: figma.DocumentNode | figma.Canvas
 	node.children?.forEach(figmaNode => {
 		const handler = childNodeHandlers.get(figmaNode.type)
 		const child = handler && handler(docId, figmaNode)
-	
-		//if (child) div.appendChild(child)
-		if(child) children.push(child)
+
+		if (child) children.push(child)
 	})
 
 	return children
@@ -68,12 +67,14 @@ export async function handleFigmaFileUrl({ params }: FigmaHandlerParams) {
 	contentElement.innerHTML = `Requesting Figma Data for "${docName}"...`
 
 	try {
-		//TODO: save figma data locally and only request stuff that has been updated
-		const response = await GetFigmaDocument({ userToken, docId, depth: 3 })
-		window.localStorage.setItem(docId, JSON.stringify(response))
-		console.log('got figma file', response)
+		const response = GetFigmaDocument({ userToken, docId, depth: 3 })
 
-		renderFigmaFileUI(docId, response)
+		if(response.cached.document) {
+			renderFigmaFileUI(docId, response.cached.document)
+		}
+
+		const file = await response.request
+		renderFigmaFileUI(docId, file)
 
 	} catch (err) {
 		console.error(err)
@@ -82,6 +83,8 @@ export async function handleFigmaFileUrl({ params }: FigmaHandlerParams) {
 }
 
 export function renderFigmaFileUI(docId: string, figmaFile: figma.GetFileResponse) {
+	if(!figmaFile) throw new Error(`figma file cannot be ${figmaFile}`)
+
 	const contentElement = getContentElement()
 	clearChildren(contentElement)
 
@@ -111,7 +114,7 @@ function renderFigmaCanvasNode(docId: string, node: figma.CanvasNode) {
 	div.innerText = node.type + ' - ' + node.name
 
 	const children = renderChildNodes(docId, node)
-	for(const child of children) div.appendChild(child)
+	for (const child of children) div.appendChild(child)
 
 	return div
 }
@@ -125,8 +128,13 @@ function renderFigmaFrameNode(docId: string, node: figma.FrameNode) {
 	span.innerText = node.name + ' - ' + 'requesting data...'
 	div.appendChild(span)
 
-	enqueueImageRequest(docId, node.id)
-		.then(result => handleGotFigmaFrameImage(node, div, result[node.id]))
+	const request = enqueueImageRequest(docId, node.id)
+	if (request.cachedResult) {
+		handleGotFigmaFrameImage(node, div, request.cachedResult)
+	}
+	request.imageRequest.then(result => {
+		handleGotFigmaFrameImage(node, div, result[node.id])
+	})
 
 	return div
 }
@@ -138,8 +146,6 @@ function handleGotFigmaFrameImage(node: figma.FrameNode, parent: HTMLDivElement,
 	span.innerText = node.name
 	parent.appendChild(span)
 
-	// parent.appendChild(Component.Checkbox("Snap to elements", ev => console.log(node.name, (ev.target as HTMLInputElement)?.checked)))
-	
 	const img = document.createElement('img')
 	img.src = imgSrc
 	img.onclick = () => SendMessageToCurrentTab("overlay_image", img.src)
@@ -150,10 +156,10 @@ function handleGotFigmaFrameImage(node: figma.FrameNode, parent: HTMLDivElement,
 		// https://developer.mozilla.org/en-US/docs/Web/API/DataTransferItemList/add#javascript
 		await SendMessageToCurrentTab('start_drag_from_side_panel', 'figment/imgSrc')
 	}
-	img.ondragend = (ev: DragEvent) => {
-		//TODO: change the style of the dragged thing?
-		console.log('drag end', ev)
-	}
+	// img.ondragend = (ev: DragEvent) => {
+	// 	//TODO: change the style of the dragged thing?
+	// 	console.log('drag end', ev)
+	// }
 	parent.appendChild(img)
 }
 
@@ -164,7 +170,7 @@ function renderFigmaSectionNode(docId: string, node: figma.SectionNode) {
 	div.innerText = node.type + ' - ' + node.name + ' - ' + node.devStatus?.type
 
 	const children = renderChildNodes(docId, node)
-	for(const child of children) div.appendChild(child)
+	for (const child of children) div.appendChild(child)
 
 	return div
 }

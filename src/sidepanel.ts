@@ -1,8 +1,6 @@
 import handleFigmaUrl, { renderFigmaFileUI } from "./figma/figmaSidepanel.js";
 import { clearChildren } from "./html.js";
-
-
-
+import { figmaFiles } from "./localStorage.js";
 
 
 const handlers = new Map<string, sidePanelUrlHandler>()
@@ -20,21 +18,13 @@ async function handleTabUpdated(tab: chrome.tabs.Tab) {
 	if (handler) handler(url)
 }
 
-
 function handleLocalhost(url: URL) {
 	displayPathInfo(url)
 
-	//check for figma doc in local storage!
-	const keys = Object.keys(localStorage)
-	for (var key in keys) {
-		const docId = keys[key]
-		const file = JSON.parse(localStorage[docId])
-		if (file.document) {
-			renderFigmaFileUI(docId, file)
-		}
+	for(const file of figmaFiles()) {
+		renderFigmaFileUI(file.docId, file.document)
 	}
 }
-
 
 export function displayString(json: string) {
 	const content = document.getElementById('json')
