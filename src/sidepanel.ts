@@ -1,26 +1,38 @@
-import handleFigmaUrl from "./figma/figmaSidepanel.js";
+import handleFigmaUrl, { renderFigmaFileUI } from "./figma/figmaSidepanel.js";
+import { clearChildren } from "./html.js";
 
 
 
 
 
 const handlers = new Map<string, sidePanelUrlHandler>()
-handlers.set('*', handleUnknownUrl)
+handlers.set('localhost', handleLocalhost)
 handlers.set('www.figma.com', handleFigmaUrl)
 
 async function handleTabUpdated(tab: chrome.tabs.Tab) {
-	const url = new URL(tab.url ?? '')
+	if (!tab.url) return
+
+	const url = new URL(tab.url)
 	clearChildren(getContentElement('URL'))
-	//clearChildren(getContentElement('content'))
 	clearChildren(getContentElement('json'))
-	const handler = handlers.get(url.host) ?? handlers.get('*')
-	if(handler) handler(url)
+	const handler = handlers.get(url.hostname)
+
+	if (handler) handler(url)
 }
 
 
-function handleUnknownUrl(url: URL) {
+function handleLocalhost(url: URL) {
 	displayPathInfo(url)
-	displayString(`[ unknown url - content not parsed ]`)
+
+	//check for figma doc in local storage!
+	const keys = Object.keys(localStorage)
+	for (var key in keys) {
+		const docId = keys[key]
+		const file = JSON.parse(localStorage[docId])
+		if (file.document) {
+			renderFigmaFileUI(docId, file)
+		}
+	}
 }
 
 
@@ -34,11 +46,6 @@ export function getContentElement(id: string = "content") {
 	const content = document.getElementById(id)
 	if (!content) throw new Error(`could not find element with id "${id}"`)
 	return content
-}
-
-export function clearChildren(element: HTMLElement) {
-	while(element.firstChild) 
-	element.removeChild(element.firstChild)
 }
 
 export type sidePanelUrlHandler = (url: URL) => void
@@ -62,21 +69,18 @@ export async function getCurrentTab() {
 
 //handle side panel load
 window.onload = async function () {
-	console.log('window.onload')
 	const tab = await getCurrentTab()
 	handleTabUpdated(tab)
 }
 
 //handle switching to a specific tab
 chrome.tabs.onActivated.addListener(async (activeInfo: chrome.tabs.TabActiveInfo) => {
-	console.log('onActivated', activeInfo)
 	const tab = await getCurrentTab()
 	handleTabUpdated(tab)
 })
 
 //handle current tab content changed (most likely a URL change)
 chrome.tabs.onUpdated.addListener((tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) => {
-	console.log('onUpdated', { tabId, changeInfo, tab })
 	switch (changeInfo?.status) {
 		case 'complete':
 			handleTabUpdated(tab)

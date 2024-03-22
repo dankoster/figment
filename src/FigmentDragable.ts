@@ -1,6 +1,7 @@
 
 import { figmentId } from './Figment.js'
 import { removeElementsByTagName } from './elementFunctions.js';
+import * as html from './html.js';
 
 export default class FigmentDragable extends HTMLElement {
 
@@ -24,11 +25,22 @@ export default class FigmentDragable extends HTMLElement {
 		div.className = 'figment-dragable'
 		this.shadowRoot?.appendChild(div)
 
-		const img = this.image(imgSrc)
-		div.appendChild(img)
+		const img = html.Image({src: imgSrc, draggable: false})
+		img.addEventListener("mousedown", () => {
+			document.addEventListener("mousemove", onMouseMove);
+		});
+		document.addEventListener("mouseup", () => {
+			document.removeEventListener("mousemove", onMouseMove);
 
-		div.appendChild(this.label({ textContent: 'remove', onClick: () => div.remove() }))
-		div.appendChild(this.range({ onchange: (value) => this.setStyles(img, {opacity: Number.parseInt(value)/100}) }))
+			//remove css transition or some mouse-over effects can act weird
+			if (overlayRef.classList.contains('with-transition'))
+				overlayRef.classList.remove('with-transition')
+
+		});
+
+		div.appendChild(img)
+		div.appendChild(html.Label({ textContent: 'remove', className: 'figment-dragable-label', onClick: () => div.remove() }))
+		div.appendChild(html.Range({ onchange: (value) => this.setStyles(img, { opacity: value / 100 }) }))
 
 		this.setLocation(div, target)
 
@@ -72,46 +84,6 @@ export default class FigmentDragable extends HTMLElement {
 				overlayRef.style.top = newTop;
 			}
 		}
-
-		img.addEventListener("mousedown", () => {
-			document.addEventListener("mousemove", onMouseMove);
-		});
-		document.addEventListener("mouseup", () => {
-			document.removeEventListener("mousemove", onMouseMove);
-
-			//remove css transition or some mouse-over effects can act weird
-			if (overlayRef.classList.contains('with-transition'))
-				overlayRef.classList.remove('with-transition')
-		
-		});
-	}
-
-	private image(imgSrc: string) {
-		const img = document.createElement('img');
-		img.setAttribute('src', imgSrc);
-		img.setAttribute('draggable', "false"); //turn off drag/drop
-		return img;
-	}
-
-	private range({ onchange }: { onchange: (value: string) => void }) {
-		const range = document.createElement('input')
-		range.setAttribute('type', 'range')
-		range.setAttribute('min', '0')
-		range.setAttribute('max', '100')
-		range.setAttribute('value', '50')
-		range.oninput = (ev) => {
-			onchange(range.value)
-		}
-		return range
-	}
-
-	private label({ textContent, onClick }: { textContent: string, onClick?: (this: HTMLSpanElement, ev: MouseEvent) => any }) {
-
-		const span = document.createElement('span')
-		span.className = 'figment-dragable-label'
-		span.textContent = textContent
-		if (onClick) span.addEventListener('click', onClick)
-		return span
 	}
 
 	setStyles(element: HTMLElement, styles: { [key in keyof CSSStyleDeclaration]?: any }) {

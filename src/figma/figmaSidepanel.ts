@@ -1,12 +1,12 @@
 import {
-	clearChildren,
 	displayString,
 	getContentElement,
 	sidePanelUrlHandler,
 	splitUrlPath
 } from '../sidepanel.js'
-import { GetFigmaDocument, GetFigmaImages } from './figmaApi.js'
+import { GetFigmaDocument, enqueueImageRequest } from './figmaApi.js'
 import { SendMessageToCurrentTab } from '../Bifrost.js'
+import { childrenHavingClass, clearChildren, TextInput } from '../html.js'
 
 //TODO: promot the user for a figma personal access token (with instructions!!!)
 import { userToken } from "../figma/.env/figmaToken.js"
@@ -30,13 +30,13 @@ type FigmaHandlerParams = { path: string, params: string[] }
 type FigmaHandlerFunction = (params: FigmaHandlerParams) => void | Promise<void>
 
 const figmaUrlHandlers = new Map<string, FigmaHandlerFunction>()
-figmaUrlHandlers.set('file', renderFigmaFileUI) //handle https://www.figma.com/file....
+figmaUrlHandlers.set('file', handleFigmaFileUrl) //handle https://www.figma.com/file....
 figmaUrlHandlers.set('*', ({ path }) => displayString(`[FIGMA] no handler for path: ${path}`))
 
-const childNodeHandlers = new Map<figma.Node['type'], (node: any) => HTMLElement>()
-childNodeHandlers.set('CANVAS', renderCanvasNode)
-childNodeHandlers.set('FRAME', renderFrameNode)
-childNodeHandlers.set('SECTION', renderSectionNode)
+const childNodeHandlers = new Map<figma.Node['type'], (docId: string, node: any) => HTMLElement>()
+childNodeHandlers.set('CANVAS', renderFigmaCanvasNode)
+childNodeHandlers.set('FRAME', renderFigmaFrameNode)
+childNodeHandlers.set('SECTION', renderFigmaSectionNode)
 
 
 const handleUrl: sidePanelUrlHandler = function (url: URL) {
@@ -44,15 +44,14 @@ const handleUrl: sidePanelUrlHandler = function (url: URL) {
 	const handler = figmaUrlHandlers.get(path) ?? figmaUrlHandlers.get('*')
 
 	if (handler) handler({ path, params })
-	//else throw new Error(`Could not find handler for ${path}`)
 }
 export default handleUrl
 
-function renderChildNodes(node: figma.DocumentNode | figma.CanvasNode | figma.SectionNode) {
+function renderChildNodes(docId: string, node: figma.DocumentNode | figma.CanvasNode | figma.SectionNode) {
 	const children: HTMLElement[] = []
 	node.children?.forEach(figmaNode => {
 		const handler = childNodeHandlers.get(figmaNode.type)
-		const child = handler && handler(figmaNode)
+		const child = handler && handler(docId, figmaNode)
 	
 		//if (child) div.appendChild(child)
 		if(child) children.push(child)
@@ -61,77 +60,63 @@ function renderChildNodes(node: figma.DocumentNode | figma.CanvasNode | figma.Se
 	return children
 }
 
-
-const CurrentDocument = {
-	id: '',
-}
-
-async function renderFigmaFileUI({ params }: FigmaHandlerParams) {
+export async function handleFigmaFileUrl({ params }: FigmaHandlerParams) {
 	const [docId, docName] = params
-
-	CurrentDocument.id = docId;
 
 	const contentElement = getContentElement()
 	clearChildren(contentElement)
+	contentElement.innerHTML = `Requesting Figma Data for "${docName}"...`
 
 	try {
-		contentElement.innerHTML = `Requesting Figma Data for "${docName}"...`
-
 		//TODO: save figma data locally and only request stuff that has been updated
 		const response = await GetFigmaDocument({ userToken, docId, depth: 3 })
-		clearChildren(contentElement)
-
+		window.localStorage.setItem(docId, JSON.stringify(response))
 		console.log('got figma file', response)
 
-		function childrenHavingClass(elements: HTMLCollection, className: string) {
-			const result: HTMLElement[] = []
-			for(const element of elements) {
-				if(element.classList.contains(className)) result.push(element as HTMLElement)
-				result.push(... childrenHavingClass(element.children, className))
-			}
-			return result
-		}
+		renderFigmaFileUI(docId, response)
 
-		//Render filter box
-		const div = document.createElement('div')
-		const input = document.createElement('input')
-		input.type = 'text'
-		input.placeholder = 'filter'
-		input.onkeyup = (ev) => {
-			const test = childrenHavingClass(contentElement.children, 'figma')
-			for (const element of test) {
-				if (element.textContent?.includes(input.value))
+	} catch (err) {
+		console.error(err)
+		contentElement.innerText = err as string
+	}
+}
+
+export function renderFigmaFileUI(docId: string, figmaFile: figma.GetFileResponse) {
+	const contentElement = getContentElement()
+	clearChildren(contentElement)
+
+	//Render filter box
+	contentElement.appendChild(TextInput({
+		placeholder: 'filter', onkeyup: (value: string) => {
+			const figmaElements = childrenHavingClass(contentElement.children, 'figma')
+			for (const element of figmaElements) {
+				if (element.textContent?.includes(value))
 					element.classList.remove('filtered')
+
 				else
 					element.classList.add('filtered')
 			}
 		}
-		div.appendChild(input)
-		contentElement.appendChild(div)
+	}))
 
-		//render children
-		const children = renderChildNodes(response.document)
-		for(const child of children) div.appendChild(child)
-
-	} catch (err) {
-		console.error(err)
-		contentElement.innerHTML = "Requesting Figma Data..."
-	}
+	//render children
+	const children = renderChildNodes(docId, figmaFile.document)
+	for (const child of children) contentElement.appendChild(child)
 }
 
-function renderCanvasNode(node: figma.CanvasNode) {
+function renderFigmaCanvasNode(docId: string, node: figma.CanvasNode) {
 	const div = document.createElement('div')
 	div.classList.add('figma')
 	div.classList.add(node.type)
 	div.innerText = node.type + ' - ' + node.name
 
-	const children = renderChildNodes(node)
+	const children = renderChildNodes(docId, node)
 	for(const child of children) div.appendChild(child)
 
 	return div
 }
 
-function renderFrameNode(node: figma.FrameNode) {
+function renderFigmaFrameNode(docId: string, node: figma.FrameNode) {
 	const div = document.createElement('div')
 	div.classList.add('figma')
 	div.classList.add(node.type)
@@ -140,7 +125,7 @@ function renderFrameNode(node: figma.FrameNode) {
 	span.innerText = node.name + ' - ' + 'requesting data...'
 	div.appendChild(span)
 
-	enqueueImageRequest(node.id)
+	enqueueImageRequest(docId, node.id)
 		.then(result => handleGotFigmaFrameImage(node, div, result[node.id]))
 
 	return div
@@ -154,10 +139,9 @@ function handleGotFigmaFrameImage(node: figma.FrameNode, parent: HTMLDivElement,
 	parent.appendChild(span)
 
 	// parent.appendChild(Component.Checkbox("Snap to elements", ev => console.log(node.name, (ev.target as HTMLInputElement)?.checked)))
-
+	
 	const img = document.createElement('img')
 	img.src = imgSrc
-	img.draggable = true
 	img.onclick = () => SendMessageToCurrentTab("overlay_image", img.src)
 	img.ondragstart = async (ev: DragEvent) => {
 		//tell the target tab that we're starting a drag
@@ -170,40 +154,18 @@ function handleGotFigmaFrameImage(node: figma.FrameNode, parent: HTMLDivElement,
 		//TODO: change the style of the dragged thing?
 		console.log('drag end', ev)
 	}
-
 	parent.appendChild(img)
 }
 
-function renderSectionNode(node: figma.SectionNode) {
+function renderFigmaSectionNode(docId: string, node: figma.SectionNode) {
 	const div = document.createElement('div')
 	div.classList.add('figma')
 	div.classList.add(node.type)
 	div.innerText = node.type + ' - ' + node.name + ' - ' + node.devStatus?.type
 
-	const children = renderChildNodes(node)
+	const children = renderChildNodes(docId, node)
 	for(const child of children) div.appendChild(child)
 
 	return div
 }
 
-//figma api is really slow, but we can query for multiple images at once.
-const imageRequestIds: string[] = []
-let imageRequest: Promise<{ [key: string]: string }> | undefined
-function enqueueImageRequest(nodeId: string): Promise<{ [key: string]: string }> {
-	imageRequestIds.push(nodeId)
-
-	if (!imageRequest) {
-		imageRequest = new Promise((resolve, reject) => {
-			//wait for all the requests to come in and THEN send the api request
-			setTimeout(() => {
-				//TODO: cache the results in local storage and don't re-request images until the old ones expire or the source node has a more recent change date
-				GetFigmaImages({ docId: CurrentDocument.id, userToken, ids: imageRequestIds })
-					.then(result => resolve(result))
-					.catch(reason => reject(reason))
-					.finally(() => { imageRequest = undefined })
-			}, 500)
-		})
-	}
-
-	return imageRequest;
-}

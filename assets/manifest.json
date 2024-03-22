@@ -37,7 +37,8 @@
 				"FigmentDragable.js",
 				"Trace.js",
 				"styles.css",
-				"dragable.css"
+				"dragable.css",
+				"html.js"
 			],
 			"matches": [
 				"*://localhost/*"

@@ -1,4 +1,5 @@
 const figmaApiUrl = `https://api.figma.com/v1`
+import { userToken } from "../figma/.env/figmaToken.js"
 
 export class FigmaSearch {
 	// static FindByExactNameOrId({figma, name, id}) { return figma?.frames?.find(frame => frame.name === name || frame.id === decodeURIComponent(id)) }
@@ -12,7 +13,30 @@ export async function GetFigmaDocument({ docId, userToken, depth = 3 }: { docId:
 	return json as figma.GetFileResponse
 }
 
-export async function GetFigmaImages({ docId, userToken, ids }: { docId: string, userToken: string, ids: string[] }) {
+//figma api is really slow, but we can query for multiple images at once.
+const imageRequestIds: string[] = []
+let imageRequest: Promise<{ [key: string]: string }> | undefined
+export function enqueueImageRequest(docId: string, nodeId: string): Promise<{ [key: string]: string }> {
+	imageRequestIds.push(nodeId)
+
+	if (!imageRequest) {
+		imageRequest = new Promise((resolve, reject) => {
+			//wait for all the requests to come in and THEN send the api request
+			setTimeout(() => {
+				//TODO: cache the results in local storage and don't re-request images until the old ones expire or the source node has a more recent change date
+				GetFigmaImages({ docId, userToken, ids: imageRequestIds })
+					.then(result => resolve(result))
+					.catch(reason => reject(reason))
+					.finally(() => { imageRequest = undefined })
+			}, 500)
+		})
+	}
+
+	return imageRequest;
+}
+
+
+async function GetFigmaImages({ docId, userToken, ids }: { docId: string, userToken: string, ids: string[] }) {
 
 	if(!Array.isArray(ids)) throw `${ids} is not an array`
 	if(!ids.length) throw `${ids} can not be empty`
