@@ -1,35 +1,22 @@
-import handleFigmaUrl, { renderFigmaFileUI } from "./figma/figmaSidepanel.js";
+import * as figmaSidepanel from "./figma/figmaSidepanel.js";
 import { clearChildren } from "./html.js";
-import { figmaFiles } from "./localStorage.js";
 
 
 const handlers = new Map<string, sidePanelUrlHandler>()
-handlers.set('localhost', handleLocalhost)
-handlers.set('www.figma.com', handleFigmaUrl)
+handlers.set('localhost', figmaSidepanel.handleLocalhost)
+handlers.set('www.figma.com', figmaSidepanel.handleFigmaUrl)
 
 async function handleTabUpdated(tab: chrome.tabs.Tab) {
 	if (!tab.url) return
 
 	const url = new URL(tab.url)
-	clearChildren(getContentElement('URL'))
-	clearChildren(getContentElement('json'))
 	const handler = handlers.get(url.hostname)
 
 	if (handler) handler(url)
 }
 
-function handleLocalhost(url: URL) {
-	displayPathInfo(url)
-
-	for(const file of figmaFiles()) {
-		renderFigmaFileUI(file.docId, file.document)
-	}
-}
-
-export function displayString(json: string) {
-	const content = document.getElementById('json')
-	if (!content) throw new Error('could not find element with id "json"')
-	content.innerHTML = json
+export function displayStatus(status: string) {
+	getContentElement('status').innerText = status
 }
 
 export function getContentElement(id: string = "content") {

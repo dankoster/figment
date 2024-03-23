@@ -1,5 +1,5 @@
 import {
-	displayString,
+	displayStatus,
 	getContentElement,
 	sidePanelUrlHandler,
 	splitUrlPath
@@ -10,6 +10,7 @@ import { childrenHavingClass, clearChildren, TextInput } from '../html.js'
 
 //TODO: promot the user for a figma personal access token (with instructions!!!)
 import { userToken } from "../figma/.env/figmaToken.js"
+import { figmaFiles as localStorage_figmaFiles } from '../localStorage.js'
 
 
 //see api docs here for return data structure: https://www.figma.com/developers/api#files
@@ -24,14 +25,14 @@ import { userToken } from "../figma/.env/figmaToken.js"
 //const figmaNodeLink = (id: string) => `https://www.figma.com/file/${CurrentDocument.id}/${CurrentDocument.name}?node-id=${id}`
 
 
-//TODO: prompt the user and save this in local storage
+//TODO: prompt the user and save the userToken in local storage
 
 type FigmaHandlerParams = { path: string, params: string[] }
 type FigmaHandlerFunction = (params: FigmaHandlerParams) => void | Promise<void>
 
-const figmaUrlHandlers = new Map<string, FigmaHandlerFunction>()
-figmaUrlHandlers.set('file', handleFigmaFileUrl) //handle https://www.figma.com/file....
-figmaUrlHandlers.set('*', ({ path }) => displayString(`[FIGMA] no handler for path: ${path}`))
+const figmaUrlPathHandlers = new Map<string, FigmaHandlerFunction>()
+figmaUrlPathHandlers.set('file', async ({ params: [docId] }: FigmaHandlerParams) => await renderFigmaDoc(docId)) //handle https://www.figma.com/file....
+figmaUrlPathHandlers.set('*', ({ path }) => displayStatus(`[FIGMA] no handler for path: ${path}`))
 
 const childNodeHandlers = new Map<figma.Node['type'], (docId: string, node: any) => HTMLElement>()
 childNodeHandlers.set('CANVAS', renderFigmaCanvasNode)
@@ -39,59 +40,59 @@ childNodeHandlers.set('FRAME', renderFigmaFrameNode)
 childNodeHandlers.set('SECTION', renderFigmaSectionNode)
 
 
-const handleUrl: sidePanelUrlHandler = function (url: URL) {
+export const handleFigmaUrl: sidePanelUrlHandler = function (url: URL) {
 	const [path, ...params] = splitUrlPath(url)	//file d8BAC23FK8bcpIGmkgwjYk Figma-basics
-	const handler = figmaUrlHandlers.get(path) ?? figmaUrlHandlers.get('*')
+	const handler = figmaUrlPathHandlers.get(path) ?? figmaUrlPathHandlers.get('*')
 
 	if (handler) handler({ path, params })
 }
-export default handleUrl
 
-function renderChildNodes(docId: string, node: figma.DocumentNode | figma.CanvasNode | figma.SectionNode) {
-	const children: HTMLElement[] = []
-	node.children?.forEach(figmaNode => {
-		const handler = childNodeHandlers.get(figmaNode.type)
-		const child = handler && handler(docId, figmaNode)
-
-		if (child) children.push(child)
-	})
-
-	return children
-}
-
-export async function handleFigmaFileUrl({ params }: FigmaHandlerParams) {
-	const [docId, docName] = params
-
-	const contentElement = getContentElement()
-	clearChildren(contentElement)
-	contentElement.innerHTML = `Requesting Figma Data for "${docName}"...`
-
-	try {
-		const response = GetFigmaDocument({ userToken, docId, depth: 3 })
-
-		if(response.cached.document) {
-			renderFigmaFileUI(docId, response.cached.document)
-		}
-
-		const file = await response.request
-		renderFigmaFileUI(docId, file)
-
-	} catch (err) {
-		console.error(err)
-		contentElement.innerText = err as string
+export const handleLocalhost: sidePanelUrlHandler = async function (url: URL) {
+	for (const file of localStorage_figmaFiles()) {
+		await renderFigmaDoc(file.docId)
 	}
 }
 
-export function renderFigmaFileUI(docId: string, figmaFile: figma.GetFileResponse) {
-	if(!figmaFile) throw new Error(`figma file cannot be ${figmaFile}`)
-
+async function renderFigmaDoc(docId: string) {
 	const contentElement = getContentElement()
+
+	//TODO: actually diff the dom tree and apply granular replacements
 	clearChildren(contentElement)
 
+	try {
+		displayStatus(`requesting figma data for "${docId}"...`)
+		const { cached, request } = GetFigmaDocument({ userToken, docId, depth: 3 })
+
+		const ui = renderFigmaFile(docId, cached.document) //render the cached version
+		if (ui) {
+			displayStatus('using cached figma data')
+			contentElement.appendChild(ui)
+		}
+
+		const file = await request //wait for the requested updated version
+		const newUi = renderFigmaFile(docId, file) //render the updated version
+		if (ui) {
+			displayStatus('updated figma data')
+			ui.replaceWith(newUi) 
+		}
+		else contentElement.appendChild(newUi)
+
+	} catch (err) {
+		console.error(err)
+		displayStatus(err as string)
+	}
+}
+
+function renderFigmaFile(docId: string, figmaFile: figma.GetFileResponse) {
+	const div = document.createElement('div')
+	div.classList.add(figmaFile.editorType)
+	div.classList.add(figmaFile.role)
+
+	//TODO: replace with full text search of figma.GetFileResponse
 	//Render filter box
-	contentElement.appendChild(TextInput({
+	div.appendChild(TextInput({
 		placeholder: 'filter', onkeyup: (value: string) => {
-			const figmaElements = childrenHavingClass(contentElement.children, 'figma')
+			const figmaElements = childrenHavingClass(div.children, 'figma')
 			for (const element of figmaElements) {
 				if (element.textContent?.includes(value))
 					element.classList.remove('filtered')
@@ -104,7 +105,21 @@ export function renderFigmaFileUI(docId: string, figmaFile: figma.GetFileRespons
 
 	//render children
 	const children = renderChildNodes(docId, figmaFile.document)
-	for (const child of children) contentElement.appendChild(child)
+	for (const child of children) div.appendChild(child)
+
+	return div
+}
+
+function renderChildNodes(docId: string, node: figma.DocumentNode | figma.CanvasNode | figma.SectionNode) {
+	const children: HTMLElement[] = []
+	node.children?.forEach(figmaNode => {
+		const handler = childNodeHandlers.get(figmaNode.type)
+		const child = handler && handler(docId, figmaNode)
+
+		if (child) children.push(child)
+	})
+
+	return children
 }
 
 function renderFigmaCanvasNode(docId: string, node: figma.CanvasNode) {
@@ -125,27 +140,25 @@ function renderFigmaFrameNode(docId: string, node: figma.FrameNode) {
 	div.classList.add(node.type)
 
 	const span = document.createElement('span')
-	span.innerText = node.name + ' - ' + 'requesting data...'
+	span.innerText = node.name
 	div.appendChild(span)
 
+	let img: HTMLImageElement | undefined
 	const request = enqueueImageRequest(docId, node.id)
 	if (request.cachedResult) {
-		handleGotFigmaFrameImage(node, div, request.cachedResult)
+		img = renderFigmaDragableImage(request.cachedResult)
+		div.appendChild(img)
 	}
 	request.imageRequest.then(result => {
-		handleGotFigmaFrameImage(node, div, result[node.id])
+		const newImg = renderFigmaDragableImage(result[node.id])
+		if (img) img.replaceWith(newImg)
+		else div.appendChild(newImg)
 	})
 
 	return div
 }
 
-function handleGotFigmaFrameImage(node: figma.FrameNode, parent: HTMLDivElement, imgSrc: string) {
-	clearChildren(parent)
-
-	const span = document.createElement('span')
-	span.innerText = node.name
-	parent.appendChild(span)
-
+function renderFigmaDragableImage(imgSrc: string) {
 	const img = document.createElement('img')
 	img.src = imgSrc
 	img.onclick = () => SendMessageToCurrentTab("overlay_image", img.src)
@@ -156,11 +169,8 @@ function handleGotFigmaFrameImage(node: figma.FrameNode, parent: HTMLDivElement,
 		// https://developer.mozilla.org/en-US/docs/Web/API/DataTransferItemList/add#javascript
 		await SendMessageToCurrentTab('start_drag_from_side_panel', 'figment/imgSrc')
 	}
-	// img.ondragend = (ev: DragEvent) => {
-	// 	//TODO: change the style of the dragged thing?
-	// 	console.log('drag end', ev)
-	// }
-	parent.appendChild(img)
+
+	return img
 }
 
 function renderFigmaSectionNode(docId: string, node: figma.SectionNode) {
@@ -174,4 +184,3 @@ function renderFigmaSectionNode(docId: string, node: figma.SectionNode) {
 
 	return div
 }
-
