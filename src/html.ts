@@ -10,41 +10,46 @@ export function childrenHavingClass(elements: HTMLCollection, className: string)
 }
 
 export function clearChildren(element: HTMLElement) {
-	while (element.firstChild)
-		element.removeChild(element.firstChild)
+    while (element.firstChild)
+        element.removeChild(element.firstChild)
 }
 
 
 export function applyDiff(target: Element, update: Element) {
-	//https://www.w3.org/TR/DOM-Level-3-Core/core.html#Node3-isEqualNode
+    //https://www.w3.org/TR/DOM-Level-3-Core/core.html#Node3-isEqualNode
 
-	if (target.isEqualNode(update)) {
-		return
-	}
-	else if (update.childNodes.length > 0 && target.childNodes.length === update.childNodes.length) {
-		for (let i = 0; i < update.childNodes.length; i++) {
-			applyDiff(target.childNodes[i] as Element, update.childNodes[i] as Element)
-		}
-	} else {
-		//this target should have no children so try to just update attributes?
-		// it could also be a Text element, so attributes may be undefined
-		if (target.attributes?.length
-			&& target.tagName === update.tagName
-			&& target.attributes.length === update.attributes.length) {
+    if (target.isEqualNode(update)) {
+        return
+    }
+    else if (update.childNodes.length > 0) {
+        if (target.childNodes.length === update.childNodes.length) {
+            for (let i = 0; i < update.childNodes.length; i++) {
+                applyDiff(target.childNodes[i] as Element, update.childNodes[i] as Element)
+            }
+        } else {
+            // console.log('applyDiff - different child node count', target, update)
+            target.replaceWith(update)
+        }
+    } else {
+        //this target should have no children so try to just update attributes?
+        // it could also be a Text element, so attributes may be undefined
+        if (target.attributes?.length
+            && target.tagName === update.tagName
+            && target.attributes.length === update.attributes.length) {
 
-			for (const attr of target.attributes) {
-				const newValue = update.attributes.getNamedItem(attr.name)?.value
-				attr.value = newValue || attr.value
-			}
+            for (const attr of target.attributes) {
+                const newValue = update.attributes.getNamedItem(attr.name)?.value
+                attr.value = newValue || attr.value
+            }
 
-			if (target.innerHTML !== update.innerHTML)
-				target.innerHTML = update.innerHTML
-		}
-		else {
-			// console.log('applyDiff', target, update)
-			target.replaceWith(update)
-		}
-	}
+            if (target.innerHTML !== update.innerHTML)
+                target.innerHTML = update.innerHTML
+        }
+        else {
+            // console.log('applyDiff - no child nodes', target, update)
+            target.replaceWith(update)
+        }
+    }
 }
 
 
