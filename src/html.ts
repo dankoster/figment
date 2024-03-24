@@ -1,10 +1,12 @@
 
-export function childrenHavingClass(elements: HTMLCollection, className: string) {
+export function childrenHavingClass(elements: HTMLCollection, classNames: string[]) {
     const result: HTMLElement[] = []
     for (const element of elements) {
-        if (element.classList.contains(className))
-            result.push(element as HTMLElement)
-        result.push(...childrenHavingClass(element.children, className))
+        for (const className of classNames) {
+            if (element.classList.contains(className))
+                result.push(element as HTMLElement)
+        }
+        result.push(...childrenHavingClass(element.children, classNames))
     }
     return result
 }

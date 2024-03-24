@@ -39,6 +39,7 @@ childNodeHandlers.set('CANVAS', renderFigmaCanvasNode)
 childNodeHandlers.set('FRAME', renderFigmaFrameNode)
 childNodeHandlers.set('SECTION', renderFigmaSectionNode)
 
+const elementById: { [key: string]: HTMLElement[] | undefined } = {}
 
 export const handleFigmaUrl: sidePanelUrlHandler = function (url: URL) {
 	const [path, ...params] = splitUrlPath(url)	//file d8BAC23FK8bcpIGmkgwjYk Figma-basics
@@ -56,14 +57,14 @@ export const handleLocalhost: sidePanelUrlHandler = async function (url: URL) {
 async function renderFigmaDoc(docId: string) {
 	try {
 		//get the cached document AND submit a request for an update
-		const { cached, request } = GetFigmaDocument({ userToken, docId, depth: 3 })
+		const { cached, request } = GetFigmaDocument({ userToken, docId, depth: 4 })
 		const cachedDocTimestamp = new Date(cached.document.lastModified).getTime()
 
 		const contentElement = getContentElement()
 		let figmaElement = contentElement?.querySelector(".figma")
 
 		//render the cached version
-		const ui = renderFigmaFile(docId, cached.document) 
+		const ui = renderFigmaFile(docId, cached.document)
 		if (ui) {
 			displayStatus('using cached figma data')
 			if (figmaElement) {
@@ -74,7 +75,7 @@ async function renderFigmaDoc(docId: string) {
 				contentElement.appendChild(ui)
 			}
 		}
-		
+
 		//wait for the requested updated version
 		const file = await request
 
@@ -97,22 +98,18 @@ async function renderFigmaDoc(docId: string) {
 
 function renderFigmaFile(docId: string, figmaFile: figma.GetFileResponse) {
 	const div = document.createElement('div')
-	div.classList.add(figmaFile.editorType)
-	div.classList.add(figmaFile.role)
+	//div.classList.add(figmaFile.editorType) //'figma'
+	//div.classList.add(figmaFile.role) //'owner'
 
-	//TODO: replace with full text search of figma.GetFileResponse
+	//@ts-ignore
+	div.figmaDocId = docId
+	//@ts-ignore
+	div.figmaNode = figmaFile
+
 	//Render filter box
 	div.appendChild(TextInput({
-		placeholder: 'filter', onkeyup: (value: string) => {
-			const figmaElements = childrenHavingClass(div.children, 'figma')
-			for (const element of figmaElements) {
-				if (element.textContent?.includes(value))
-					element.classList.remove('filtered')
-
-				else
-					element.classList.add('filtered')
-			}
-		}
+		placeholder: 'filter',
+		onkeyup: (searchString: string) => onFilterKeyUp(figmaFile, searchString)
 	}))
 
 	//render children
@@ -122,13 +119,82 @@ function renderFigmaFile(docId: string, figmaFile: figma.GetFileResponse) {
 	return div
 }
 
+let filterTimeout: number | undefined
+function onFilterKeyUp(figmaFile: figma.GetFileResponse, searchString: string) {
+
+	if (filterTimeout) clearTimeout(filterTimeout)
+	filterTimeout = setTimeout(() => {
+		const results = findString(figmaFile.document, searchString)
+		const resultElements = Array.from(results).flatMap((r: any) => elementById[r.id])
+
+		const figmaElements = childrenHavingClass(document.children, ['figma'])
+		for (const element of figmaElements) {
+			if (resultElements.includes(element))
+				element.classList.remove('filtered')
+
+			else
+				element.classList.add('filtered')
+		}
+
+	}, 400)
+
+}
+
+function findString(node: any, searchString: string) {
+	const result = new Set()
+	const search = searchString.toLowerCase()
+
+	if (node?.name?.toLowerCase && node.name.toLowerCase().includes(search)) {
+		result.add(node)
+	}
+
+	if (node?.children) {
+		for (const child of node.children) {
+			if ((child?.characters?.toLowerCase && child.characters.toLowerCase().includes(search))
+				|| child?.name?.toLowerCase && child?.name?.toLowerCase().includes(search)) {
+				result.add(child)
+			}
+
+			findString(child, searchString).forEach(childResult => result.add(childResult))
+		}
+	}
+
+	return result
+}
+
 function renderChildNodes(docId: string, node: figma.DocumentNode | figma.CanvasNode | figma.SectionNode) {
 	const children: HTMLElement[] = []
 	node.children?.forEach(figmaNode => {
 		const handler = childNodeHandlers.get(figmaNode.type)
 		const child = handler && handler(docId, figmaNode)
 
-		if (child) children.push(child)
+		if (!handler) {
+			console.log('unhandled', figmaNode.type)
+		}
+
+		if (child) {
+			//@ts-ignore
+			child.figmaDocId = docId
+			//@ts-ignore
+			child.figmaNode = figmaNode
+
+			const mapChildren = (figmaNode: any) => {
+				if (!Array.isArray(elementById[figmaNode.id])) {
+					elementById[figmaNode.id] = []
+				}
+
+				elementById[figmaNode.id]?.push(child)
+
+				if (figmaNode?.children && typeof figmaNode?.children[Symbol.iterator] === 'function')
+					for (const child of figmaNode.children) {
+						mapChildren(child)
+					}
+			}
+
+			mapChildren(figmaNode)
+
+			children.push(child)
+		}
 	})
 
 	return children
@@ -149,7 +215,7 @@ function renderFigmaCanvasNode(docId: string, node: figma.CanvasNode) {
 function renderFigmaFrameNode(docId: string, node: figma.FrameNode) {
 	const div = document.createElement('div')
 	div.classList.add('figma')
-	div.classList.add(node.type)
+	div.classList.add(node.type);
 
 	const span = document.createElement('span')
 	span.innerText = node.name
