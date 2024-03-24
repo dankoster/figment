@@ -14,6 +14,42 @@ export function clearChildren(element: HTMLElement) {
 		element.removeChild(element.firstChild)
 }
 
+
+export function applyDiff(target: Element, update: Element) {
+	//https://www.w3.org/TR/DOM-Level-3-Core/core.html#Node3-isEqualNode
+
+	if (target.isEqualNode(update)) {
+		return
+	}
+	else if (update.childNodes.length > 0 && target.childNodes.length === update.childNodes.length) {
+		for (let i = 0; i < update.childNodes.length; i++) {
+			applyDiff(target.childNodes[i] as Element, update.childNodes[i] as Element)
+		}
+	} else {
+		//this target should have no children so try to just update attributes?
+		// it could also be a Text element, so attributes may be undefined
+		if (target.attributes?.length
+			&& target.tagName === update.tagName
+			&& target.attributes.length === update.attributes.length) {
+
+			for (const attr of target.attributes) {
+				const newValue = update.attributes.getNamedItem(attr.name)?.value
+				attr.value = newValue || attr.value
+			}
+
+			if (target.innerHTML !== update.innerHTML)
+				target.innerHTML = update.innerHTML
+		}
+		else {
+			// console.log('applyDiff', target, update)
+			target.replaceWith(update)
+		}
+	}
+}
+
+
+
+
 //here is some typescript shenanigans we can do... it it better? Is it worse? Probably worse.
 export function Image(properties: { [Property in keyof HTMLImageElement]?: HTMLImageElement[Property] }) {
     const image = document.createElement('img')

@@ -6,7 +6,7 @@ import {
 } from '../sidepanel.js'
 import { GetFigmaDocument, enqueueImageRequest } from './figmaApi.js'
 import { SendMessageToCurrentTab } from '../Bifrost.js'
-import { childrenHavingClass, clearChildren, TextInput } from '../html.js'
+import { applyDiff, childrenHavingClass, TextInput } from '../html.js'
 
 //TODO: promot the user for a figma personal access token (with instructions!!!)
 import { userToken } from "../figma/.env/figmaToken.js"
@@ -54,28 +54,40 @@ export const handleLocalhost: sidePanelUrlHandler = async function (url: URL) {
 }
 
 async function renderFigmaDoc(docId: string) {
-	const contentElement = getContentElement()
-
-	//TODO: actually diff the dom tree and apply granular replacements
-	clearChildren(contentElement)
-
 	try {
-		displayStatus(`requesting figma data for "${docId}"...`)
+		//get the cached document AND submit a request for an update
 		const { cached, request } = GetFigmaDocument({ userToken, docId, depth: 3 })
+		const cachedDocTimestamp = new Date(cached.document.lastModified).getTime()
 
-		const ui = renderFigmaFile(docId, cached.document) //render the cached version
+		const contentElement = getContentElement()
+		let figmaElement = contentElement?.querySelector(".figma")
+
+		//render the cached version
+		const ui = renderFigmaFile(docId, cached.document) 
 		if (ui) {
 			displayStatus('using cached figma data')
-			contentElement.appendChild(ui)
+			if (figmaElement) {
+				applyDiff(figmaElement, ui)
+			}
+			else {
+				figmaElement = ui
+				contentElement.appendChild(ui)
+			}
 		}
+		
+		//wait for the requested updated version
+		const file = await request
 
-		const file = await request //wait for the requested updated version
-		const newUi = renderFigmaFile(docId, file) //render the updated version
-		if (ui) {
-			displayStatus('updated figma data')
-			ui.replaceWith(newUi) 
+		const updateTimestamp = new Date(file.lastModified).getTime()
+		//console.log(cachedDocTimestamp, updateTimestamp, cachedDocTimestamp === updateTimestamp ? 'same' : 'updated')
+		if (cachedDocTimestamp !== updateTimestamp) {
+			const newUi = renderFigmaFile(docId, file) //render the updated version
+			if (figmaElement) {
+				applyDiff(figmaElement, newUi)
+				displayStatus('updated figma data')
+			}
+			else contentElement.appendChild(newUi)
 		}
-		else contentElement.appendChild(newUi)
 
 	} catch (err) {
 		console.error(err)
