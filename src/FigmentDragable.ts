@@ -38,9 +38,20 @@ export default class FigmentDragable extends HTMLElement {
 
 		});
 
+		const initialOpacity = '100'
+		const setImageOpacity = (value: string) => html.setStyles(img, { opacity: (Number.parseInt(value) / 100).toString() })
+		setImageOpacity(initialOpacity)
+
 		div.appendChild(img)
-		div.appendChild(html.Label({ textContent: 'remove', className: 'figment-dragable-label', onClick: () => div.remove() }))
-		div.appendChild(html.Range({ onchange: (value) => this.setStyles(img, { opacity: value / 100 }) }))
+		div.appendChild(html.element('span', { textContent: 'remove', className: 'figment-dragable-label', onclick: () => div.remove() }))
+		div.appendChild(html.element('input', {
+			type: 'range', 
+			min: '0', 
+			max: '100', 
+			step: '1',
+			value: initialOpacity,
+			oninput: (e) => setImageOpacity((e.target as HTMLInputElement).value)
+		}))
 
 		this.setLocation(div, target)
 
@@ -86,20 +97,16 @@ export default class FigmentDragable extends HTMLElement {
 		}
 	}
 
-	setStyles(element: HTMLElement, styles: { [key in keyof CSSStyleDeclaration]?: any }) {
-		for (const style in styles) {
-			element.style[style] = styles[style]
-		}
-	}
+
 
 	setLocation(element: HTMLElement, rect: DOMRect) {
-		this.setStyles(element, {
+		html.setStyles(element, {
 			top: window.scrollY + rect.top + 'px',
 			left: rect.left + 'px'
 		})
 	}
 	setSize(element: HTMLElement, rect: DOMRect) {
-		this.setStyles(element, {
+		html.setStyles(element, {
 			width: rect.width + 'px',
 			height: rect.height + 'px'
 		})

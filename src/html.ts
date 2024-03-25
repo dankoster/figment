@@ -66,30 +66,8 @@ export function element<T extends keyof HTMLElementTagNameMap>(tag: T, propertie
     return element
 }
 
-export function Label({ textContent, className, onClick }: { textContent: string, className: string, onClick?: (this: HTMLSpanElement, ev: MouseEvent) => any }) {
-    const span = document.createElement('span')
-    span.className = className
-    span.textContent = textContent
-    if (onClick) span.addEventListener('click', onClick)
-    return span
-}
-
-export function Range({ min = 0, max = 100, value = 50, onchange }: { min?: number; max?: number; value?: number; onchange: (value: number) => void }) {
-    const range = document.createElement('input')
-    range.setAttribute('type', 'range')
-    range.setAttribute('min', min.toString())
-    range.setAttribute('max', max.toString())
-    range.setAttribute('value', value.toString())
-    range.oninput = () => onchange(Number.parseInt(range.value))
-    return range
-}
-
-export function TextInput({ placeholder, onkeyup }: { placeholder: string, onkeyup: (value: string) => void }) {
-    const div = document.createElement('div')
-    const input = document.createElement('input')
-    input.type = 'text'
-    input.placeholder = placeholder
-    input.onkeyup = () => onkeyup(input.value)
-    div.appendChild(input)
-    return div
+export function setStyles(element: HTMLElement, styles: { [key in keyof Partial<CSSStyleDeclaration>]: string }) {
+    for (const style in styles) {
+        element.style[style] = styles[style]
+    }
 }

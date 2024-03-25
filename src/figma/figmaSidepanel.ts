@@ -6,7 +6,7 @@ import {
 } from '../sidepanel.js'
 import { GetFigmaDocument, enqueueImageRequest } from './figmaApi.js'
 import { SendMessageToCurrentTab } from '../Bifrost.js'
-import { applyDiff, childrenHavingClass, element, TextInput } from '../html.js'
+import { applyDiff, childrenHavingClass, element } from '../html.js'
 
 import { getApiKey, figmaFiles as localStorage_figmaFiles } from './localStorage.js'
 
@@ -108,7 +108,6 @@ async function renderFigmaDoc(docId: string, userToken: string) {
 
 function renderFigmaFile(docId: string, figmaFile: figma.GetFileResponse) {
 	const div = document.createElement('div')
-	// div.classList.add(figmaFile.editorType) //'figma'
 	div.classList.add('figma-file')
 	div.classList.add(figmaFile.role) //'owner'
 
@@ -117,12 +116,11 @@ function renderFigmaFile(docId: string, figmaFile: figma.GetFileResponse) {
 	//@ts-ignore
 	div.figmaNode = figmaFile
 
-	div.appendChild(element('a', {href:'figmaApiKeyForm.html', text: 'Access Token'}))
-
-	//Render filter box
-	div.appendChild(TextInput({
-		placeholder: 'filter',
-		onkeyup: (searchString: string) => onFilterKeyUp(figmaFile, searchString)
+	//ui controls like access token and filter input
+	div.appendChild(element('a', { href: 'figmaApiKeyForm.html', text: 'Access Token' }))
+	div.appendChild(element('input', {
+		type: 'text', placeholder: 'filter',
+		onkeyup: (e) => onFilterKeyUp(figmaFile, (e.target as HTMLInputElement)?.value)
 	}))
 
 	//render children
