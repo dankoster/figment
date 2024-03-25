@@ -61,17 +61,17 @@ async function renderFigmaDoc(docId: string) {
 		const cachedDocTimestamp = new Date(cached.document.lastModified).getTime()
 
 		const contentElement = getContentElement()
-		let figmaElement = contentElement?.querySelector(".figma")
+		let figmaFileElement = contentElement?.querySelector(".figma-file")
 
 		//render the cached version
 		const ui = renderFigmaFile(docId, cached.document)
 		if (ui) {
 			displayStatus('using cached figma data')
-			if (figmaElement) {
-				applyDiff(figmaElement, ui)
+			if (figmaFileElement) {
+				applyDiff(figmaFileElement, ui)
 			}
 			else {
-				figmaElement = ui
+				figmaFileElement = ui
 				contentElement.appendChild(ui)
 			}
 		}
@@ -83,8 +83,8 @@ async function renderFigmaDoc(docId: string) {
 		//console.log(cachedDocTimestamp, updateTimestamp, cachedDocTimestamp === updateTimestamp ? 'same' : 'updated')
 		if (cachedDocTimestamp !== updateTimestamp) {
 			const newUi = renderFigmaFile(docId, file) //render the updated version
-			if (figmaElement) {
-				applyDiff(figmaElement, newUi)
+			if (figmaFileElement) {
+				applyDiff(figmaFileElement, newUi)
 				displayStatus('updated figma data')
 			}
 			else contentElement.appendChild(newUi)
@@ -98,8 +98,9 @@ async function renderFigmaDoc(docId: string) {
 
 function renderFigmaFile(docId: string, figmaFile: figma.GetFileResponse) {
 	const div = document.createElement('div')
-	//div.classList.add(figmaFile.editorType) //'figma'
-	//div.classList.add(figmaFile.role) //'owner'
+	// div.classList.add(figmaFile.editorType) //'figma'
+	div.classList.add('figma-file')
+	div.classList.add(figmaFile.role) //'owner'
 
 	//@ts-ignore
 	div.figmaDocId = docId
