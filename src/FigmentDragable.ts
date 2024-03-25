@@ -25,7 +25,7 @@ export default class FigmentDragable extends HTMLElement {
 		div.className = 'figment-dragable'
 		this.shadowRoot?.appendChild(div)
 
-		const img = html.Image({src: imgSrc, draggable: false})
+		const img = html.element('img', { src: imgSrc, draggable: false })
 		img.addEventListener("mousedown", () => {
 			document.addEventListener("mousemove", onMouseMove);
 		});

@@ -58,13 +58,12 @@ export function applyDiff(target: Element, update: Element) {
 
 
 //here is some typescript shenanigans we can do... it it better? Is it worse? Probably worse.
-export function Image(properties: { [Property in keyof HTMLImageElement]?: HTMLImageElement[Property] }) {
-    const image = document.createElement('img')
+export function element<T extends keyof HTMLElementTagNameMap>(tag: T, properties: { [Property in keyof Partial<HTMLElementTagNameMap[T]>]: HTMLElementTagNameMap[T][Property] }) {
+    const element = document.createElement(tag)
     for (const property in properties) {
-        //@ts-ignore
-        image[property] = properties[property]
+        element[property] = properties[property]
     }
-    return image
+    return element
 }
 
 export function Label({ textContent, className, onClick }: { textContent: string, className: string, onClick?: (this: HTMLSpanElement, ev: MouseEvent) => any }) {

@@ -1,6 +1,6 @@
 const figmaApiUrl = `https://api.figma.com/v1`
 import { userToken } from "../figma/.env/figmaToken.js"
-import * as local from "../localStorage.js"
+import * as local from "./localStorage.js"
 
 export class FigmaSearch {
 	// static FindByExactNameOrId({figma, name, id}) { return figma?.frames?.find(frame => frame.name === name || frame.id === decodeURIComponent(id)) }
@@ -19,7 +19,7 @@ export function GetFigmaDocument({ docId, userToken, depth = 3 }: { docId: strin
 //figma api is really slow, but we can query for multiple images at once.
 const imageRequestIds = new Set<string>()
 let imageRequest: Promise<{ [key: string]: string }> | undefined
-export function enqueueImageRequest(docId: string, nodeId: string): {cachedResult: string | null; imageRequest: Promise<{ [key: string]: string }>} {
+export function enqueueImageRequest(docId: string, nodeId: string): {cachedResult: string | undefined; imageRequest: Promise<{ [key: string]: string }>} {
 	imageRequestIds.add(nodeId)
 
 	if (!imageRequest) {

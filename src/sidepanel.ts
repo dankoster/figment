@@ -1,5 +1,4 @@
 import * as figmaSidepanel from "./figma/figmaSidepanel.js";
-import { clearChildren } from "./html.js";
 
 
 const handlers = new Map<string, sidePanelUrlHandler>()
