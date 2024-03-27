@@ -116,7 +116,8 @@ function onOverlayClick(e: MouseEvent, renderTree: RenderTreeNode[]) {
 	if (menu) menu.Clear()
 	else menu = FigmentMenu.Create({ extraClasses: 'menu-keep-open' }) as FigmentMenu
 
-	let testItem = new MenuItem({
+
+	const testItem = new MenuItem({
 		text: 'submenu test',
 	})
 	testItem.AddSubItem(new MenuItem({
@@ -125,17 +126,11 @@ function onOverlayClick(e: MouseEvent, renderTree: RenderTreeNode[]) {
 	testItem.AddSubItem(new MenuItem({
 		text: 'item 2'
 	}))
-
-	menu.AddItem(testItem)
-
-	testItem = new MenuItem({
-		text: 'submenu test',
-	})
 	testItem.AddSubItem(new MenuItem({
-		text: 'item 1'
+		text: 'item 3'
 	}))
 	testItem.AddSubItem(new MenuItem({
-		text: 'item 2'
+		text: 'item 4'
 	}))
 
 	menu.AddItem(testItem)

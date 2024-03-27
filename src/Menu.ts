@@ -95,7 +95,7 @@ export class FigmentMenu extends HTMLElement {
 
 	private static fixContainerOverflow(container: HTMLDivElement) {
 		//move the container to not overflow the viewport
-		
+
 		const computedContainerStyle = getComputedStyle(container)
 		const top = getTotal(computedContainerStyle, ['top'])
 		const left = getTotal(computedContainerStyle, ['left'])
@@ -144,6 +144,9 @@ export class FigmentMenu extends HTMLElement {
 		const rect = submenu.parentElement?.getBoundingClientRect();
 		submenu.style.top = `${rect?.top}px`
 		submenu.style.left = `${rect?.right}px`
+
+		//TODO: open the submenu to the left if the overflow is > 0.5x parent width
+		FigmentMenu.fixContainerOverflow(submenu)
 	}
 
 	AddItem(item: MenuItem) {

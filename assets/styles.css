@@ -107,6 +107,34 @@
 
 
 
+.menu-text {
+	/* cursor: pointer; */
+	overflow: hidden;
+	text-wrap: nowrap;
+	text-overflow: ellipsis;
+	color: #282828;
+}
+
+[class*="Component "]::after {
+	color: blue;
+	margin-left: 10px;
+}
+
+.menu-text.HostComponent {
+	font-weight: bolder;
+}
+
+.menu-text.HostComponent::before {
+	color: blue;
+	content: "<";
+}
+
+.menu-text.HostComponent::after {
+	color: blue;
+	content: "/>";
+	margin-left: 0px;
+}
+
 
 
 @keyframes slideIn {
@@ -288,39 +316,12 @@ a.menu-btn {
 	text-align: center;
 }
 
-.menu-text {
-	/* cursor: pointer; */
-	overflow: hidden;
-	text-overflow: ellipsis;
-	color: #282828;
-}
-
-[class*="Component "]::after {
-	color: blue;
-	margin-left: 10px;
-}
-
 /* 
 [data-text]::after {
 	content:attr(data-text);
 	color:blue;
 	margin-left:10px;
 } */
-
-.menu-text.HostComponent {
-	font-weight: bolder;
-}
-
-.menu-text.HostComponent::before {
-	color: blue;
-	content: "<";
-}
-
-.menu-text.HostComponent::after {
-	color: blue;
-	content: "/>";
-	margin-left: 0px;
-}
 
 .menu-item-grid-expando span.HostComponent::before {
 	content: "</>";
