@@ -1,14 +1,10 @@
 //inspired by https://codepen.io/ryanmorr/pen/JdOvYR
 import { figmentId } from './Figment.js'
 import { removeElementsByTagName } from './elementFunctions.js'
+import { GetTotalClientHeight, getTotal, stylePxToInt } from './html.js'
 
 type ExtraClasses = string | string[]
 
-
-function stylePxToInt(value: string): number { return Number.parseInt(value.replaceAll('px', '')) }
-function getTotal(style: CSSStyleDeclaration, properties: string[]) { 
-	return properties.reduce((total, property: any) => total + stylePxToInt(style[property]), 0) 
-}
 
 function AddExtraClasses(target: HTMLElement, extraClasses?: string | string[]) {
 	if (extraClasses) {
@@ -46,7 +42,7 @@ export class FigmentMenu extends HTMLElement {
 	static removeMenu() {
 		removeElementsByTagName('figment-menu')
 	}
-	 
+
 	static Create({ extraClasses }: { extraClasses: ExtraClasses }) {
 		if (!customElements.get('figment-menu'))
 			customElements.define('figment-menu', FigmentMenu)
@@ -59,60 +55,99 @@ export class FigmentMenu extends HTMLElement {
 		return figmentMenu
 	}
 
-	GetTotalClientHeight(elements: HTMLCollection): number {
-		return Array.from(elements ?? []).reduce((sum, node) => sum += node.clientHeight, 0);
-	}
+	
 
 	ShowFor(target: HTMLElement) {
-		if(!target) throw new Error('invalid target:', target)
+		if (!target) throw new Error('invalid target:', target)
 		const x = (target?.parentElement?.offsetLeft ?? 0) + target.offsetLeft + target.offsetWidth
 		const y = (target?.parentElement?.offsetTop ?? 0) + target.clientHeight
 		this.Show(x, y)
 	}
 
 	Show(x: number, y: number) {
-		this.container = document.createElement('div')
-		this.container.className = 'figment-menu-container'
+
+		this.container = FigmentMenu.buildMenuElements(this.items)
 		this.container.style.left = x + 'px'
 		this.container.style.top = y + 'px'
+
 		this.shadowRoot?.appendChild(this.container)
 
-		this.menu = document.createElement('div')
-		this.menu.className = 'figment-menu'
-		this.items.forEach(item => this.menu?.appendChild(item.div))
-		this.container.appendChild(this.menu)
+		FigmentMenu.setSizeConstraints(this.container)
+		FigmentMenu.positionSubmenus(this.container)
+	}
 
-		const computedContainerStyle = getComputedStyle(this.container)
+	private static positionSubmenus(container: HTMLDivElement) {
+
+		const menu = container.firstChild as HTMLDivElement
+		
+		menu.querySelectorAll('.submenu').forEach(sm => {
+			if(!sm.parentElement) throw new Error('no parent element?!?!')
+			const rect = sm.parentElement.getBoundingClientRect();
+
+			//TODO: this is calculated before any scrolling happens so it's wrong
+			// if the menu appears after scrolling and the submenu doesn't scroll
+			// with the parent
+	
+			(sm as HTMLElement).style.top = `${rect.top}px`; //ASI actually breaks here!!! Cool!
+			(sm as HTMLElement).style.left = `${rect.right}px`;
+		})
+
+	}
+	
+	private static setSizeConstraints(container: HTMLDivElement) {
+		const computedContainerStyle = getComputedStyle(container)
 		const top = getTotal(computedContainerStyle, ['top'])
 		const left = getTotal(computedContainerStyle, ['left'])
-		const right = getTotal(computedContainerStyle, ['left', 'width']);
-		const bottom = this.container.offsetTop + this.container.offsetHeight;
+		const right = getTotal(computedContainerStyle, ['left', 'width'])
+		const bottom = container.offsetTop + container.offsetHeight
 
-		const childrenHeight = this.GetTotalClientHeight(this.menu?.children)
-		const lastChildHeight = this.menu?.children[this.menu.children.length - 1].clientHeight
-		const menuHeight = stylePxToInt(getComputedStyle(this.menu).height)
+		const menu = container.firstChild as HTMLDivElement
+		const childrenHeight = GetTotalClientHeight(menu?.children)
+		const lastChildHeight = menu?.children[menu.children.length - 1].clientHeight
+		const menuHeight = stylePxToInt(getComputedStyle(menu).height)
 
 		//allow a specified number of children to scroll, 
 		// but expand the menu max-height if there are fewer than that
 		const allowableOverflow = lastChildHeight * 3
 		const overflowHeight = childrenHeight - menuHeight
-		if(overflowHeight < allowableOverflow) {
-			this.menu.style.maxHeight = childrenHeight + 'px'
+		if (overflowHeight < allowableOverflow) {
+			menu.style.maxHeight = childrenHeight + 'px'
 		}
 
-		const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+		const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
 
-		const overflowX = right - document.documentElement.clientWidth - window.scrollX + scrollbarWidth;
-		const overflowY = bottom - document.documentElement.clientHeight - window.scrollY + (2 * scrollbarWidth);
+		const overflowX = right - document.documentElement.clientWidth - window.scrollX + scrollbarWidth
+		const overflowY = bottom - document.documentElement.clientHeight - window.scrollY + (2 * scrollbarWidth)
 
 		if (overflowX > 0) {
 			//console.log(`Fix overflow X: ${left} - ${overflowX} = ${left - overflowY}px`)
-			this.container.style.left = (left - overflowX) + 'px';
+			container.style.left = (left - overflowX) + 'px'
 		}
 		if (overflowY > 0) {
 			//console.log(`Fix overflow Y: ${top} - ${overflowY} = ${top - overflowY}px`)
-			this.container.style.top = (top - overflowY) + 'px';
+			container.style.top = (top - overflowY) + 'px'
 		}
+	}
+
+	private static buildMenuElements(menuItems: MenuItem[]): HTMLDivElement {
+		const con = document.createElement('div')
+		con.className = 'figment-menu-container'
+
+		const div = document.createElement('div')
+		div.className = 'figment-menu'
+		con.appendChild(div)
+
+		for (const item of menuItems) {
+			div.appendChild(item.div)
+			if (item.subMenuItems?.length) {
+				const subMenu = FigmentMenu.buildMenuElements(item.subMenuItems)
+				subMenu.classList.add('submenu')
+				item.div.appendChild(subMenu)
+				item.div.classList.add('has-submenu')
+			}
+		}
+
+		return con
 	}
 
 	AddItem(item: MenuItem) {
@@ -140,15 +175,15 @@ export class FigmentMenu extends HTMLElement {
 type MenuItemOptions = {
 	id?: string,
 	text: string,
-	textClass: string,
-	textData: string,
+	textClass?: string,
+	textData?: string,
 	onTextClick?: (this: HTMLSpanElement, ev: MouseEvent) => any,
-	subtext: string,
+	subtext?: string,
 	href?: string,
 	extraClasses?: ExtraClasses,
 	imageSrc?: string,
 	onSubTextClick?: (this: HTMLSpanElement, ev: MouseEvent) => any,
-	mouseEnter: (this: HTMLSpanElement, ev: MouseEvent) => any,
+	mouseEnter?: (this: HTMLSpanElement, ev: MouseEvent) => any,
 	mouseLeave?: (this: HTMLSpanElement, ev: MouseEvent) => any,
 }
 
@@ -157,8 +192,8 @@ export class MenuItem {
 	id?: string
 	div: HTMLDivElement
 	img?: HTMLImageElement
-	subMenu?: FigmentMenu
 	expando?: HTMLDivElement
+	subMenuItems: MenuItem[] = []
 
 	constructor({
 		id,
@@ -238,13 +273,8 @@ export class MenuItem {
 		if (Number.isSafeInteger(value) && this.img) this.img.height = value
 	}
 
-	get SubMenu() {
-		if (!this.subMenu) {
-			this.subMenu = new FigmentMenu()
-			if(!this.subMenu.menu) throw new Error('failed to create submenu')
-			this.div.appendChild(this.subMenu.menu)
-		}
-		return this.subMenu
+	AddSubItem(item: MenuItem) {
+		this.subMenuItems.push(item)
 	}
 
 	get Expando() {

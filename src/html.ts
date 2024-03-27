@@ -54,6 +54,15 @@ export function applyDiff(target: Element, update: Element) {
     }
 }
 
+export function GetTotalClientHeight(elements: HTMLCollection): number {
+    return Array.from(elements ?? []).reduce((sum, node) => sum += node.clientHeight, 0);
+}
+
+export function stylePxToInt(value: string): number { return Number.parseInt(value.replaceAll('px', '')) }
+export function getTotal(style: CSSStyleDeclaration, properties: string[]) {
+	return properties.reduce((total, property: any) => total + stylePxToInt(style[property]), 0)
+}
+
 
 
 

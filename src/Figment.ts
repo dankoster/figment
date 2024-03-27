@@ -116,6 +116,30 @@ function onOverlayClick(e: MouseEvent, renderTree: RenderTreeNode[]) {
 	if (menu) menu.Clear()
 	else menu = FigmentMenu.Create({ extraClasses: 'menu-keep-open' }) as FigmentMenu
 
+	let testItem = new MenuItem({
+		text: 'submenu test',
+	})
+	testItem.AddSubItem(new MenuItem({
+		text: 'item 1'
+	}))
+	testItem.AddSubItem(new MenuItem({
+		text: 'item 2'
+	}))
+
+	menu.AddItem(testItem)
+
+	testItem = new MenuItem({
+		text: 'submenu test',
+	})
+	testItem.AddSubItem(new MenuItem({
+		text: 'item 1'
+	}))
+	testItem.AddSubItem(new MenuItem({
+		text: 'item 2'
+	}))
+
+	menu.AddItem(testItem)
+
 	//create a menu UI from this tree
 	renderTree.forEach(node => menu?.AddItem(
 		new MenuItem({

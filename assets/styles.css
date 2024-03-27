@@ -10,9 +10,9 @@
 
 .figment-outline-label {
 	font-family: system-ui;
-    font-size: medium;
+	font-size: medium;
 	line-height: 1.4;
-    font-weight: 600;
+	font-weight: 600;
 
 	cursor: pointer;
 	pointer-events: all;
@@ -31,7 +31,7 @@
 
 .figment-menu-container {
 	z-index: 111111;
-	position: absolute;
+	position: fixed;
 	border-radius: 7px;
 	overflow: hidden;
 	box-shadow: 0px 5px 25px #000000a3;
@@ -39,7 +39,7 @@
 
 .figment-menu {
 	font-family: system-ui;
-    font-size: medium;
+	font-size: medium;
 	line-height: normal;
 	cursor: default;
 	color: black;
@@ -51,6 +51,10 @@
 	max-height: 10em;
 	overflow-y: auto;
 	color-scheme: auto;
+}
+
+.menu-item-container {
+	outline: 1px solid red;
 }
 
 .menu-item {
@@ -355,18 +359,30 @@ a.menu-btn {
 	border-left-color: #fff;
 }
 
-/* position a sub-menu */
-.figment-menu .figment-menu {
-	top: 4px;
-	left: 99%;
+
+.menu-item:hover>.submenu {
+    opacity: 1; 
+    visibility: visible; 
+    /* display: block;  */
+    animation: slideIn 200ms ease-out; 
 }
 
-.menu-item:hover>.figment-menu {
-	/* opacity: 1; */
-	/* transform: translate(0, 0) scale(1); */
-	pointer-events: auto;
+.menu-item>.submenu {
+    opacity: 0; 
+    visibility: hidden; 
+    /* display: none;  */
 }
 
-.menu-item:hover>.figment-menu {
-	transition-delay: 300ms;
-}
+@keyframes slideIn { 
+    0% { 
+        opacity: 0; 
+        visibility: visible; 
+        transform: translateX(-10px); 
+    } 
+    
+    100% { 
+        opacity: 1; 
+        visibility: visible; 
+        transform: translateX(0); 
+    } 
+} 
