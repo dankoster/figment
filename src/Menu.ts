@@ -72,28 +72,35 @@ export class FigmentMenu extends HTMLElement {
 
 		this.shadowRoot?.appendChild(this.container)
 
-		FigmentMenu.setSizeConstraints(this.container)
+		FigmentMenu.fixSmallMenuScroll(this.container.querySelector('div.figment-menu') as HTMLDivElement)
+		FigmentMenu.fixContainerOverflow(this.container)
 	}
 
-	private static setSizeConstraints(container: HTMLDivElement) {
+	private static fixSmallMenuScroll(menu: HTMLDivElement | null, minChildrenForScrolling = 3) {
+		//allow a specified number of children to scroll, 
+		// but expand the menu max-height if there are fewer than that
+		
+		if(!menu) throw new Error(`menu is ${menu}`)
+
+		const childrenHeight = GetTotalClientHeight(menu?.children)
+		const lastChildHeight = menu?.children[menu.children.length - 1].clientHeight
+		const menuHeight = stylePxToInt(getComputedStyle(menu).height)
+
+		const allowableOverflow = lastChildHeight * minChildrenForScrolling
+		const overflowHeight = childrenHeight - menuHeight
+		if (overflowHeight < allowableOverflow) {
+			menu.style.maxHeight = childrenHeight + 'px'
+		}
+	}
+
+	private static fixContainerOverflow(container: HTMLDivElement) {
+		//move the container to not overflow the viewport
+		
 		const computedContainerStyle = getComputedStyle(container)
 		const top = getTotal(computedContainerStyle, ['top'])
 		const left = getTotal(computedContainerStyle, ['left'])
 		const right = getTotal(computedContainerStyle, ['left', 'width'])
 		const bottom = container.offsetTop + container.offsetHeight
-
-		const menu = container.firstChild as HTMLDivElement
-		const childrenHeight = GetTotalClientHeight(menu?.children)
-		const lastChildHeight = menu?.children[menu.children.length - 1].clientHeight
-		const menuHeight = stylePxToInt(getComputedStyle(menu).height)
-
-		//allow a specified number of children to scroll, 
-		// but expand the menu max-height if there are fewer than that
-		const allowableOverflow = lastChildHeight * 3
-		const overflowHeight = childrenHeight - menuHeight
-		if (overflowHeight < allowableOverflow) {
-			menu.style.maxHeight = childrenHeight + 'px'
-		}
 
 		const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth
 
