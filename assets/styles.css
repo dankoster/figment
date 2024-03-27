@@ -105,7 +105,10 @@
 	}
 }
 
-
+div.submenu-hover-target {
+    display: block;
+    position: fixed;
+}
 
 .menu-text {
 	/* cursor: pointer; */

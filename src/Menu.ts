@@ -1,7 +1,7 @@
 //inspired by https://codepen.io/ryanmorr/pen/JdOvYR
 import { figmentId } from './Figment.js'
 import { removeElementsByTagName } from './elementFunctions.js'
-import { GetTotalClientHeight, getTotal, stylePxToInt } from './html.js'
+import { GetTotalClientHeight, element, getTotal, stylePxToInt } from './html.js'
 
 type ExtraClasses = string | string[]
 
@@ -79,8 +79,8 @@ export class FigmentMenu extends HTMLElement {
 	private static fixSmallMenuScroll(menu: HTMLDivElement | null, minChildrenForScrolling = 3) {
 		//allow a specified number of children to scroll, 
 		// but expand the menu max-height if there are fewer than that
-		
-		if(!menu) throw new Error(`menu is ${menu}`)
+
+		if (!menu) throw new Error(`menu is ${menu}`)
 
 		const childrenHeight = GetTotalClientHeight(menu?.children)
 		const lastChildHeight = menu?.children[menu.children.length - 1].clientHeight
@@ -125,15 +125,32 @@ export class FigmentMenu extends HTMLElement {
 		div.className = 'figment-menu'
 		container.appendChild(div)
 
-		for (const item of menuItems) {
-			div.appendChild(item.div)
-			if (item.subMenuItems?.length) {
-				const subMenu = FigmentMenu.buildMenuElements(item.subMenuItems)
+		//recursively add submenus
+		for (const menuItem of menuItems) {
+			div.appendChild(menuItem.div)
+			if (menuItem.subMenuItems?.length) {
+				const subMenu = FigmentMenu.buildMenuElements(menuItem.subMenuItems)
 				subMenu.classList.add('submenu')
-				item.div.appendChild(subMenu)
-				item.div.classList.add('has-submenu')
-				item.div.parentElement?.addEventListener('scroll', () => FigmentMenu.updateSubmenuPosition(subMenu))
-				item.div.parentElement?.addEventListener('mouseenter', () => FigmentMenu.updateSubmenuPosition(subMenu))
+
+				//add invisible hover target to cover lower menu items but remove it 
+				// if the mouse starts moving left. This is to let the user shortcut
+				// across other menu items while moving the cursor to a submenu. 
+				const div = document.createElement('div')
+				div.className = 'submenu-hover-target'
+				div.addEventListener('mousemove', (ev) => {
+					if(ev.movementX < 0) {
+						div.style.display = 'none'
+					}
+				})
+				menuItem.div.addEventListener('mouseenter', ()=> {
+					div.style.display = 'block'
+				})
+				menuItem.div.appendChild(div)
+
+				menuItem.div.appendChild(subMenu)
+				menuItem.div.classList.add('has-submenu')
+				menuItem.div.parentElement?.addEventListener('scroll', () => FigmentMenu.updateSubmenuPosition(subMenu))
+				menuItem.div.parentElement?.addEventListener('mouseenter', () => FigmentMenu.updateSubmenuPosition(subMenu))
 			}
 		}
 
@@ -141,12 +158,22 @@ export class FigmentMenu extends HTMLElement {
 	}
 
 	private static updateSubmenuPosition(submenu: HTMLDivElement) {
-		const rect = submenu.parentElement?.getBoundingClientRect();
-		submenu.style.top = `${rect?.top}px`
-		submenu.style.left = `${rect?.right}px`
+		const parentRect = submenu.parentElement?.getBoundingClientRect();
+		submenu.style.top = `${parentRect?.top}px`
+		submenu.style.left = `${parentRect?.right}px`
 
 		//TODO: open the submenu to the left if the overflow is > 0.5x parent width
 		FigmentMenu.fixContainerOverflow(submenu)
+
+		const submenuRect = submenu.getBoundingClientRect()
+		const rect = submenu.parentElement?.getBoundingClientRect()
+
+		const div = submenu.parentElement?.querySelector('div.submenu-hover-target') as HTMLDivElement
+
+		//todo: get (submenu.parentElement?.style.paddingBlockEnd ?? 0) instead of hardcoding -2
+		div?.style.setProperty('margin-top', `${(parentRect?.height ?? 0) - 2}px`)
+		div?.style.setProperty('width', `${rect?.width}px`)
+		div?.style.setProperty('height', `${submenuRect.height - (parentRect?.height ?? 0)}px`)
 	}
 
 	AddItem(item: MenuItem) {
@@ -168,7 +195,6 @@ export class FigmentMenu extends HTMLElement {
 		this.menu?.appendChild(scrollingContainer);
 		return scrollingContainer;
 	}
-
 }
 
 type MenuItemOptions = {
