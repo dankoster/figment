@@ -55,7 +55,7 @@ export class FigmentMenu extends HTMLElement {
 		return figmentMenu
 	}
 
-	
+
 
 	ShowFor(target: HTMLElement) {
 		if (!target) throw new Error('invalid target:', target)
@@ -73,27 +73,8 @@ export class FigmentMenu extends HTMLElement {
 		this.shadowRoot?.appendChild(this.container)
 
 		FigmentMenu.setSizeConstraints(this.container)
-		FigmentMenu.positionSubmenus(this.container)
 	}
 
-	private static positionSubmenus(container: HTMLDivElement) {
-
-		const menu = container.firstChild as HTMLDivElement
-		
-		menu.querySelectorAll('.submenu').forEach(sm => {
-			if(!sm.parentElement) throw new Error('no parent element?!?!')
-			const rect = sm.parentElement.getBoundingClientRect();
-
-			//TODO: this is calculated before any scrolling happens so it's wrong
-			// if the menu appears after scrolling and the submenu doesn't scroll
-			// with the parent
-	
-			(sm as HTMLElement).style.top = `${rect.top}px`; //ASI actually breaks here!!! Cool!
-			(sm as HTMLElement).style.left = `${rect.right}px`;
-		})
-
-	}
-	
 	private static setSizeConstraints(container: HTMLDivElement) {
 		const computedContainerStyle = getComputedStyle(container)
 		const top = getTotal(computedContainerStyle, ['top'])
@@ -130,12 +111,12 @@ export class FigmentMenu extends HTMLElement {
 	}
 
 	private static buildMenuElements(menuItems: MenuItem[]): HTMLDivElement {
-		const con = document.createElement('div')
-		con.className = 'figment-menu-container'
+		const container = document.createElement('div')
+		container.className = 'figment-menu-container'
 
 		const div = document.createElement('div')
 		div.className = 'figment-menu'
-		con.appendChild(div)
+		container.appendChild(div)
 
 		for (const item of menuItems) {
 			div.appendChild(item.div)
@@ -144,10 +125,18 @@ export class FigmentMenu extends HTMLElement {
 				subMenu.classList.add('submenu')
 				item.div.appendChild(subMenu)
 				item.div.classList.add('has-submenu')
+				item.div.parentElement?.addEventListener('scroll', () => FigmentMenu.updateSubmenuPosition(subMenu))
+				item.div.parentElement?.addEventListener('mouseenter', () => FigmentMenu.updateSubmenuPosition(subMenu))
 			}
 		}
 
-		return con
+		return container
+	}
+
+	private static updateSubmenuPosition(submenu: HTMLDivElement) {
+		const rect = submenu.parentElement?.getBoundingClientRect();
+		submenu.style.top = `${rect?.top}px`
+		submenu.style.left = `${rect?.right}px`
 	}
 
 	AddItem(item: MenuItem) {
