@@ -53,10 +53,6 @@
 	color-scheme: auto;
 }
 
-.menu-item-container {
-	outline: 1px solid red;
-}
-
 .menu-item {
 	display: flex;
 	justify-content: space-between;
