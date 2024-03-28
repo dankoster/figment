@@ -138,11 +138,15 @@ export class FigmentMenu extends HTMLElement {
 				const div = document.createElement('div')
 				div.className = 'submenu-hover-target'
 				div.addEventListener('mousemove', (ev) => {
-					if(ev.movementX < 0) {
+					//did the pointer move away from the submenu?
+					if (ev.movementX < 0) {
 						div.style.display = 'none'
 					}
 				})
-				menuItem.div.addEventListener('mouseenter', ()=> {
+				div.addEventListener('mouseleave', () => {
+					div.style.display = 'none'
+				})
+				menuItem.div.addEventListener('mouseenter', () => {
 					div.style.display = 'block'
 				})
 				menuItem.div.appendChild(div)
@@ -166,13 +170,10 @@ export class FigmentMenu extends HTMLElement {
 		FigmentMenu.fixContainerOverflow(submenu)
 
 		const submenuRect = submenu.getBoundingClientRect()
-		const rect = submenu.parentElement?.getBoundingClientRect()
-
 		const div = submenu.parentElement?.querySelector('div.submenu-hover-target') as HTMLDivElement
-
-		//todo: get (submenu.parentElement?.style.paddingBlockEnd ?? 0) instead of hardcoding -2
-		div?.style.setProperty('margin-top', `${(parentRect?.height ?? 0) - 2}px`)
-		div?.style.setProperty('width', `${rect?.width}px`)
+		//todo: get (submenu.parentElement?.style.paddingBlockEnd ?? 0) instead of hardcoding -3
+		div?.style.setProperty('margin-top', `${(parentRect?.height ?? 0) - 3}px`)
+		div?.style.setProperty('width', `${parentRect?.width}px`)
 		div?.style.setProperty('height', `${submenuRect.height - (parentRect?.height ?? 0)}px`)
 	}
 
