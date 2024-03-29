@@ -211,6 +211,7 @@ type MenuItemOptions = {
 	onSubTextClick?: (this: HTMLSpanElement, ev: MouseEvent) => any,
 	mouseEnter?: (this: HTMLSpanElement, ev: MouseEvent) => any,
 	mouseLeave?: (this: HTMLSpanElement, ev: MouseEvent) => any,
+	subItems?: MenuItem[],
 }
 
 export class MenuItem {
@@ -226,11 +227,12 @@ export class MenuItem {
 		text,
 		textClass,
 		textData,
-		onTextClick,
 		subtext,
 		href,
 		extraClasses,
 		imageSrc,
+		subItems,
+		onTextClick,
 		onSubTextClick,
 		mouseEnter,
 		mouseLeave
@@ -279,6 +281,8 @@ export class MenuItem {
 		}
 
 		if (imageSrc) this.imageSrc = imageSrc
+
+		subItems?.forEach(s => this.AddSubItem(s))
 	}
 
 	get imageSrc() { return this.img?.src }

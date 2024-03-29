@@ -5,7 +5,7 @@ import {
 	splitUrlPath
 } from '../sidepanel.js'
 import { GetFigmaDocument, enqueueImageRequest } from './figmaApi.js'
-import { SendMessageToCurrentTab } from '../Bifrost.js'
+import { FigmentMessage, SendMessageToCurrentTab } from '../Bifrost.js'
 import { applyDiff, childrenHavingClass, element } from '../html.js'
 
 import { getApiKey, figmaFiles as localStorage_figmaFiles } from './localStorage.js'
@@ -38,6 +38,49 @@ childNodeHandlers.set('FRAME', renderFigmaFrameNode)
 childNodeHandlers.set('SECTION', renderFigmaSectionNode)
 
 const elementById: { [key: string]: HTMLElement[] | undefined } = {}
+let file: figma.GetFileResponse | undefined
+let filter: string
+
+//tell the service worker the sidepanel has opened
+chrome.runtime.sendMessage({
+	action: 'sidepanel_open',
+	messageId: Date.now() + Math.random()
+} as FigmentMessage)
+
+chrome.runtime.onUserScriptMessage.addListener((message, sender, sendResponse) => {
+	console.log('figmaSidePanel.onUserScriptMessage', { message, sender })
+})
+chrome.runtime.onMessage.addListener((message: FigmentMessage, sender, sendResponse) => {
+	console.log('figmaSidePanel.onMessage', { message, sender })
+	handleFigmentMessage(message)
+})
+chrome.runtime.onMessageExternal.addListener((request, sender, sendResponse) => {
+	console.log('figmaSidePanel.onMessageExternal', { request, sender })
+	handleFigmentMessage(request.message)
+})
+
+function handleFigmentMessage(message: FigmentMessage) {
+	switch (message.action) {
+		case 'search_figma_data':
+			if (!message.str) throw new Error(`${message.str} is not a valid value`)
+
+			filter = message.str
+			const filterInput = document.querySelector('input[placeholder=filter]') as HTMLInputElement
+			if (filterInput) {
+				filterInput.value = filter
+			}
+			if (file) {
+				filterFigmaData(file, filter)
+			}
+
+			//acknowledge reciept of this message
+			chrome.runtime.sendMessage({
+				action: 'sidepanel_got_message',
+				messageId: message.messageId
+			} as FigmentMessage)
+			break;
+	}
+}
 
 export const handleFigmaUrl: sidePanelUrlHandler = function (url: URL) {
 	const [path, ...params] = splitUrlPath(url)	//file d8BAC23FK8bcpIGmkgwjYk Figma-basics
@@ -73,6 +116,7 @@ async function renderFigmaDoc(docId: string, userToken: string) {
 
 		//render the cached version
 		if (cached?.document) {
+			file = cached.document
 			const ui = renderFigmaFile(docId, cached.document)
 			if (ui) {
 				displayStatus('using cached figma data')
@@ -83,11 +127,13 @@ async function renderFigmaDoc(docId: string, userToken: string) {
 					figmaFileElement = ui
 					contentElement.appendChild(ui)
 				}
+
+				if (filter) filterFigmaData(file, filter)
 			}
 		}
 
 		//wait for the requested updated version
-		const file = await request
+		file = await request
 
 		const updateTimestamp = new Date(file.lastModified).getTime()
 		//console.log(cachedDocTimestamp, updateTimestamp, cachedDocTimestamp === updateTimestamp ? 'same' : 'updated')
@@ -98,6 +144,8 @@ async function renderFigmaDoc(docId: string, userToken: string) {
 				displayStatus('updated figma data')
 			}
 			else contentElement.appendChild(newUi)
+
+			if (filter) filterFigmaData(file, filter)
 		}
 
 	} catch (err) {
@@ -117,10 +165,17 @@ function renderFigmaFile(docId: string, figmaFile: figma.GetFileResponse) {
 	div.figmaNode = figmaFile
 
 	//ui controls like access token and filter input
+	let filterTimeout: number | undefined
 	div.appendChild(element('a', { href: 'figmaApiKeyForm.html', text: 'Access Token' }))
 	div.appendChild(element('input', {
-		type: 'text', placeholder: 'filter',
-		onkeyup: (e) => onFilterKeyUp(figmaFile, (e.target as HTMLInputElement)?.value)
+		type: 'text', placeholder: 'filter', value: filter ?? '',
+		onkeyup: (e) => {
+			if (filterTimeout) clearTimeout(filterTimeout)
+			filterTimeout = setTimeout(() => {
+				filter = (e.target as HTMLInputElement)?.value
+				filterFigmaData(figmaFile, filter)
+			}, 400)
+		}
 	}))
 
 	//render children
@@ -130,25 +185,18 @@ function renderFigmaFile(docId: string, figmaFile: figma.GetFileResponse) {
 	return div
 }
 
-let filterTimeout: number | undefined
-function onFilterKeyUp(figmaFile: figma.GetFileResponse, searchString: string) {
+function filterFigmaData(figmaFile: figma.GetFileResponse, searchString: string) {
+	const results = findString(figmaFile.document, searchString)
+	const resultElements = Array.from(results).flatMap((r: any) => elementById[r.id])
 
-	if (filterTimeout) clearTimeout(filterTimeout)
-	filterTimeout = setTimeout(() => {
-		const results = findString(figmaFile.document, searchString)
-		const resultElements = Array.from(results).flatMap((r: any) => elementById[r.id])
+	const figmaElements = childrenHavingClass(document.children, ['figma'])
+	for (const element of figmaElements) {
+		if (resultElements.includes(element))
+			element.classList.remove('filtered')
 
-		const figmaElements = childrenHavingClass(document.children, ['figma'])
-		for (const element of figmaElements) {
-			if (resultElements.includes(element))
-				element.classList.remove('filtered')
-
-			else
-				element.classList.add('filtered')
-		}
-
-	}, 400)
-
+		else
+			element.classList.add('filtered')
+	}
 }
 
 function findString(node: any, searchString: string) {
@@ -178,10 +226,6 @@ function renderChildNodes(docId: string, node: figma.DocumentNode | figma.Canvas
 	node.children?.forEach(figmaNode => {
 		const handler = childNodeHandlers.get(figmaNode.type)
 		const child = handler && handler(docId, figmaNode)
-
-		// if (!handler) {
-		// 	console.log('unhandled', figmaNode.type)
-		// }
 
 		if (child) {
 			//@ts-ignore
@@ -224,6 +268,9 @@ function renderFigmaCanvasNode(docId: string, node: figma.CanvasNode) {
 }
 
 function renderFigmaFrameNode(docId: string, node: figma.FrameNode) {
+	const userToken = getApiKey()
+	if (!userToken) throw new Error('no user token')
+
 	const div = document.createElement('div')
 	div.classList.add('figma')
 	div.classList.add(node.type);
@@ -233,7 +280,7 @@ function renderFigmaFrameNode(docId: string, node: figma.FrameNode) {
 	div.appendChild(span)
 
 	let img: HTMLImageElement | undefined
-	const request = enqueueImageRequest(docId, node.id)
+	const request = enqueueImageRequest(userToken, docId, node.id)
 	if (request.cachedResult) {
 		img = renderFigmaDragableImage(request.cachedResult)
 		div.appendChild(img)

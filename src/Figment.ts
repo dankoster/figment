@@ -1,4 +1,4 @@
-import { handleExtensionEvent, setToolbarEnabledState } from './Bifrost.js'
+import { handleExtensionEvent, searchFigmaData, setToolbarEnabledState } from './Bifrost.js'
 import FigmentDragable from './FigmentDragable.js'
 import FigmentOutline from './FigmentOutline.js'
 import { FigmentMenu, MenuItem } from './Menu.js'
@@ -117,28 +117,27 @@ function onOverlayClick(e: MouseEvent, renderTree: RenderTreeNode[]) {
 	else menu = FigmentMenu.Create({ extraClasses: 'menu-keep-open' }) as FigmentMenu
 
 
-	const testItem = new MenuItem({
-		text: 'submenu test',
-	})
-	testItem.AddSubItem(new MenuItem({
-		text: 'item 1'
-	}))
-	testItem.AddSubItem(new MenuItem({
-		text: 'item 2'
-	}))
-	testItem.AddSubItem(new MenuItem({
-		text: 'item 3'
-	}))
-	testItem.AddSubItem(new MenuItem({
-		text: 'item 4'
-	}))
 
-	menu.AddItem(testItem)
+	// menu.AddItem(new MenuItem({
+	// 	text: 'submenu test',
+	// 	subItems: [
+	// 		new MenuItem({
+	// 			text: 'item A'
+	// 		}),
+	// 		new MenuItem({
+	// 			text: 'item B'
+	// 		}),
+	// 		new MenuItem({
+	// 			text: 'item C'
+	// 		}),
+	// 	]
+	// }))
 
 	//create a menu UI from this tree
-	renderTree.forEach(node => menu?.AddItem(
-		new MenuItem({
-			extraClasses: node.stateNode instanceof HTMLElement ? ['is-dom-element'] : undefined,
+	renderTree.forEach(node => {
+		const isDomElement = node.kind === 'HostComponent'
+		const item = new MenuItem({
+			extraClasses: isDomElement ? ['is-dom-element'] : undefined,
 			text: node.type,
 			textClass: node.kind,
 			textData: node.kind,
@@ -150,7 +149,14 @@ function onOverlayClick(e: MouseEvent, renderTree: RenderTreeNode[]) {
 				onClick: undefined
 			}))
 		})
-	))
+		if(!isDomElement) {
+			item.AddSubItem(new MenuItem({
+				text: "Find in Figma",
+				onTextClick: () => searchFigmaData(figmentId, node.type)
+			}))
+		}
+
+		menu?.AddItem(item)})
 
 	menu.ShowFor(e.target as HTMLElement)
 

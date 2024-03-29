@@ -1,5 +1,4 @@
 const figmaApiUrl = `https://api.figma.com/v1`
-import { userToken } from "../figma/.env/figmaToken.js"
 import * as local from "./localStorage.js"
 
 export class FigmaSearch {
@@ -16,10 +15,14 @@ export function GetFigmaDocument({ docId, userToken, depth = 3 }: { docId: strin
 	return { cached: local.getDocument(docId), request }
 }
 
-//figma api is really slow, but we can query for multiple images at once.
 const imageRequestIds = new Set<string>()
 let imageRequest: Promise<{ [key: string]: string }> | undefined
-export function enqueueImageRequest(docId: string, nodeId: string): {cachedResult: string | undefined; imageRequest: Promise<{ [key: string]: string }>} {
+/**
+ * Get the cached result for an image, if any, and add a callback to the 
+ * JavaScript task queue that will execute a batch request for all the images
+ * requested on the current execution cycle. 
+*/
+export function enqueueImageRequest(userToken: string, docId: string, nodeId: string): {cachedResult: string | undefined; imageRequest: Promise<{ [key: string]: string }>} {
 	imageRequestIds.add(nodeId)
 
 	if (!imageRequest) {
