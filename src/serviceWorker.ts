@@ -48,7 +48,7 @@ chrome.runtime.onMessageExternal.addListener(async (request, sender, sendRespons
 	console.log('serviceWorker.onMessageExternal', { message, sender })
 	switch (message.action) {
 		case 'toggle_enabled':
-			chrome.action.setBadgeText({ tabId: sender.tab?.id, text: request.message.value ? "ON" : "OFF" });
+			chrome.action.setBadgeText({ tabId: sender.tab?.id, text: message.bool ? "ON" : "OFF" });
 			sendResponse({ success: true })
 			break;
 		case 'search_figma_data':
