@@ -6,6 +6,10 @@
 	border-radius: 5px;
 	outline-offset: -2px;
 	transition: all 0.2s ease-in-out;
+
+	&.no-transition {
+		transition: none;
+	}
 }
 
 .figment-outline-label {
@@ -91,7 +95,7 @@
 		border-left-color: #000000;
 		transition: right 200ms ease-out;
 	}
-	
+
 	&.has-submenu:hover::after {
 		right: -5px;
 	}
@@ -106,10 +110,10 @@
 }
 
 div.submenu-hover-target {
-    display: block;
-    position: fixed;
+	display: block;
+	position: fixed;
 	clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
-    /* background-color: rgba(0, 0, 0, 0.156); */
+	/* background-color: rgba(0, 0, 0, 0.156); */
 }
 
 .menu-text {
@@ -398,4 +402,3 @@ a.menu-btn {
 	border-bottom: 1px solid #b3b3b3;
 	background-color: #aaa;
 }
-

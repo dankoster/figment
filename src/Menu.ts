@@ -21,6 +21,7 @@ export class FigmentMenu extends HTMLElement {
 	container?: HTMLDivElement
 	menu?: HTMLDivElement
 	items: MenuItem[] = []
+	target?: HTMLElement
 
 	constructor() {
 		super();
@@ -32,11 +33,22 @@ export class FigmentMenu extends HTMLElement {
 		cssLink.setAttribute('rel', 'stylesheet')
 		cssLink.setAttribute('href', `chrome-extension://${figmentId}/styles.css`)
 		this.shadowRoot?.appendChild(cssLink)
+
+		// TODO: consider moving the menu and outline into the same shadow dom. 
+		// Making the menu track the location of a target element that is in a
+		// different shadow dom appears to be problematic for reading position data. 
+
+		//watch for changes to the size of the document and just close the menu
+		const resizeObserver = new ResizeObserver(() => {
+			this.Clear()
+		});
+
+		resizeObserver.observe(document.body);
 	}
 
 	Clear() {
 		this.container?.remove()
-		this.items = []
+		this.items.length = 0
 	}
 
 	static removeMenu() {
@@ -55,20 +67,27 @@ export class FigmentMenu extends HTMLElement {
 		return figmentMenu
 	}
 
+	private setLocation(rect: DOMRect) {
+		if (!this.container) throw new Error('no container')
+
+		this.container.style.left = rect.x + 'px'
+		this.container.style.top = rect.y + 'px'
+	}
+
+	static calcPlacement(target: HTMLElement): DOMRect {
+		const x = (target?.parentElement?.offsetLeft ?? 0) + target.offsetLeft + target.offsetWidth
+		const y = (target?.parentElement?.offsetTop ?? 0) + target.clientHeight
+		return new DOMRect(x, y)
+	}
 
 
 	ShowFor(target: HTMLElement) {
 		if (!target) throw new Error('invalid target:', target)
-		const x = (target?.parentElement?.offsetLeft ?? 0) + target.offsetLeft + target.offsetWidth
-		const y = (target?.parentElement?.offsetTop ?? 0) + target.clientHeight
-		this.Show(x, y)
-	}
-
-	Show(x: number, y: number) {
+		this.target = target
 
 		this.container = FigmentMenu.buildMenuElements(this.items)
-		this.container.style.left = x + 'px'
-		this.container.style.top = y + 'px'
+
+		this.setLocation(FigmentMenu.calcPlacement(this.target))
 
 		this.shadowRoot?.appendChild(this.container)
 

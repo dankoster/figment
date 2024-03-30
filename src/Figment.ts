@@ -18,8 +18,13 @@ let frozenRenderTree: RenderTreeNode[] | undefined = undefined
 let menu: FigmentMenu | undefined = undefined
 let outline: FigmentOutline | undefined = undefined
 let dragable: FigmentDragable | undefined = undefined
-
 let enabled = false;
+
+//handle events from the service worker
+handleExtensionEvent("toggle_enabled", toggleEnabled)
+handleExtensionEvent("overlay_image", handleOverlayImageEvent)
+handleExtensionEvent("start_drag_from_side_panel", handleDragFromSidePanel)
+
 function toggleEnabled() {
 	enabled = !enabled
 	enableOverlay(enabled)
@@ -59,11 +64,6 @@ function handleDragFromSidePanel(e: CustomEventInit) {
 		}
 	}
 }
-
-//this event is sent when clicking on the toolbar button or using the configured keyboard shortcut
-handleExtensionEvent("toggle_enabled", toggleEnabled)
-handleExtensionEvent("overlay_image", handleOverlayImageEvent)
-handleExtensionEvent("start_drag_from_side_panel", handleDragFromSidePanel)
 
 function enableOverlay(enable: boolean) {
 	if (enable) {
@@ -146,17 +146,21 @@ function onOverlayClick(e: MouseEvent, renderTree: RenderTreeNode[]) {
 			mouseEnter: ((e: MouseEvent) => FigmentOutline.highlightElement({
 				node: node.stateNode,
 				label: node.type,
-				onClick: undefined
+				onClick: undefined //no action for clicking the element/component name in the menu
 			}))
 		})
 		if(!isDomElement) {
 			item.AddSubItem(new MenuItem({
 				text: "Find in Figma",
-				onTextClick: () => searchFigmaData(figmentId, node.type)
+				onTextClick: () => {
+					searchFigmaData(figmentId, node.type)
+					menu?.Clear() //close the menu
+				}
 			}))
 		}
 
-		menu?.AddItem(item)})
+		menu?.AddItem(item)
+	})
 
 	menu.ShowFor(e.target as HTMLElement)
 
