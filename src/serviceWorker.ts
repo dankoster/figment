@@ -21,7 +21,6 @@ chrome.commands.onCommand.addListener((command, tab) => {
 //https://developer.chrome.com/docs/extensions/develop/concepts/messaging 
 //handle messages that happen inside the extension (between the sidepanel and service worker, for example)
 chrome.runtime.onMessage.addListener((message: FigmentMessage, sender, sendResponse) => {
-	console.log('serviceWorker.onMessage', { message, sender })
 	switch (message.action) {
 		case 'sidepanel_got_message':
 			//discard the message after confirmed reciept
@@ -34,7 +33,6 @@ chrome.runtime.onMessage.addListener((message: FigmentMessage, sender, sendRespo
 			//send any queued messages to the sidepanel
 			while (messagesForSidePanel.length) {
 				const message = messagesForSidePanel.pop()
-				console.log('re-send', message)
 				chrome.runtime.sendMessage(message)
 			}
 			break;
@@ -45,7 +43,6 @@ const messagesForSidePanel: FigmentMessage[] = []
 
 chrome.runtime.onMessageExternal.addListener(async (request, sender, sendResponse) => {
 	const message = request.message as FigmentMessage
-	console.log('serviceWorker.onMessageExternal', { message, sender })
 	switch (message.action) {
 		case 'toggle_enabled':
 			chrome.action.setBadgeText({ tabId: sender.tab?.id, text: message.bool ? "ON" : "OFF" });
