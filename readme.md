@@ -25,15 +25,26 @@ Unlike the official React Dev Tools, this tool renders elements on the same page
 * Highlight React components and DOM elements under the mouse
 * Click the highlight label to see a menu showing the stack of components under the mouse
 * Click a code file link to open it in Visual Studio Code
+* Configurable hot key (configure in the chrome extension settings (go to __chrome://extensions/shortcuts__ in a browser tab)
 
-### TODO
+### Up Next
+* Figma integration
+   * Load designs from a Figma file into the side panel
+   * Overlay designs onto your page to check for pixel perfect implementation
+   * Correlate React components with Figma designs
+
+    Here's a very rough first pass:
+
+https://github.com/dankoster/figment/assets/9935523/afc57455-f782-4ea8-becd-a954089f3134
+
+     
+### TODO 
 * Display other react info for selected components
    * State
    * Params
    * Hooks
 * Configuration options
    * Dark mode
-   * Custom hotkey(s)
    * [Custom browser protocols](https://help.autodesk.com/view/SGDEV/ENU/?guid=SGD_ami_custom_browser_protocols_html) for opening files (currently only suppoprts `vscode://file:line:character`)
 
 
