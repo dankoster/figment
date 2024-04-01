@@ -14,9 +14,22 @@ export function setApiKey(value: string) {
 	localStorage.setItem('pat', value)
 }
 
+//keep a cache of documents to avoid re-running JSON.parse
+const docCache = new Map<string, LocalFigmaFileInfo>()
+
 export function getDocument(docId: string): LocalFigmaFileInfo | undefined {
 	try {
-		return JSON.parse(localStorage.getItem(docId) ?? '')
+		if (docCache.has(docId)) {
+			return docCache.get(docId)
+		} else {
+			const localItem = localStorage.getItem(docId)
+			if (!localItem) {
+				return undefined
+			}
+			const doc = JSON.parse(localItem)
+			docCache.set(docId, doc)
+			return doc
+		}
 	} catch (err) {
 		if (err instanceof SyntaxError && err.message.endsWith('is not valid JSON'))
 			return undefined
@@ -31,6 +44,7 @@ export function setDocument(docId: string, doc: figma.GetFileResponse) {
 	localDoc.type = "figma.GetFileResponse"
 	localDoc.document = doc
 	localStorage.setItem(docId, JSON.stringify(localDoc))
+	docCache.set(docId, localDoc)
 }
 
 export function getImage(docId: string, nodeId: string) {
@@ -45,13 +59,16 @@ export function setImage({ docId, nodeId, url }: { docId: string; nodeId: string
 	localStorage.setItem(docId, JSON.stringify(localDoc))
 }
 
-export function* figmaFiles(): Generator<LocalFigmaFileInfo> {
+export function figmaFiles(): LocalFigmaFileInfo[] {
 	const keys = Object.keys(localStorage)
+	const result = []
 	for (var key in keys) {
 		const docId = keys[key]
+		if(docId === 'pat') continue //ignore the personal access token
 		const doc = getDocument(docId) ?? {} as LocalFigmaFileInfo
 		if (doc.type === "figma.GetFileResponse" && doc.document) {
-			yield doc
+			result.push(doc)
 		}
 	}
+	return result
 }

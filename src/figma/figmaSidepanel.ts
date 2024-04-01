@@ -23,14 +23,12 @@ import { getApiKey, figmaFiles as localStorage_figmaFiles } from './localStorage
 //const figmaNodeLink = (id: string) => `https://www.figma.com/file/${CurrentDocument.id}/${CurrentDocument.name}?node-id=${id}`
 
 
-//TODO: prompt the user and save the userToken in local storage
-
 type FigmaHandlerParams = { path: string, params: string[] }
 type FigmaHandlerFunction = (params: FigmaHandlerParams) => void | Promise<void>
 
 const figmaUrlPathHandlers = new Map<string, FigmaHandlerFunction>()
 figmaUrlPathHandlers.set('file', ({ params: [docId] }: FigmaHandlerParams) => handleFigmaDoc(docId)) //handle https://www.figma.com/file....
-figmaUrlPathHandlers.set('*', ({ path }) => displayStatus(`[FIGMA] no handler for path: ${path}`))
+figmaUrlPathHandlers.set('*', ({ path }) => displayStatus(`Open a specific figma file to read it`))
 
 const childNodeHandlers = new Map<figma.Node['type'], (docId: string, node: any) => HTMLElement>()
 childNodeHandlers.set('CANVAS', renderFigmaCanvasNode)
@@ -51,11 +49,9 @@ chrome.runtime.onUserScriptMessage.addListener((message, sender, sendResponse) =
 	console.log('figmaSidePanel.onUserScriptMessage', { message, sender })
 })
 chrome.runtime.onMessage.addListener((message: FigmentMessage, sender, sendResponse) => {
-	console.log('figmaSidePanel.onMessage', { message, sender })
 	handleFigmentMessage(message)
 })
 chrome.runtime.onMessageExternal.addListener((request, sender, sendResponse) => {
-	console.log('figmaSidePanel.onMessageExternal', { request, sender })
 	handleFigmentMessage(request.message)
 })
 
@@ -90,8 +86,19 @@ export const handleFigmaUrl: sidePanelUrlHandler = function (url: URL) {
 }
 
 export const handleLocalhost: sidePanelUrlHandler = async function (url: URL) {
-	for (const file of localStorage_figmaFiles()) {
-		await handleFigmaDoc(file.docId)
+	const userToken = getApiKey()
+	if (!userToken) {
+		window.location.href = 'figmaApiKeyForm.html'
+	}
+	else {
+		const files = localStorage_figmaFiles()
+		if (files?.length) {
+			for (const file of files) {
+				await handleFigmaDoc(file.docId)
+			}
+		} else {
+			displayStatus('No figma file loaded. Visit figma.com to load a file.')
+		}
 	}
 }
 
@@ -99,8 +106,12 @@ async function handleFigmaDoc(docId: string) {
 
 	const userToken = getApiKey()
 
-	if (!userToken) window.location.href = 'figmaApiKeyForm.html'
-	else await renderFigmaDoc(docId, userToken)
+	if (!userToken) {
+		window.location.href = 'figmaApiKeyForm.html'
+	}
+	else {
+		await renderFigmaDoc(docId, userToken)
+	}
 }
 
 async function renderFigmaDoc(docId: string, userToken: string) {
