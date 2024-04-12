@@ -30,15 +30,26 @@ chrome.runtime.onMessage.addListener((message: FigmentMessage, sender, sendRespo
 			}
 			break
 		case 'sidepanel_open':
-			//send any queued messages to the sidepanel
+			//send any queued messages to the sidepanel (first in, first out)
 			while (messagesForSidePanel.length) {
-				const message = messagesForSidePanel.pop()
+				const message = messagesForSidePanel.shift()
 				chrome.runtime.sendMessage(message)
 			}
 			break;
 	}
 })
 
+/**
+ * This is to account for cases where the same message may be handled here AND elsewhere 
+ * such as in a side-panel. For example, a message may need to cause multiple actions such 
+ * as opening the side panel and then searching for something inside the side panel. In that
+ * case, the message can trigger the first action and then be queued to be re-sent when the
+ * side panel finally opens and is ready to process the next action.
+ * 
+ * We need this mechanism because we don't have a good way of knowing if the side panel
+ * is actually open or a better way to reilably wait for it to open. The API for that seems
+ * to be broken at this time.
+ */
 const messagesForSidePanel: FigmentMessage[] = []
 
 chrome.runtime.onMessageExternal.addListener(async (request, sender, sendResponse) => {
@@ -55,6 +66,7 @@ chrome.runtime.onMessageExternal.addListener(async (request, sender, sendRespons
 					// and there doesn't appear to be a good way to wait for it to be available.
 					chrome.sidePanel.open({ windowId: tab.windowId })
 
+					//queue the message for sending when the sidepanel is ready
 					messagesForSidePanel.push(message)
 				}
 			})
@@ -83,7 +95,6 @@ chrome.runtime.onInstalled.addListener(() => {
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-
 	switch (info.menuItemId) {
 		case 'openSidePanel':
 			openSidePanel(tab);

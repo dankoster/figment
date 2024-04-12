@@ -7,49 +7,63 @@ export class FigmaSearch {
 	// static SplitByCaps(searchTerm) { return new RegExp(searchTerm.split(/(?=[A-Z])/).map(str => str.toLowerCase()).join('|')) }
 }
 
-export function GetFigmaDocument({ docId, userToken, depth = 3 }: { docId: string, userToken: string, depth?: number }) {
+type DocRequestParams = { docId: string, userToken: string, depth?: number }
 
+export function GetUpdatedFigmaDocument({ docId, userToken, depth = 3 }: DocRequestParams) {
 	const request = FetchFigmaJson(`${figmaApiUrl}/files/${docId}?depth=${depth}`, userToken) as Promise<figma.GetFileResponse>
 	request.then(doc => local.setDocument(docId, doc))
-	
+	return request
+}
+
+export function GetFigmaDocument({ docId, userToken, depth = 3 }: DocRequestParams) {
+	const request = GetUpdatedFigmaDocument({ docId, depth, userToken })
 	return { cached: local.getDocument(docId), request }
 }
 
-const imageRequestIds = new Set<string>()
-let imageRequest: Promise<{ [key: string]: string }> | undefined
+type docId = string
+type ImageRequests = { [key: docId]: { imageRequestIds: Set<string>, request: Promise<{ [key: string]: string }> | undefined } }
+let imageRequests: ImageRequests = {}
 /**
  * Get the cached result for an image, if any, and add a callback to the 
  * JavaScript task queue that will execute a batch request for all the images
  * requested on the current execution cycle. 
 */
-export function enqueueImageRequest(userToken: string, docId: string, nodeId: string): {cachedResult: string | undefined; imageRequest: Promise<{ [key: string]: string }>} {
-	imageRequestIds.add(nodeId)
+export function enqueueImageRequest(userToken: string, docId: string, nodeId: string) {
+	if (!imageRequests[docId]) {
+		imageRequests[docId] = {
+			imageRequestIds: new Set<string>(),
+			request: undefined
+		}
+	}
 
-	if (!imageRequest) {
-		imageRequest = new Promise((resolve, reject) => {
+	imageRequests[docId].imageRequestIds.add(nodeId)
+
+	if (!imageRequests[docId].request) {
+		imageRequests[docId].request = new Promise((resolve, reject) => {
 			//wait for all the requests to come in and THEN send the api request
 			setTimeout(() => {
 				//dequeue the ids collected so far
-				const ids = [...imageRequestIds]
-				imageRequestIds.clear()
+				const ids = [...imageRequests[docId].imageRequestIds]
+				imageRequests[docId].imageRequestIds.clear()
 
 				//make a single request for the dequeued ids
 				GetFigmaImages({ docId, userToken, ids })
 					.then(result => {
-						for(const nodeId in result) 
-							local.setImage({docId, nodeId, url: result[nodeId]})
+						for (const nodeId in result) {
+							local.setImage({ docId, nodeId, url: result[nodeId] })
+						}
 						return result
 					})
 					.then(result => resolve(result))
 					.catch(reason => reject(reason))
-					.finally(() => { imageRequest = undefined })
+					.finally(() => { imageRequests[docId].request = undefined })
 			})
 		})
 	}
 
 	const cachedResult = local.getImage(docId, nodeId)
 
-	return { cachedResult, imageRequest };
+	return { cachedResult, imageRequest: imageRequests[docId].request };
 }
 
 

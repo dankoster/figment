@@ -1,6 +1,6 @@
 {
-	"name": "Figment: a React dev tool",
-	"description": "Quickly find the code for rendered React components!",
+	"name": "Figment ⌁ for React + Figma",
+	"description": "Find the code and Figma designs for your React components!",
 	"version": "0.5.4",
 	"manifest_version": 3,
 	"icons": {
