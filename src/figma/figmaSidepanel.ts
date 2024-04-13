@@ -152,16 +152,15 @@ export const handleLocalhost: sidePanelUrlHandler = function (url: URL) {
 			const fileDiv = renderFigmaFile(file.docId, file.document)
 			newFigmaUI.appendChild(fileDiv)
 
+			const handleUpdatedDoc = (updatedDoc: figma.GetFileResponse) => {
+				const newFileDiv = renderFigmaFile(file.docId, updatedDoc)
+				console.log('render updated file', file.docId)
+				applyDiff(fileDiv, newFileDiv)
+			}
+
 			//get updated data and render that next (also updates the cache)
-			// GetUpdatedFigmaDocument({ docId: file.docId, userToken })
-			// 	.then(updatedDoc => {
-			// 		console.log('render updated file', file.docId)
-			// 		const evenNewerFileDiv = renderFigmaFile(file.docId, updatedDoc)
-			// 		const div = document.getElementById(file.docId)
-			// 		console.log({fileDiv, newFileDiv: fileDiv, div, evenNewerFileDiv})
-			// 		if(!div) throw new Error(`missing div for ${file.docId}`)
-			// 		applyDiff(div, evenNewerFileDiv)
-			// 	})
+			GetUpdatedFigmaDocument({ docId: file.docId, userToken })
+				.then(handleUpdatedDoc)
 		}
 
 		const oldFigmaUi = document.getElementById('figmaUi')
@@ -170,7 +169,6 @@ export const handleLocalhost: sidePanelUrlHandler = function (url: URL) {
 		} else {
 			document.body.appendChild(newFigmaUI)
 		}
-		console.log('-------------- updated UI --------------------------------')
 	}
 }
 

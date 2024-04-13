@@ -56,10 +56,13 @@ chrome.tabs.onActivated.addListener(async (activeInfo: chrome.tabs.TabActiveInfo
 })
 
 //handle current tab content changed (most likely a URL change)
-chrome.tabs.onUpdated.addListener((tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) => {
+chrome.tabs.onUpdated.addListener(async (tabId: number, changeInfo: chrome.tabs.TabChangeInfo, tab: chrome.tabs.Tab) => {
 	switch (changeInfo?.status) {
 		case 'complete':
-			handleTabUpdated(tab)
+			const curTab = await getCurrentTab()
+			if(tabId === curTab.id) {
+				handleTabUpdated(tab)
+			}
 			break;
 	}
 })
