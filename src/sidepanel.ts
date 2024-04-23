@@ -60,7 +60,7 @@ chrome.tabs.onUpdated.addListener(async (tabId: number, changeInfo: chrome.tabs.
 	switch (changeInfo?.status) {
 		case 'complete':
 			const curTab = await getCurrentTab()
-			if(tabId === curTab.id) {
+			if(tabId === curTab?.id) {
 				handleTabUpdated(tab)
 			}
 			break;
