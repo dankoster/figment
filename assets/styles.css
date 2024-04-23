@@ -114,6 +114,11 @@ div.submenu-hover-target {
 	position: fixed;
 	clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
 	/* background-color: rgba(0, 0, 0, 0.156); */
+
+	&.left {
+		clip-path: polygon(0% 100%, 0% 0%, 100% 0%);
+		margin-left: -0.5rem;
+	}
 }
 
 .menu-text {

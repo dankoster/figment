@@ -127,8 +127,16 @@ export class FigmentMenu extends HTMLElement {
 		const overflowY = bottom - document.documentElement.clientHeight - window.scrollY + (2 * scrollbarWidth)
 
 		if (overflowX > 0) {
-			//console.log(`Fix overflow X: ${left} - ${overflowX} = ${left - overflowY}px`)
-			container.style.left = (left - overflowX) + 'px'
+			//console.log(`Fix overflow X: ${left} - ${overflowX} = ${left - overflowY}px`, container)
+
+			if (overflowX > 50) {
+				//move the submenu to the left side
+				container.style.left = (left - container.clientWidth - (container.parentElement?.clientWidth ?? 0) + 'px')
+				container.previousElementSibling?.classList.add('left')
+			}
+			else {
+				container.style.left = (left - overflowX) + 'px'
+			}
 		}
 		if (overflowY > 0) {
 			//console.log(`Fix overflow Y: ${top} - ${overflowY} = ${top - overflowY}px`)
@@ -154,21 +162,30 @@ export class FigmentMenu extends HTMLElement {
 				//add invisible hover target to cover lower menu items but remove it 
 				// if the mouse starts moving left. This is to let the user shortcut
 				// across other menu items while moving the cursor to a submenu. 
-				const div = document.createElement('div')
-				div.className = 'submenu-hover-target'
-				div.addEventListener('mousemove', (ev) => {
-					//did the pointer move away from the submenu?
-					if (ev.movementX < 0) {
-						div.style.display = 'none'
+				// If the menu appears to the left instead of the right, we will add
+				// an other class that overrides the shape of the hover target polygon
+				const hoverTarget = document.createElement('div')
+				hoverTarget.className = 'submenu-hover-target'
+				hoverTarget.addEventListener('mousemove', (ev) => {
+					if (ev.movementX != 0) {
+						const menuIsLeft = hoverTarget.classList.contains('left')
+						const menuIsRight = !menuIsLeft
+						const movementIsLeft = ev.movementX < 0
+						const movementIsRight = ev.movementX > 0
+						//did the pointer move away from the submenu?
+						//console.log(movementIsRight ? '→' : movementIsLeft ? '←' : '0')
+						if ((menuIsLeft && movementIsRight) || (menuIsRight && movementIsLeft)) {
+							hoverTarget.style.display = 'none'
+						}
 					}
 				})
-				div.addEventListener('mouseleave', () => {
-					div.style.display = 'none'
+				hoverTarget.addEventListener('mouseleave', () => {
+					hoverTarget.style.display = 'none'
 				})
 				menuItem.div.addEventListener('mouseenter', () => {
-					div.style.display = 'block'
+					hoverTarget.style.display = 'block'
 				})
-				menuItem.div.appendChild(div)
+				menuItem.div.appendChild(hoverTarget)
 
 				menuItem.div.appendChild(subMenu)
 				menuItem.div.classList.add('has-submenu')
@@ -185,15 +202,16 @@ export class FigmentMenu extends HTMLElement {
 		submenu.style.top = `${parentRect?.top}px`
 		submenu.style.left = `${parentRect?.right}px`
 
-		//TODO: open the submenu to the left if the overflow is > 0.5x parent width
 		FigmentMenu.fixContainerOverflow(submenu)
 
 		const submenuRect = submenu.getBoundingClientRect()
-		const div = submenu.parentElement?.querySelector('div.submenu-hover-target') as HTMLDivElement
+		const hoverTarget = submenu.parentElement?.querySelector('div.submenu-hover-target') as HTMLDivElement
+
+		hoverTarget.style.top = `${parentRect?.top}px`
 		//todo: get (submenu.parentElement?.style.paddingBlockEnd ?? 0) instead of hardcoding -3
-		div?.style.setProperty('margin-top', `${(parentRect?.height ?? 0) - 3}px`)
-		div?.style.setProperty('width', `${parentRect?.width}px`)
-		div?.style.setProperty('height', `${submenuRect.height - (parentRect?.height ?? 0)}px`)
+		hoverTarget?.style.setProperty('margin-top', `${(parentRect?.height ?? 0) - 3}px`)
+		hoverTarget?.style.setProperty('width', `${parentRect?.width}px`)
+		hoverTarget?.style.setProperty('height', `${submenuRect.height - (parentRect?.height ?? 0)}px`)
 	}
 
 	AddItem(item: MenuItem) {
