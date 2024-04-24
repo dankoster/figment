@@ -59,8 +59,8 @@ function handleFigmentMessage(message: FigmentMessage) {
 //subtree stemming from a canvas node will represent a layer (e.g an object) on the canvas.
 
 
-//const figmaNodeLink = (id: string) => `https://www.figma.com/file/${CurrentDocument.id}/${CurrentDocument.name}?node-id=${id}`
-
+const figmaNodeLink = (docId: string, docName: string, nodeId: string) => `https://www.figma.com/file/${docId}/${docName}?node-id=${nodeId}`
+const figmaFileLink = (docId: string) => `https://www.figma.com/file/${docId}`
 
 type FigmaHandlerParams = { path: string, params: string[] }
 type FigmaHandlerFunction = (params: FigmaHandlerParams) => void | Promise<void>
@@ -69,7 +69,7 @@ const figmaUrlPathHandlers = new Map<string, FigmaHandlerFunction>()
 figmaUrlPathHandlers.set('file', ({ params: [docId] }: FigmaHandlerParams) => handleFigmaFile(docId)) //handle https://www.figma.com/file....
 figmaUrlPathHandlers.set('*', ({ path }) => displayStatus(`Open a specific figma file to read it`))
 
-const childNodeHandlers = new Map<figma.Node['type'], (docId: string, node: any) => HTMLElement>()
+const childNodeHandlers = new Map<figma.Node['type'], (docId: string, docName: string, node: any) => HTMLElement>()
 childNodeHandlers.set('CANVAS', renderFigmaCanvasNode)
 childNodeHandlers.set('FRAME', renderFigmaFrameNode)
 childNodeHandlers.set('SECTION', renderFigmaSectionNode)
@@ -234,8 +234,8 @@ function renderFigmaFile(docId: string, figmaFile: figma.GetFileResponse) {
 	div.classList.add('figma-file')
 	div.classList.add(figmaFile.role) //'owner'
 
-	div.appendChild(element('div', { textContent: figmaFile.name }))
-	div.appendChild(element('div', { textContent: docId }))
+	div.appendChild(element('h1', { textContent: figmaFile.name }))
+	div.appendChild(element('a', { textContent: docId, href: figmaFileLink(docId), target: '_figma' }))
 
 	//@ts-ignore
 	div.figmaDocId = docId
@@ -243,7 +243,7 @@ function renderFigmaFile(docId: string, figmaFile: figma.GetFileResponse) {
 	div.figmaNode = figmaFile
 
 	//render children
-	const children = renderChildNodes(docId, figmaFile.document)
+	const children = renderChildNodes(docId, figmaFile.document.name, figmaFile.document)
 	for (const child of children) div.appendChild(child)
 
 	return div
@@ -285,11 +285,11 @@ function findString(node: any, searchString: string) {
 	return result
 }
 
-function renderChildNodes(docId: string, node: figma.DocumentNode | figma.CanvasNode | figma.SectionNode) {
+function renderChildNodes(docId: string, docName: string, node: figma.DocumentNode | figma.CanvasNode | figma.SectionNode) {
 	const children: HTMLElement[] = []
 	node.children?.forEach(figmaNode => {
 		const handler = childNodeHandlers.get(figmaNode.type)
-		const child = handler && handler(docId, figmaNode)
+		const child = handler && handler(docId, docName, figmaNode)
 
 		if (child) {
 			//@ts-ignore
@@ -319,30 +319,29 @@ function renderChildNodes(docId: string, node: figma.DocumentNode | figma.Canvas
 	return children
 }
 
-function renderFigmaCanvasNode(docId: string, node: figma.CanvasNode) {
+function renderFigmaCanvasNode(docId: string, docName: string, node: figma.CanvasNode) {
 	const div = document.createElement('div')
 	div.classList.add('figma')
 	div.classList.add(node.type)
-	div.innerText = node.type + ' - ' + node.name
+	div.appendChild(element('h2', {innerText: node.type + ' - ' + node.name}))
 
-	const children = renderChildNodes(docId, node)
+	const children = renderChildNodes(docId, docName, node)
 	for (const child of children) div.appendChild(child)
 
 	return div
 }
 
-function renderFigmaFrameNode(docId: string, node: figma.FrameNode) {
+function renderFigmaFrameNode(docId: string, docName: string, node: figma.FrameNode) {
 	const userToken = getApiKey()
 	if (!userToken) throw new Error('no user token')
 
 	const div = document.createElement('div')
 	div.classList.add('figma')
 	div.classList.add(node.type);
-
-	const span = document.createElement('span')
-	span.innerText = node.name
-	div.appendChild(span)
-
+	const nodeLink = element('a', {href: figmaNodeLink(docId, docName, node.id), target: '_figma'})
+	nodeLink.appendChild(element('h4', {innerText: node.name, className: 'name'}))
+	div.appendChild(nodeLink)
+	
 	let img: HTMLImageElement | undefined
 	const request = enqueueImageRequest(userToken, docId, node.id)
 	if (request.cachedResult) {
@@ -378,13 +377,15 @@ function renderFigmaDragableImage(imgSrc: string) {
 	return img
 }
 
-function renderFigmaSectionNode(docId: string, node: figma.SectionNode) {
+function renderFigmaSectionNode(docId: string, docName: string, node: figma.SectionNode) {
 	const div = document.createElement('div')
 	div.classList.add('figma')
 	div.classList.add(node.type)
-	div.innerText = node.type + ' - ' + node.name + ' - ' + node.devStatus?.type
+	div.appendChild(element('h3', {innerText: node.type})) 
+	div.appendChild(element('h4', {innerText: node.name}))
+	div.appendChild(element('span', {innerText: node.devStatus?.type})) 
 
-	const children = renderChildNodes(docId, node)
+	const children = renderChildNodes(docId, docName, node)
 	for (const child of children) div.appendChild(child)
 
 	return div
