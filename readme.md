@@ -3,60 +3,59 @@
 ### Figment is a developer tool to inspect rendered React components and find the related sorce code!
 
 
-Just like the React dev tools, this tool looks at the debug data embedded in a dev build of a React site and presents some of that data as useful information. 
-
-**Most importantly, it lets you inspect the UI to quickly figure out what code is rendering what you see. You can just click the provided link to open the source in VS Code.** 
+It lets you inspect the UI to quickly figure out what code is rendering what you see. You can just click the provided link to open the source in VS Code.
 
 
 https://github.com/dankoster/figment/assets/9935523/d72555a0-1849-4c75-8424-01de6b23144f
 
 
-Unlike the official React Dev Tools, this tool renders elements on the same page it's inspecting. I'm using [custom components](https://developer.mozilla.org/en-US/docs/Web/API/Web_components) avoid conflicts and provide isolation between the page and the components rendered by the tool. Mostly this means making use of the [shadow dom](https://developer.mozilla.org/en-US/docs/Web/API/Web_components/Using_shadow_DOM) to isolate the extension CSS from the page CSS.
+This tool has no dependencies. Every bit of functionality was written by me because I learn best by making something I find useful. If you would like a feature that doesn't exist, just let me know and I'll take a look. Or you can submit a PR. 
+
+I'm currently tinkering with a Figma integration to help correlate React components with Figma designs.
 
 # Usage
-1) Open a page on localhost that is using a dev build of React (production react will likely be minified and not include source file mappings)
+1) Open a page on localhost that is using a dev build of React. Production React will likely be minified and not include source file mappings. I am currently limiting this tool (in the manifest) to only function for localhost. 
 2) Toggle enabled/disabled
    * Use the hotkey `ALT-f` (`⌥-f` on Mac)
    * *OR* click the Figment toolbar icon
 3) Mouse over the page to see elements and components highlighted with a red outline
-4) Click the red outline label to get the context menu
+4) Click the red outline's label to get the context menu
+
+The context menu that pops up will show you the element/component you are inspecting as well as all of it's parent element/components. A link to the source code will be provided for each element/component where React has provided that information. 
 
 # Features
 * Highlight React components and DOM elements under the mouse
 * Click the highlight label to see a menu showing the stack of components under the mouse
 * Click a code file link to open it in Visual Studio Code
-* Configurable hot key (configure in the chrome extension settings (go to __chrome://extensions/shortcuts__ in a browser tab)
+* It works with React Native! (if you can run in a chromium browser)
+* Configurable hot key (chrome://extensions/shortcuts)
+* Figma integration (working on it...)
 
-### Up Next
-* Figma integration
-   * Load designs from a Figma file into the side panel
-   * Overlay designs onto your page to check for pixel perfect implementation
-   * Correlate React components with Figma designs
-
-    Here's a very rough first pass:
-
-https://github.com/dankoster/figment/assets/9935523/afc57455-f782-4ea8-becd-a954089f3134
-
+### Current & recent dev efforts
+* Menu stuff
+   - [x] Scroll behavior
+   - [x] Submenu positioning
+   - [x] Submenu mouse interaction refinement
+* Sidepanel stuff
+   - [ ] Figma integration (wip)
+   - [ ] CSS styles for everything
+   - [ ] Sidepanel Tabs
+   - [ ] Configuration options sidepanel
      
-### TODO 
+### TODO?
 * Display other react info for selected components
-   * State
-   * Params
-   * Hooks
-* Configuration options
-   * Dark mode
-   * [Custom browser protocols](https://help.autodesk.com/view/SGDEV/ENU/?guid=SGD_ami_custom_browser_protocols_html) for opening files (currently only suppoprts `vscode://file:line:character`)
+* [Custom browser protocols](https://help.autodesk.com/view/SGDEV/ENU/?guid=SGD_ami_custom_browser_protocols_html) for opening files (currently only suppoprts `vscode://file:line:character`)
 
 
 # Install (for development)
-We're keeping it simple here. There are no dependencies except for [git](https://github.com/git-guides/install-git) and [TypeScript](https://www.typescriptlang.org/). We don't have a package manager or build tool. If you have TypeScript and git installed, the following instructions should work great on Mac or Linux: 
+We're keeping it simple and using just JavaScript, HTML, and CSS. I have intentionally avoided dependencies except for [git](https://github.com/git-guides/install-git) and [TypeScript](https://www.typescriptlang.org/). We really don't need a package manager or build tool for a project of this size. 
 
 1) Clone the repo locally: `git clone https://github.com/dankoster/figment.git`
 1) Navigate to the folder that was created by git: `cd figment`
 1) Run the terminal command: `mkdir -p dist && cp -rv ./assets/* ./dist && tsc` 
    * `mkdir -p dist` makes the dist folder
    * `cp -rv ./assets/* ./dist` verbosely copies the contents of the assets folder into dist
-   * `tsc` compiles the typescript (or use `tsc -w` to watch for changes)
+   * `tsc` compiles the typescript to the dist folder
 1) Open `chrome://extensions/` in your chromium browser
 1) Turn on "Developer Mode"
 1) Click the "Load unpacked" button
@@ -64,7 +63,4 @@ We're keeping it simple here. There are no dependencies except for [git](https:/
 1) Find the figment extension in your browser extensions toolbar and pin it
 1) Have fun hacking!
    * Use `tsc -w` to watch for changes while working
-   * Use `cp -rv ./assets/* ./dist` to copy asset files into dist
-
-I added a simple Deno script to watch and copy those asset files... 
-`deno run --allow-read --allow-write watchAndCopy.ts ./assets ./dist`
+   * Use `cp -rv ./assets/* ./dist` to copy asset files into dist (or use the included Deno script to watch and copy those asset files when they change... `deno run --allow-read --allow-write watchAndCopy.ts ./assets ./dist`)
