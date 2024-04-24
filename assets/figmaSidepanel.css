@@ -1,0 +1,23 @@
+.figma-logo {
+    width: 100px;
+}
+
+.FRAME {
+
+    padding: 0.5rem;
+    outline: 1px solid #ccc;
+    margin-block: 0.5rem;
+    border-radius: 5px;
+    background: #f1f1f1;
+
+    img {
+        width: 100%;
+        object-fit: contain;
+        outline: 1px dashed #ccc;
+        margin-block-start: 0.5rem;
+    }
+}
+
+.filtered {
+    display: none;
+}

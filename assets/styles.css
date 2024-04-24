@@ -3,17 +3,20 @@
 	pointer-events: none;
 	outline: 2px dashed #ff000091;
 	z-index: 30000;
-	position: absolute;
 	border-radius: 5px;
 	outline-offset: -2px;
 	transition: all 0.2s ease-in-out;
+
+	&.no-transition {
+		transition: none;
+	}
 }
 
 .figment-outline-label {
 	font-family: system-ui;
-    font-size: medium;
+	font-size: medium;
 	line-height: 1.4;
-    font-weight: 600;
+	font-weight: 600;
 
 	cursor: pointer;
 	pointer-events: all;
@@ -32,7 +35,7 @@
 
 .figment-menu-container {
 	z-index: 111111;
-	position: absolute;
+	position: fixed;
 	border-radius: 7px;
 	overflow: hidden;
 	box-shadow: 0px 5px 25px #000000a3;
@@ -40,7 +43,7 @@
 
 .figment-menu {
 	font-family: system-ui;
-    font-size: medium;
+	font-size: medium;
 	line-height: normal;
 	cursor: default;
 	color: black;
@@ -61,7 +64,111 @@
 	color: #353535;
 	gap: 1rem;
 	padding-inline: 0.5rem;
+
+
+	&:hover {
+		outline: 2px solid darkgray;
+		outline-offset: -2px;
+		border-radius: 6px;
+	}
+
+	&:hover>.submenu {
+		opacity: 1;
+		visibility: visible;
+		/* display: block;  */
+		animation: slideIn 200ms ease-out;
+	}
+
+	&>.submenu {
+		opacity: 0;
+		visibility: hidden;
+		/* display: none;  */
+	}
+
+	&.has-submenu::after {
+		content: "";
+		position: relative;
+		height: 0;
+		right: 0;
+		transform: translateY(50%);
+		border: 5px solid transparent;
+		border-left-color: #000000;
+		transition: right 200ms ease-out;
+	}
+
+	&.has-submenu:hover::after {
+		right: -5px;
+	}
+
+	&.is-dom-element:hover {
+		outline: 1px dashed #ff000091;
+		/* cursor: pointer; */
+		outline-width: 2px;
+		outline-offset: -2px;
+		border-radius: 4px;
+	}
 }
+
+div.submenu-hover-target {
+	display: block;
+	position: fixed;
+	clip-path: polygon(0% 0%, 100% 0%, 100% 100%);
+	/* background-color: rgba(0, 0, 0, 0.156); */
+
+	&.left {
+		clip-path: polygon(0% 100%, 0% 0%, 100% 0%);
+		margin-left: -0.5rem;
+	}
+}
+
+.menu-text {
+	/* cursor: pointer; */
+	overflow: hidden;
+	text-wrap: nowrap;
+	text-overflow: ellipsis;
+	color: #282828;
+}
+
+[class*="Component "]::after {
+	color: blue;
+	margin-left: 10px;
+}
+
+.menu-text.HostComponent {
+	font-weight: bolder;
+}
+
+.menu-text.HostComponent::before {
+	color: blue;
+	content: "<";
+}
+
+.menu-text.HostComponent::after {
+	color: blue;
+	content: "/>";
+	margin-left: 0px;
+}
+
+
+
+@keyframes slideIn {
+	0% {
+		opacity: 0;
+		visibility: visible;
+		transform: translateX(-10px);
+	}
+
+	100% {
+		opacity: 1;
+		visibility: visible;
+		transform: translateX(0);
+	}
+}
+
+
+
+
+
 
 .menu-scrolling-container {
 	max-height: 300px;
@@ -189,20 +296,6 @@ input[type="checkbox"].toggle {
 	padding: 4px;
 }
 
-.menu-item:hover {
-	outline: 2px dashed darkgray;
-	outline-offset: -2px;
-	border-radius: 6px;
-}
-
-.menu-item.is-dom-element:hover {
-	outline: 1px dashed #ff000091;
-	/* cursor: pointer; */
-	outline-width: 2px;
-	outline-offset: -2px;
-	border-radius: 4px;
-}
-
 .menu-btn {
 	display: block;
 	color: #444;
@@ -237,39 +330,12 @@ a.menu-btn {
 	text-align: center;
 }
 
-.menu-text {
-	/* cursor: pointer; */
-	overflow: hidden;
-	text-overflow: ellipsis;
-	color: #282828;
-}
-
-[class*="Component "]::after {
-	color: blue;
-	margin-left: 10px;
-}
-
 /* 
 [data-text]::after {
 	content:attr(data-text);
 	color:blue;
 	margin-left:10px;
 } */
-
-.menu-text.HostComponent {
-	font-weight: bolder;
-}
-
-.menu-text.HostComponent::before {
-	color: blue;
-	content: "<";
-}
-
-.menu-text.HostComponent::after {
-	color: blue;
-	content: "/>";
-	margin-left: 0px;
-}
 
 .menu-item-grid-expando span.HostComponent::before {
 	content: "</>";
@@ -340,34 +406,4 @@ a.menu-btn {
 	height: 1px;
 	border-bottom: 1px solid #b3b3b3;
 	background-color: #aaa;
-}
-
-.menu-item-submenu::after {
-	content: "";
-	position: absolute;
-	right: 6px;
-	top: 50%;
-	transform: translateY(-50%);
-	border: 5px solid transparent;
-	border-left-color: #808080;
-}
-
-.menu-item-submenu:hover::after {
-	border-left-color: #fff;
-}
-
-/* position a sub-menu */
-.figment-menu .figment-menu {
-	top: 4px;
-	left: 99%;
-}
-
-.menu-item:hover>.figment-menu {
-	/* opacity: 1; */
-	/* transform: translate(0, 0) scale(1); */
-	pointer-events: auto;
-}
-
-.menu-item:hover>.figment-menu {
-	transition-delay: 300ms;
 }

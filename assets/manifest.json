@@ -1,7 +1,7 @@
 {
-	"name": "Figment",
-	"description": "Quickly find the code for rendered React components!",
-	"version": "0.5.3",
+	"name": "Figment ⌁ for React + Figma",
+	"description": "Find the code and Figma designs for your React components!",
+	"version": "0.5.4",
 	"manifest_version": 3,
 	"icons": {
 		"16": "F.png",
@@ -34,8 +34,11 @@
 				"elementFunctions.js",
 				"Menu.js",
 				"FigmentOutline.js",
+				"FigmentDragable.js",
 				"Trace.js",
-				"styles.css"
+				"styles.css",
+				"dragable.css",
+				"html.js"
 			],
 			"matches": [
 				"*://localhost/*"
@@ -44,20 +47,35 @@
 	],
 	"externally_connectable": {
 		"matches": [
-			"http://localhost/*"
+			"http://localhost/*",
+			"*://figma.com/*"
 		]
 	},
 	"permissions": [
-		"scripting"
+		"scripting",
+		"sidePanel",
+		"contextMenus",
+		"tabs",
+		"activeTab"
 	],
 	"host_permissions": [
-		"*://localhost/*"
+		"*://localhost/*",
+		"*://figma.com/*"
 	],
 	"commands": {
 		"_execute_action": {
 			"suggested_key": {
 				"default": "Alt+F"
 			}
+		},
+		"configure": {
+			"suggested_key": {
+				"default": "Alt+C"
+			},
+			"description": "Open Sidepanel"
 		}
-	}
+	},
+	"side_panel": {
+		"default_path": "sidepanel.html"
+	  }
 }

@@ -2,9 +2,10 @@ import { figmentId } from './Figment.js'
 import { removeElementsByTagName } from './elementFunctions.js';
 
 export default class FigmentOutline extends HTMLElement {
-	
+
 	overlay: HTMLDivElement
 	label?: HTMLSpanElement
+	target?: HTMLElement
 
 	constructor() {
 		super();
@@ -22,22 +23,36 @@ export default class FigmentOutline extends HTMLElement {
 		// Attach the created elements to the shadow dom
 		this.shadowRoot?.appendChild(cssLink)
 		this.shadowRoot?.appendChild(this.overlay)
+
+		//watch for changes to the size of the document and move the outline to
+		// match the resulting changes to the position of our target element
+		const resizeObserver = new ResizeObserver((entries) => {
+			for (const entry of entries) {
+				if (this.target) {
+					this.overlay.classList.add('no-transition')
+					this.setLocation(this.target.getBoundingClientRect())
+					this.overlay.classList.remove('no-transition')
+				}	
+			}
+		});
+
+		resizeObserver.observe(document.body);
 	}
 
-	setLabel({label, onClick}: {label: string, onClick?: (this: HTMLSpanElement, ev: MouseEvent) => any}) {
+	setLabel({ label, onClick }: { label: string, onClick?: (this: HTMLSpanElement, ev: MouseEvent) => any }) {
 
 		//remove the old label to avoid accumulating event handlers
 		this.shadowRoot?.querySelectorAll('.figment-outline-label').forEach(e => e.remove())
-		
+
 		this.label = document.createElement('span')
 		this.label.className = 'figment-outline-label'
 		this.label.textContent = label
-		if(onClick) this.label.addEventListener('click', onClick)
+		if (onClick) this.label.addEventListener('click', onClick)
 		this.overlay.appendChild(this.label)
 	}
 
-	setStyles(styles: {[key in keyof CSSStyleDeclaration]?:any}) {
-		for(const style in styles) {
+	setStyles(styles: { [key in keyof CSSStyleDeclaration]?: any }) {
+		for (const style in styles) {
 			this.overlay.style[style] = styles[style]
 		}
 	}
@@ -49,6 +64,13 @@ export default class FigmentOutline extends HTMLElement {
 			, width: rect.width + 'px'
 			, height: rect.height + 'px'
 		})
+	}
+
+	trackNode(node: HTMLElement) {
+		if (!node.getBoundingClientRect) throw new Error(`missing 'getBoundingClientRect' on node ${node}`)
+
+		this.target = node
+		this.setLocation(node.getBoundingClientRect())
 	}
 
 	static removeHighlight() {
@@ -70,11 +92,11 @@ export default class FigmentOutline extends HTMLElement {
 		return overlay
 	}
 
-	static highlightElement({node, label, onClick}: {node: HTMLElement, label: string, onClick?: (this: HTMLElement, ev: MouseEvent) => any}) {
-		if (node && node.getBoundingClientRect) {
-			let overlay = FigmentOutline.Create()	
-			overlay.setLabel({label, onClick})
-			overlay.setLocation(node.getBoundingClientRect())
+	static highlightElement({ node, label, onClick }: { node: HTMLElement, label: string, onClick?: (this: HTMLElement, ev: MouseEvent) => any }) {
+		if (node) {
+			let overlay = FigmentOutline.Create()
+			overlay.setLabel({ label, onClick })
+			overlay.trackNode(node)
 		}
-	}	
+	}
 }
