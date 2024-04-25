@@ -1,14 +1,13 @@
 import {
 	displayStatus,
-	getContentElement,
 	sidePanelUrlHandler,
 	splitUrlPath
 } from '../sidepanel.js'
-import { GetFigmaDocument, GetUpdatedFigmaDocument, enqueueImageRequest } from './figmaApi.js'
+import { GetUpdatedFigmaDocument, enqueueImageRequest } from './figmaApi.js'
 import { FigmentMessage, SendMessageToCurrentTab } from '../Bifrost.js'
 import { applyStylesheetToDocument, applyDiff, childrenHavingClass, element } from '../html.js'
 
-import { getApiKey, figmaFiles as localStorage_figmaFiles } from './localStorage.js'
+import * as figmaLocalStorage from './localStorage.js'
 
 
 //tell the service worker the sidepanel has opened
@@ -66,7 +65,7 @@ type FigmaHandlerParams = { path: string, params: string[] }
 type FigmaHandlerFunction = (params: FigmaHandlerParams) => void | Promise<void>
 
 const figmaUrlPathHandlers = new Map<string, FigmaHandlerFunction>()
-figmaUrlPathHandlers.set('file', ({ params: [docId] }: FigmaHandlerParams) => handleFigmaFile(docId)) //handle https://www.figma.com/file....
+figmaUrlPathHandlers.set('file', ({ params: [docId] }: FigmaHandlerParams) => handleFigmaFileURL(docId)) //handle https://www.figma.com/file....
 figmaUrlPathHandlers.set('*', ({ path }) => displayStatus(`Open a specific figma file to read it`))
 
 const childNodeHandlers = new Map<figma.Node['type'], (docId: string, docName: string, node: any) => HTMLElement>()
@@ -85,16 +84,20 @@ export const handleFigmaUrl: sidePanelUrlHandler = function (url: URL) {
 	if (handler) handler({ path, params })
 }
 
-async function handleFigmaFile(docId: string) {
+async function handleFigmaFileURL(docId: string) {
 
-	const userToken = getApiKey()
+	const userToken = figmaLocalStorage.getApiKey()
 
 	if (!userToken) {
 		window.location.href = 'figmaApiKeyForm.html'
 	}
 	else {
-		//TODO: save the doc data to local storage and render a UI showing that
-		await renderFigmaDoc(docId, userToken)
+		document.getElementById('figmaUi')?.remove()
+
+		displayStatus(`FETCHING ${docId}`)
+		const doc = await GetUpdatedFigmaDocument({docId, userToken})
+
+		displayStatus(`GOT ${docId} last modified ${doc.lastModified}`)		
 	}
 }
 
@@ -104,12 +107,13 @@ async function handleFigmaFile(docId: string) {
  * @returns void
  */
 export const handleLocalhost: sidePanelUrlHandler = function (url: URL) {
-	const userToken = getApiKey()
+	const userToken = figmaLocalStorage.getApiKey()
 	if (!userToken) {
+		displayStatus('no user token found!')
 		window.location.href = 'figmaApiKeyForm.html'
 	}
 	else {
-		const files = localStorage_figmaFiles()
+		const files = figmaLocalStorage.figmaFiles()
 		if (!files?.length) {
 			displayStatus('No figma file loaded. Visit figma.com to load a file.')
 			return
@@ -153,12 +157,14 @@ export const handleLocalhost: sidePanelUrlHandler = function (url: URL) {
 			newFigmaUI.appendChild(fileDiv)
 
 			const handleUpdatedDoc = (updatedDoc: figma.GetFileResponse) => {
+				displayStatus(`GOT ${file.docId} Last modified: ${updatedDoc.lastModified}`)
 				const newFileDiv = renderFigmaFile(file.docId, updatedDoc)
 				console.log('render updated file', file.docId)
 				applyDiff(fileDiv, newFileDiv)
 			}
 
 			//get updated data and render that next (also updates the cache)
+			displayStatus(`FETCHING ${file.docId}`)
 			GetUpdatedFigmaDocument({ docId: file.docId, userToken })
 				.then(handleUpdatedDoc)
 		}
@@ -169,62 +175,6 @@ export const handleLocalhost: sidePanelUrlHandler = function (url: URL) {
 		} else {
 			document.body.appendChild(newFigmaUI)
 		}
-	}
-}
-
-async function renderFigmaDoc(docId: string, userToken: string) {
-	try {
-		//get the cached document AND submit a request for an update
-		const { cached, request } = GetFigmaDocument({ userToken, docId, depth: 4 })
-
-		const contentElement = getContentElement()
-
-		//TODO: handle multiple figma files?
-		let figmaFileElement = contentElement?.querySelector(".figma-file")
-
-		//render the cached version
-		if (cached?.document) {
-			file = cached.document
-			const ui = renderFigmaFile(docId, file)
-			if (ui) {
-				displayStatus('using cached figma data')
-				if (figmaFileElement) {
-					applyDiff(figmaFileElement, ui)
-				}
-				else {
-					figmaFileElement = ui
-					contentElement.appendChild(ui)
-				}
-
-				if (filter) filterFigmaData(file, filter)
-			}
-		}
-
-		//wait for the requested updated version
-		file = await request
-
-		const updateTimestamp = new Date(file.lastModified).getTime()
-		const cachedDocTimestamp = cached?.document && new Date(cached.document.lastModified).getTime()
-
-		//console.log(cachedDocTimestamp, updateTimestamp, cachedDocTimestamp === updateTimestamp ? 'same' : 'updated')
-		if (cachedDocTimestamp !== updateTimestamp) {
-			const newUi = renderFigmaFile(docId, file) //render the updated version
-			if (newUi) {
-				displayStatus('updated figma data')
-				if (figmaFileElement) {
-					applyDiff(figmaFileElement, newUi)
-				}
-				else {
-					contentElement.appendChild(newUi)
-				}
-			}
-
-			if (filter) filterFigmaData(file, filter)
-		}
-
-	} catch (err) {
-		console.error(err)
-		displayStatus(err as string)
 	}
 }
 
@@ -332,7 +282,7 @@ function renderFigmaCanvasNode(docId: string, docName: string, node: figma.Canva
 }
 
 function renderFigmaFrameNode(docId: string, docName: string, node: figma.FrameNode) {
-	const userToken = getApiKey()
+	const userToken = figmaLocalStorage.getApiKey()
 	if (!userToken) throw new Error('no user token')
 
 	const div = document.createElement('div')

@@ -1,4 +1,5 @@
 import * as figmaSidepanel from "./figma/figmaSidepanel.js";
+import { element } from "./html.js";
 
 
 const handlers = new Map<string, sidePanelUrlHandler>()
@@ -9,19 +10,19 @@ async function handleTabUpdated(tab: chrome.tabs.Tab) {
 	if (!tab.url) return
 
 	const url = new URL(tab.url)
+	displayStatus(url.toString())
 	const handler = handlers.get(url.hostname)
 
 	if (handler) handler(url)
+	else displayStatus(`NO HANDLER for ${url.hostname}`)
 }
 
-export function displayStatus(status: string) {
-	getContentElement('status').innerText = status
-}
-
-export function getContentElement(id: string = "content") {
-	const content = document.getElementById(id)
-	if (!content) throw new Error(`could not find element with id "${id}"`)
-	return content
+export function displayStatus(value: string) {
+	const status = document.getElementById('status')
+	if (!status) throw new Error(`could not find element with id "${status}"`)
+	const newStatus = element('pre', {innerText: value})
+	status.appendChild(newStatus)
+	newStatus.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" })
 }
 
 export type sidePanelUrlHandler = (url: URL) => void

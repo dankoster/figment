@@ -9,15 +9,13 @@ export class FigmaSearch {
 
 type DocRequestParams = { docId: string, userToken: string, depth?: number }
 
+/**
+ * Fetch an updated copy of the specified figma document and update the cache in local storage
+ */
 export function GetUpdatedFigmaDocument({ docId, userToken, depth = 3 }: DocRequestParams) {
 	const request = FetchFigmaJson(`${figmaApiUrl}/files/${docId}?depth=${depth}`, userToken) as Promise<figma.GetFileResponse>
 	request.then(doc => local.setDocument(docId, doc))
 	return request
-}
-
-export function GetFigmaDocument({ docId, userToken, depth = 3 }: DocRequestParams) {
-	const request = GetUpdatedFigmaDocument({ docId, depth, userToken })
-	return { cached: local.getDocument(docId), request }
 }
 
 type docId = string
