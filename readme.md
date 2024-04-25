@@ -5,6 +5,7 @@
 
 It lets you inspect the UI to quickly figure out what code is rendering what you see. You can just click the provided link to open the source in VS Code.
 
+[Get it from the chrome web store!](https://chromewebstore.google.com/detail/figment/hcmfhihaniplfakhnhpojidjkbnifgde)
 
 https://github.com/dankoster/figment/assets/9935523/d72555a0-1849-4c75-8424-01de6b23144f
 
