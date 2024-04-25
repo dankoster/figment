@@ -32,16 +32,32 @@ The context menu that pops up will show you the element/component you are inspec
 * Figma integration (working on it...)
 
 ### Current & recent dev efforts
-* Menu stuff
-   - [x] Scroll behavior
-   - [x] Submenu positioning
-   - [x] Submenu mouse interaction refinement
 * Sidepanel stuff
    - [ ] Figma integration (wip)
+      - [x] Keep Figma API key in local storage (prompt for key if missing)
+      - [x] Load Figma data into local storage when visiting a figma page
+      - [x] Get Figma images
+      - [x] Keep Figma data synchronized
+      - [x] Drag Figma image onto localhost page
+      - [ ] Manage local Figma docs (list, add, delete)
+      - [ ] Separate sidepanel pages for managing and using Figma data
+      - [ ] Functionality to link React components to Figma designs
    - [ ] CSS styles for everything
-   - [ ] Sidepanel Tabs
+   - [ ] Sidepanel Header/Tabs
    - [ ] Configuration options sidepanel
      
+* Menu stuff
+   - [x] Submenu open/close css animations
+   - [x] Scroll behavior 
+      - Move the menu with the page 
+      - Move submenus with their parent menu items when scrolling inside the menu
+      - Adjust menu max-height to avoid scrolling for less than a minimum number of items
+   - [x] Submenu positioning 
+      - Slide submenus left to prevent overflowing the right side of the page
+      - Make submenus appear on the left of their parents if they would overlap the main menu enough to cover other functionality
+   - [x] Submenu mouse interaction refinement 
+      - allow "shortcutting" over other menu items if the mouse is headed toward an open submenu
+
 ### TODO?
 * Display other react info for selected components
 * [Custom browser protocols](https://help.autodesk.com/view/SGDEV/ENU/?guid=SGD_ami_custom_browser_protocols_html) for opening files (currently only suppoprts `vscode://file:line:character`)
