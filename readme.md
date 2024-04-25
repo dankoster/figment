@@ -9,58 +9,56 @@ It lets you inspect the UI to quickly figure out what code is rendering what you
 https://github.com/dankoster/figment/assets/9935523/d72555a0-1849-4c75-8424-01de6b23144f
 
 
-This tool has no dependencies. Every bit of functionality was written by me because I learn best by making something I find useful. If you would like a feature that doesn't exist, just let me know and I'll take a look. Or you can submit a PR. 
+This tool has no dependencies. Every bit of functionality was written by me because I learn best by making something I find useful. If you would like a feature that doesn't exist, [just let me know](https://github.com/dankoster/figment/issues/new) and I'll take a look. Or you can submit a PR. 
 
 I'm currently tinkering with a Figma integration to help correlate React components with Figma designs.
 
 # Usage
-1) Open a page on localhost that is using a dev build of React. Production React will likely be minified and not include source file mappings. I am currently limiting this tool (in the manifest) to only function for localhost. 
+1) Open a page on localhost that is using a dev build of React or React Native. Production React will likely be minified and not include source file mappings. I am currently limiting this tool (in the manifest) to only function for localhost. 
 2) Toggle enabled/disabled
-   * Use the hotkey `ALT-f` (`⌥-f` on Mac)
-   * *OR* click the Figment toolbar icon
+   - Use the hotkey `ALT-f` (`⌥-f` on Mac) (configure here: chrome://extensions/shortcuts)
+   - *OR* click the Figment toolbar icon
+   - *OR* chose "Toggle DOM Inspection" from the browser context menu
 3) Mouse over the page to see elements and components highlighted with a red outline
 4) Click the red outline's label to get the context menu
 
 The context menu that pops up will show you the element/component you are inspecting as well as all of it's parent element/components. A link to the source code will be provided for each element/component where React has provided that information. 
 
-# Features
-* Highlight React components and DOM elements under the mouse
-* Click the highlight label to see a menu showing the stack of components under the mouse
-* Click a code file link to open it in Visual Studio Code
-* It works with React Native! (if you can run in a chromium browser)
-* Configurable hot key (chrome://extensions/shortcuts)
-* Figma integration (working on it...)
 
-### Current & recent dev efforts
-* Sidepanel stuff
+# Recent & upcoming work
+### Sidepanel stuff
    - [ ] Figma integration (wip)
       - [x] Keep Figma API key in local storage (prompt for key if missing)
-      - [x] Load Figma data into local storage when visiting a figma page
+      - [x] Load Figma data into local storage when visiting a Figma page
       - [x] Get Figma images
       - [x] Keep Figma data synchronized
       - [x] Drag Figma image onto localhost page
       - [ ] Manage local Figma docs (list, add, delete)
       - [ ] Separate sidepanel pages for managing and using Figma data
       - [ ] Functionality to link React components to Figma designs
+      - [ ] Full text search
+      - [ ] Favorites/bookmarks?
+      - [ ] Filter Figma data to only show designs relevant to the current page?
    - [ ] CSS styles for everything
    - [ ] Sidepanel Header/Tabs
    - [ ] Configuration options sidepanel
      
-* Menu stuff
+### Menu stuff
+   - [x] Add Submenus
    - [x] Submenu open/close css animations
    - [x] Scroll behavior 
       - Move the menu with the page 
       - Move submenus with their parent menu items when scrolling inside the menu
-      - Adjust menu max-height to avoid scrolling for less than a minimum number of items
+      - Programmatically adjust menu max-height to avoid scrolling for less than a minimum number of items
    - [x] Submenu positioning 
       - Slide submenus left to prevent overflowing the right side of the page
       - Make submenus appear on the left of their parents if they would overlap the main menu enough to cover other functionality
    - [x] Submenu mouse interaction refinement 
       - allow "shortcutting" over other menu items if the mouse is headed toward an open submenu
 
-### TODO?
-* Display other react info for selected components
-* [Custom browser protocols](https://help.autodesk.com/view/SGDEV/ENU/?guid=SGD_ami_custom_browser_protocols_html) for opening files (currently only suppoprts `vscode://file:line:character`)
+### Other
+   - [ ] Display other react info for selected components
+   - [ ] [Custom browser protocols](https://help.autodesk.com/view/SGDEV/ENU/?guid=SGD_ami_custom_browser_protocols_html) for opening files (currently only suppoprts `vscode://file:line:character`)
 
 
 # Install (for development)
