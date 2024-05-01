@@ -1,3 +1,14 @@
+.figment-header {
+    position: sticky;
+    top: 0;
+    background: white;
+    margin: -8px;
+    margin-bottom: 1rem;
+    padding-inline: 8px;
+    box-shadow: 0px 0px 10px #00000080;
+    border-bottom: 1px solid #00000042;
+}
+
 .status {
     max-height: 5rem;
     overflow-y: scroll;
@@ -9,5 +20,27 @@
     & pre {
         margin-block: auto;
         text-overflow: ellipsis;
+    }
+}
+
+.tabs {
+    display: flex;
+    gap: 1px;
+    border-bottom: 1px solid;
+
+    & .tab {
+        outline: 1px solid;
+        padding-inline: 1rem;
+        padding-block: 0.3rem;
+        border-top-left-radius: 5px;
+        border-top-right-radius: 5px;
+        margin-top: 0.3rem;
+        cursor: pointer;
+
+        &.active {
+            padding-block: 0.5rem;
+            margin-top: 0;
+            font-weight: bold;
+        }
     }
 }

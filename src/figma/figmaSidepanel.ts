@@ -3,6 +3,7 @@ import {
 	sidePanelUrlHandler,
 	splitUrlPath
 } from '../sidepanel.js'
+import { SidePanelTab } from "../SidePanelTab.js"
 import { GetUpdatedFigmaDocument, enqueueImageRequest } from './figmaApi.js'
 import { FigmentMessage, SendMessageToCurrentTab } from '../Bifrost.js'
 import { applyStylesheetToDocument, applyDiff, childrenHavingClass, element } from '../html.js'
@@ -26,6 +27,7 @@ chrome.runtime.onMessageExternal.addListener((request, sender, sendResponse) => 
 	handleFigmentMessage(request.message)
 })
 
+//handle messages from the page
 function handleFigmentMessage(message: FigmentMessage) {
 	switch (message.action) {
 		case 'search_figma_data':
@@ -77,6 +79,9 @@ const elementById: { [key: string]: HTMLElement[] | undefined } = {}
 let file: figma.GetFileResponse | undefined
 let filter: string
 
+const figmaDataTab = new SidePanelTab('Localhost', element('div', {innerText: 'localhost'}))
+const figmaConfigTab = new SidePanelTab('Figma Config', element('div', {innerText: 'figma intake'}))
+
 export const handleFigmaUrl: sidePanelUrlHandler = function (url: URL) {
 	const [path, ...params] = splitUrlPath(url)	//file d8BAC23FK8bcpIGmkgwjYk Figma-basics
 	const handler = figmaUrlPathHandlers.get(path) ?? figmaUrlPathHandlers.get('*')
@@ -92,12 +97,12 @@ async function handleFigmaFileURL(docId: string) {
 		window.location.href = 'figmaApiKeyForm.html'
 	}
 	else {
-		document.getElementById('figmaUi')?.remove()
-
 		displayStatus(`FETCHING ${docId}`)
 		const doc = await GetUpdatedFigmaDocument({docId, userToken})
 
-		displayStatus(`GOT ${docId} last modified ${doc.lastModified}`)		
+		displayStatus(`GOT ${docId} last modified ${doc.lastModified}`)
+
+		figmaConfigTab.setActive()
 	}
 }
 
@@ -169,12 +174,8 @@ export const handleLocalhost: sidePanelUrlHandler = function (url: URL) {
 				.then(handleUpdatedDoc)
 		}
 
-		const oldFigmaUi = document.getElementById('figmaUi')
-		if (oldFigmaUi) {
-			applyDiff(oldFigmaUi, newFigmaUI)
-		} else {
-			document.body.appendChild(newFigmaUI)
-		}
+		figmaDataTab.setTabBody(newFigmaUI)
+		figmaDataTab.setActive()
 	}
 }
 
