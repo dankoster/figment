@@ -137,7 +137,8 @@ function onOverlayClick(e: MouseEvent, renderTree: RenderTreeNode[]) {
 	renderTree.forEach(node => {
 		const isDomElement = node.kind === 'HostComponent'
 		const item = new MenuItem({
-			extraClasses: isDomElement ? ['is-dom-element'] : undefined,
+			extraClasses: ['is-dom-element'],
+			// extraClasses: isDomElement ? ['is-dom-element'] : undefined,
 			text: node.type,
 			textClass: node.kind,
 			textData: node.kind,
@@ -149,15 +150,15 @@ function onOverlayClick(e: MouseEvent, renderTree: RenderTreeNode[]) {
 				onClick: undefined //no action for clicking the element/component name in the menu
 			}))
 		})
-		if(!isDomElement) {
-			item.AddSubItem(new MenuItem({
-				text: "Find in Figma",
-				onTextClick: () => {
-					searchFigmaData(figmentId, node.type)
-					menu?.Clear() //close the menu
-				}
-			}))
-		}
+		// if(!isDomElement) {
+		// 	item.AddSubItem(new MenuItem({
+		// 		text: "Find in Figma",
+		// 		onTextClick: () => {
+		// 			searchFigmaData(figmentId, node.type)
+		// 			menu?.Clear() //close the menu
+		// 		}
+		// 	}))
+		// }
 
 		menu?.AddItem(item)
 	})

@@ -2,6 +2,8 @@ import * as figmaSidepanel from "./figma/figmaSidepanel.js";
 import { element } from "./html.js";
 
 
+export type sidePanelUrlHandler = (url: URL) => void
+
 const handlers = new Map<string, sidePanelUrlHandler>()
 handlers.set('localhost', figmaSidepanel.handleLocalhost)
 handlers.set('www.figma.com', figmaSidepanel.handleFigmaUrl)
@@ -10,7 +12,8 @@ async function handleTabUpdated(tab: chrome.tabs.Tab) {
 	if (!tab.url) return
 
 	const url = new URL(tab.url)
-	displayStatus(url.toString())
+	displayStatus(`----------------------------`)
+	displayStatus(`${url.toString()}`)
 	const handler = handlers.get(url.hostname)
 
 	if (handler) handler(url)
@@ -20,29 +23,17 @@ async function handleTabUpdated(tab: chrome.tabs.Tab) {
 export function displayStatus(value: string) {
 	const status = document.getElementById('status')
 	if (!status) throw new Error(`could not find element with id "${status}"`)
-	const newStatus = element('pre', {innerText: value})
+	const newStatus = element('pre', { innerText: value })
 	status.appendChild(newStatus)
 	newStatus.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" })
 }
 
-export type sidePanelUrlHandler = (url: URL) => void
-
 export const splitUrlPath = (url: URL): string[] => url.pathname.split('/')?.filter(s => s)
 
-export function displayPathInfo(url: URL) {
-	const info = splitUrlPath(url)
-	info.unshift(url.hostname)
-
-	const urlElement = document.querySelector('#URL');
-	if (!urlElement) throw new Error('could not find element with id "json"')
-	urlElement.innerHTML = info?.join(' ');
-}
-
-export async function getCurrentTab() {
+async function getCurrentTab() {
 	let [tab] = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
 	return tab;
 }
-
 
 //handle side panel load
 window.onload = async function () {
@@ -61,7 +52,7 @@ chrome.tabs.onUpdated.addListener(async (tabId: number, changeInfo: chrome.tabs.
 	switch (changeInfo?.status) {
 		case 'complete':
 			const curTab = await getCurrentTab()
-			if(tabId === curTab?.id) {
+			if (tabId === curTab?.id) {
 				handleTabUpdated(tab)
 			}
 			break;

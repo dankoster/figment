@@ -1,5 +1,5 @@
 const figmaApiUrl = `https://api.figma.com/v1`
-import * as local from "./localStorage.js"
+import * as figmaLocalStorage from "./localStorage.js"
 
 export class FigmaSearch {
 	// static FindByExactNameOrId({figma, name, id}) { return figma?.frames?.find(frame => frame.name === name || frame.id === decodeURIComponent(id)) }
@@ -14,7 +14,7 @@ type DocRequestParams = { docId: string, userToken: string, depth?: number }
  */
 export function GetUpdatedFigmaDocument({ docId, userToken, depth = 3 }: DocRequestParams) {
 	const request = FetchFigmaJson(`${figmaApiUrl}/files/${docId}?depth=${depth}`, userToken) as Promise<figma.GetFileResponse>
-	request.then(doc => local.setDocument(docId, doc))
+	request.then(doc => figmaLocalStorage.setDocument(docId, doc))
 	return request
 }
 
@@ -48,7 +48,7 @@ export function enqueueImageRequest(userToken: string, docId: string, nodeId: st
 				GetFigmaImages({ docId, userToken, ids })
 					.then(result => {
 						for (const nodeId in result) {
-							local.setImage({ docId, nodeId, url: result[nodeId] })
+							figmaLocalStorage.setImage({ docId, nodeId, url: result[nodeId] })
 						}
 						return result
 					})
@@ -59,7 +59,7 @@ export function enqueueImageRequest(userToken: string, docId: string, nodeId: st
 		})
 	}
 
-	const cachedResult = local.getImage(docId, nodeId)
+	const cachedResult = figmaLocalStorage.getImage(docId, nodeId)
 
 	return { cachedResult, imageRequest: imageRequests[docId].request };
 }
