@@ -7,7 +7,7 @@ type LocalFigmaFileInfo = {
 }
 
 export function getApiKey() {
-	return localStorage.getItem('pat')
+	return localStorage.getItem('pat') ?? undefined
 }
 
 export function setApiKey(value: string) {

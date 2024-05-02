@@ -9,6 +9,7 @@ import { FigmentMessage, SendMessageToCurrentTab } from '../Bifrost.js'
 import { applyStylesheetToDocument, applyDiff, childrenHavingClass, element } from '../html.js'
 
 import * as figmaLocalStorage from './localStorage.js'
+import { setApiKey } from './localStorage.js'
 
 
 //tell the service worker the sidepanel has opened
@@ -79,8 +80,19 @@ const elementById: { [key: string]: HTMLElement[] | undefined } = {}
 let file: figma.GetFileResponse | undefined
 let filter: string
 
-const figmaDataTab = new SidePanelTab('Localhost', element('div', {innerText: 'localhost'}))
-const figmaConfigTab = new SidePanelTab('Figma Config', element('div', {innerText: 'figma intake'}))
+const figmaTabTitle = (text: string) => element('div', { className: 'figma-tab-title' }, [
+	element('img', { src: 'figmaLogo.svg', className: 'figma-logo' }),
+	element('span', { innerText: text })
+])
+
+//Inject figma css, if necessary
+applyStylesheetToDocument('figmaSidePanel.css')
+
+
+
+const figmaDataTab = new SidePanelTab(figmaTabTitle('Localhost'), renderFigmaDataUi())
+const figmaListTab = new SidePanelTab(figmaTabTitle('Figma Docs'), renderFigmaDocsList())
+const figmaConfigTab = new SidePanelTab(figmaTabTitle('Figma Config'), renderFigmaConfigUi())
 
 export const handleFigmaUrl: sidePanelUrlHandler = function (url: URL) {
 	const [path, ...params] = splitUrlPath(url)	//file d8BAC23FK8bcpIGmkgwjYk Figma-basics
@@ -98,11 +110,11 @@ async function handleFigmaFileURL(docId: string) {
 	}
 	else {
 		displayStatus(`FETCHING ${docId}`)
-		const doc = await GetUpdatedFigmaDocument({docId, userToken})
+		const doc = await GetUpdatedFigmaDocument({ docId, userToken })
 
 		displayStatus(`GOT ${docId} last modified ${doc.lastModified}`)
 
-		figmaConfigTab.setActive()
+		figmaListTab.setActive()
 	}
 }
 
@@ -115,68 +127,113 @@ export const handleLocalhost: sidePanelUrlHandler = function (url: URL) {
 	const userToken = figmaLocalStorage.getApiKey()
 	if (!userToken) {
 		displayStatus('no user token found!')
-		window.location.href = 'figmaApiKeyForm.html'
+		figmaConfigTab.setActive()
+		return
 	}
-	else {
-		const files = figmaLocalStorage.figmaFiles()
-		if (!files?.length) {
-			displayStatus('No figma file loaded. Visit figma.com to load a file.')
-			return
+
+	const figmaDataUi = renderFigmaDataUi()
+	if (!figmaDataUi) throw new Error(`figmaDataUi cannot be ${figmaDataUi}`)
+	figmaDataTab.setTabBody(figmaDataUi)
+	figmaDataTab.setActive()
+}
+
+
+function renderFigmaDocsList() {
+	const userToken = figmaLocalStorage.getApiKey()
+	if (!userToken) {
+		return renderFigmaConfigUi()
+	}
+
+	const list = element('div', { className: 'figma-files' })
+	const files = figmaLocalStorage.figmaFiles()
+	for (const file of files) {
+		if (!file.document) throw new Error('cannot render a missing document')
+
+		//render the cached data
+		const fileDiv = element('div', { className: 'figma-file' }, [
+			element('h3', { innerText: file.document.name }),
+			element('div', { innerText: `id: ${file.docId}` }),
+			element('img', { src: file.document.thumbnailUrl })
+		])
+		list.appendChild(fileDiv)
+	}
+
+	return list
+}
+
+function renderFigmaDataUi() {
+	const userToken = figmaLocalStorage.getApiKey()
+	if (!userToken) {
+		return renderFigmaConfigUi()
+	}
+
+	//Render figma UI for localhost, Header then list of figma files
+	const newFigmaUI = element('div', { id: 'figmaUi' })
+
+	const files = figmaLocalStorage.figmaFiles()
+	if (!files?.length) {
+		const errorMessage = 'No figma file loaded. Visit figma.com to load a file.'
+		displayStatus(errorMessage)
+		newFigmaUI.appendChild(element('span', { innerText: errorMessage }))
+		return newFigmaUI
+	}
+
+	const header = document.createElement('header')
+	newFigmaUI.appendChild(header)
+
+	//filter input
+	let filterTimeout: number | undefined
+	header.appendChild(element('input', {
+		type: 'text', placeholder: 'filter', value: filter ?? '',
+		onkeyup: (e) => {
+			if (filterTimeout) clearTimeout(filterTimeout)
+			filterTimeout = setTimeout(() => {
+				filter = (e.target as HTMLInputElement)?.value
+				for (const file of files) {
+					if (file.document)
+						filterFigmaData(file.document, filter)
+				}
+			}, 400)
+		}
+	}))
+
+	for (const file of files) {
+		if (!file.document) throw new Error('cannot render a missing document')
+
+		//render the cached data
+		//console.log('render cached file', file.docId)
+		const fileDiv = renderFigmaFile(file.docId, file.document)
+		newFigmaUI.appendChild(fileDiv)
+
+		const handleUpdatedDoc = (updatedDoc: figma.GetFileResponse) => {
+			displayStatus(`GOT ${file.docId} Last modified: ${updatedDoc.lastModified}`)
+			const newFileDiv = renderFigmaFile(file.docId, updatedDoc)
+			//console.log('render updated file', file.docId)
+			applyDiff(fileDiv, newFileDiv)
 		}
 
-		//Inject figma css, if necessary
-		applyStylesheetToDocument('figmaSidePanel.css')
-
-		//Render figma UI for localhost, Header then list of figma files
-		const newFigmaUI = element('div', { id: 'figmaUi' })
-
-		const header = document.createElement('header')
-		newFigmaUI.appendChild(header)
-
-		//header (logo, settings, filter, etc)
-		header.appendChild(element('img', { src: 'figmaLogo.svg', className: 'figma-logo' }))
-		header.appendChild(element('a', { href: 'figmaApiKeyForm.html', text: 'Access Token' }))
-
-		//filter input
-		let filterTimeout: number | undefined
-		header.appendChild(element('input', {
-			type: 'text', placeholder: 'filter', value: filter ?? '',
-			onkeyup: (e) => {
-				if (filterTimeout) clearTimeout(filterTimeout)
-				filterTimeout = setTimeout(() => {
-					filter = (e.target as HTMLInputElement)?.value
-					for (const file of files) {
-						if (file.document)
-							filterFigmaData(file.document, filter)
-					}
-				}, 400)
-			}
-		}))
-
-		for (const file of files) {
-			if (!file.document) throw new Error('cannot render a missing document')
-
-			//render the cached data
-			console.log('render cached file', file.docId)
-			const fileDiv = renderFigmaFile(file.docId, file.document)
-			newFigmaUI.appendChild(fileDiv)
-
-			const handleUpdatedDoc = (updatedDoc: figma.GetFileResponse) => {
-				displayStatus(`GOT ${file.docId} Last modified: ${updatedDoc.lastModified}`)
-				const newFileDiv = renderFigmaFile(file.docId, updatedDoc)
-				console.log('render updated file', file.docId)
-				applyDiff(fileDiv, newFileDiv)
-			}
-
-			//get updated data and render that next (also updates the cache)
-			displayStatus(`FETCHING ${file.docId}`)
-			GetUpdatedFigmaDocument({ docId: file.docId, userToken })
-				.then(handleUpdatedDoc)
-		}
-
-		figmaDataTab.setTabBody(newFigmaUI)
-		figmaDataTab.setActive()
+		//get updated data and render that next (also updates the cache)
+		displayStatus(`FETCHING ${file.docId}`)
+		GetUpdatedFigmaDocument({ docId: file.docId, userToken })
+			.then(handleUpdatedDoc)
 	}
+
+	return newFigmaUI
+}
+
+function renderFigmaConfigUi() {
+	return element('div', { className: 'figma-config' }, [
+		element('h2', { innerText: 'API Key' }),
+		element('ul', {}, [
+			element('li', { innerText: 'Open Figma.com and login' }),
+			element('li', { innerText: 'Open your "Account Settings" from the menu on the top left' }),
+			element('li', { innerText: 'Scroll down to "Personal access tokens"' }),
+			element('li', { innerText: 'Follow the instructions to create a new token (it just needs read only access to File content)' }),
+			element('li', { innerText: 'Paste the generated token here' }),
+		]),
+		element('input', { id: 'key', type: 'text', placeholder: 'figma api key', value: figmaLocalStorage.getApiKey() },
+			[], { 'change': (e) => setApiKey((e.target as HTMLInputElement)?.value) })
+	])
 }
 
 function renderFigmaFile(docId: string, figmaFile: figma.GetFileResponse) {
@@ -274,7 +331,7 @@ function renderFigmaCanvasNode(docId: string, docName: string, node: figma.Canva
 	const div = document.createElement('div')
 	div.classList.add('figma')
 	div.classList.add(node.type)
-	div.appendChild(element('h2', {innerText: node.type + ' - ' + node.name}))
+	div.appendChild(element('h2', { innerText: node.type + ' - ' + node.name }))
 
 	const children = renderChildNodes(docId, docName, node)
 	for (const child of children) div.appendChild(child)
@@ -289,10 +346,10 @@ function renderFigmaFrameNode(docId: string, docName: string, node: figma.FrameN
 	const div = document.createElement('div')
 	div.classList.add('figma')
 	div.classList.add(node.type);
-	const nodeLink = element('a', {href: figmaNodeLink(docId, docName, node.id), target: '_figma'})
-	nodeLink.appendChild(element('h4', {innerText: node.name, className: 'name'}))
+	const nodeLink = element('a', { href: figmaNodeLink(docId, docName, node.id), target: '_figma' })
+	nodeLink.appendChild(element('h4', { innerText: node.name, className: 'name' }))
 	div.appendChild(nodeLink)
-	
+
 	let img: HTMLImageElement | undefined
 	const request = enqueueImageRequest(userToken, docId, node.id)
 	if (request.cachedResult) {
@@ -332,9 +389,9 @@ function renderFigmaSectionNode(docId: string, docName: string, node: figma.Sect
 	const div = document.createElement('div')
 	div.classList.add('figma')
 	div.classList.add(node.type)
-	div.appendChild(element('h3', {innerText: node.type})) 
-	div.appendChild(element('h4', {innerText: node.name}))
-	div.appendChild(element('span', {innerText: node.devStatus?.type})) 
+	div.appendChild(element('h3', { innerText: node.type }))
+	div.appendChild(element('h4', { innerText: node.name }))
+	div.appendChild(element('span', { innerText: node.devStatus?.type }))
 
 	const children = renderChildNodes(docId, docName, node)
 	for (const child of children) div.appendChild(child)

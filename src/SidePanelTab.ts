@@ -1,4 +1,3 @@
-import Trace from "./Trace.js";
 import { element } from "./html.js";
 
 export class SidePanelTab {
@@ -7,12 +6,13 @@ export class SidePanelTab {
 	tab;
 	bodyClass = 'tab-body';
 
-	constructor(title: string, body: HTMLElement) {
+	constructor(title: HTMLElement, body?: HTMLElement) {
 		console.log('SidePanelTab');
 		this.title = title;
 		this.body = body;
 
-		this.tab = element('div', { innerText: title, className: 'tab' });
+		this.tab = element('div', { className: 'tab' });
+		this.tab.appendChild(title)
 		this.tab.addEventListener('click', () => this.setActive());
 
 		this.#tabs.appendChild(this.tab);
@@ -33,17 +33,15 @@ export class SidePanelTab {
 
 		const tabBody = document.querySelector(`.${this.bodyClass}`);
 		if (!tabBody) throw new Error(`missing element with class "${this.bodyClass}"`);
-		console.log('setTabBody', tabBody, this.body);
-		tabBody.replaceWith(this.body);
-		if (!this.body.classList.contains(this.bodyClass)) {
-			this.body.classList.add(this.bodyClass);
+		if (this.body) {
+			tabBody.replaceWith(this.body);
+			if (!this.body.classList.contains(this.bodyClass)) {
+				this.body.classList.add(this.bodyClass);
+			}
 		}
 	}
 
-	setTabBody(body: HTMLElement) {
-		// console.log('setTabBody', title, body)
-		Trace(`setTabBody ${this.title}`);
-		// sidePanelTabs.set(title, body)
+	setTabBody(body?: HTMLElement) {
 		this.body = body;
 	}
 }

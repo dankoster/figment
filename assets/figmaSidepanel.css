@@ -21,3 +21,14 @@
 .filtered {
     display: none;
 }
+
+.figma-tab-title {
+    display: flex;
+    gap: .75rem;
+    align-items: center;
+    text-wrap: nowrap;
+    
+    & img {
+        max-width: .75rem;
+    }
+}
