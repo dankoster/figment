@@ -78,13 +78,35 @@ export function getTotal(style: CSSStyleDeclaration, properties: string[]) {
     return properties.reduce((total, property: any) => total + stylePxToInt(style[property]), 0)
 }
 
-//here is some typescript shenanigans we can do... is it better? Is it worse? Probably worse.
-export function element<T extends keyof HTMLElementTagNameMap>(tag: T, properties: { [Property in keyof Partial<HTMLElementTagNameMap[T]>]: HTMLElementTagNameMap[T][Property] }) {
-    const element = document.createElement(tag)
+/**
+ * typescript shenanigans to build an element and add properties and children
+ * 
+ * @param tag Specify the kind of html element to create
+ * @param properties Valid properties for the specified html tag
+ * @param children Child nodes to append in order
+ * @returns HTMLElement
+ */
+export function element<T extends keyof HTMLElementTagNameMap>(
+    tag: T,
+    properties: { [Property in keyof Partial<HTMLElementTagNameMap[T]>]: HTMLElementTagNameMap[T][Property] },
+    children?: Node[],
+    eventListeners?: { [Property in keyof Partial<HTMLElementEventMap>]: (this: HTMLInputElement, ev: HTMLElementEventMap[Property]) => any }
+) {
+    const el = document.createElement(tag)
     for (const property in properties) {
-        element[property] = properties[property]
+        el[property] = properties[property]
     }
-    return element
+    if (children) {
+        for (const child of children) {
+            el.appendChild(child)
+        }
+    }
+    if (eventListeners) {
+        for (const ev in eventListeners) {
+            el.addEventListener(ev, eventListeners[ev as keyof HTMLElementEventMap] as EventListener)
+        }
+    }
+    return el
 }
 
 export function setStyles(element: HTMLElement, styles: { [key in keyof Partial<CSSStyleDeclaration>]: string }) {
