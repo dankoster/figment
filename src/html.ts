@@ -109,6 +109,10 @@ export function element<T extends keyof HTMLElementTagNameMap>(
     return el
 }
 
+export function prettyDate(date: string | number | Date) {
+    return new Date(date).toLocaleString()
+}
+
 export function setStyles(element: HTMLElement, styles: { [key in keyof Partial<CSSStyleDeclaration>]: string }) {
     for (const style in styles) {
         element.style[style] = styles[style]

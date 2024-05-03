@@ -2,6 +2,7 @@
 type LocalFigmaFileInfo = {
 	docId: string
 	type: "figma.GetFileResponse"
+	updated: number //Date.now()
 	document?: figma.GetFileResponse
 	images?: { [key: string]: string }
 }
@@ -38,9 +39,17 @@ export function getDocument(docId: string): LocalFigmaFileInfo | undefined {
 	}
 }
 
+
+export function removeDocument(file: LocalFigmaFileInfo) {
+	docCache.delete(file.docId)
+	localStorage.removeItem(file.docId)
+}
+
+
 export function setDocument(docId: string, doc: figma.GetFileResponse) {
 	const localDoc = getDocument(docId) ?? {} as LocalFigmaFileInfo
 	localDoc.docId = docId
+	localDoc.updated = Date.now()
 	localDoc.type = "figma.GetFileResponse"
 	localDoc.document = doc
 	localStorage.setItem(docId, JSON.stringify(localDoc))

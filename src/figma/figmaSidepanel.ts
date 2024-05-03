@@ -6,7 +6,7 @@ import {
 import { SidePanelTab } from "../SidePanelTab.js"
 import { GetUpdatedFigmaDocument, enqueueImageRequest } from './figmaApi.js'
 import { FigmentMessage, SendMessageToCurrentTab } from '../Bifrost.js'
-import { applyStylesheetToDocument, applyDiff, childrenHavingClass, element } from '../html.js'
+import { applyStylesheetToDocument, applyDiff, childrenHavingClass, element, prettyDate } from '../html.js'
 
 import * as figmaLocalStorage from './localStorage.js'
 import { setApiKey } from './localStorage.js'
@@ -114,6 +114,7 @@ async function handleFigmaFileURL(docId: string) {
 
 		displayStatus(`GOT ${docId} last modified ${doc.lastModified}`)
 
+		figmaListTab.setTabBody(renderFigmaDocsList())
 		figmaListTab.setActive()
 	}
 }
@@ -149,14 +150,25 @@ function renderFigmaDocsList() {
 	for (const file of files) {
 		if (!file.document) throw new Error('cannot render a missing document')
 
-		//render the cached data
-		const fileDiv = element('div', { className: 'figma-file' }, [
+		//render the cached file
+		const fileDiv = element('div', { className: 'figma-file' })
+		fileDiv.appendChild(element('div', { className: 'doc-info' }, [
 			element('h3', { innerText: file.document.name }),
-			element('div', { innerText: `id: ${file.docId}` }),
-			element('img', { src: file.document.thumbnailUrl })
-		])
+			renderFigmaFileLink(file.docId),
+			element('span', {innerText: `last fetched: ${prettyDate(file.updated)}`}),
+			element('span', {innerText: `last modified: ${prettyDate(file.document.lastModified)}`}),
+			element('button', { innerText: 'remove' }, [], { 'click': () => {
+				//remove this doc from storage
+				figmaLocalStorage.removeDocument(file)
+	
+				//remove the associated dom elements
+				fileDiv.remove()
+			} }),
+		]))
+		fileDiv.appendChild(element('img', { src: file.document.thumbnailUrl }))
 		list.appendChild(fileDiv)
 	}
+	list.appendChild(element('span', { innerText: 'Visit a document at figma.com to add it here' }))
 
 	return list
 }
@@ -243,7 +255,7 @@ function renderFigmaFile(docId: string, figmaFile: figma.GetFileResponse) {
 	div.classList.add(figmaFile.role) //'owner'
 
 	div.appendChild(element('h1', { textContent: figmaFile.name }))
-	div.appendChild(element('a', { textContent: docId, href: figmaFileLink(docId), target: '_figma' }))
+	div.appendChild(renderFigmaFileLink(docId))
 
 	//@ts-ignore
 	div.figmaDocId = docId
@@ -255,6 +267,10 @@ function renderFigmaFile(docId: string, figmaFile: figma.GetFileResponse) {
 	for (const child of children) div.appendChild(child)
 
 	return div
+}
+
+function renderFigmaFileLink(docId: string): HTMLAnchorElement {
+	return element('a', { textContent: docId, href: figmaFileLink(docId), target: '_figma' })
 }
 
 function filterFigmaData(figmaFile: figma.GetFileResponse, searchString: string) {

@@ -46,25 +46,3 @@
         }
     }
 }
-
-.figma-config {
-    & input {
-        width: 100%;
-    }
-}
-
-.figma-files {
-    display: grid;
-    gap: 1rem;
-
-    & .figma-file {
-        display: grid;
-        padding: 1rem;
-        max-width: 100%;
-        border-bottom: 1px solid;
-
-        & img {
-            max-width: 100%;
-        }
-    }
-}

@@ -32,3 +32,37 @@
         max-width: .75rem;
     }
 }
+
+.figma-config {
+    & input {
+        width: 100%;
+    }
+}
+
+.figma-files {
+    display: grid;
+    gap: 1rem;
+
+    & .figma-file {
+        display: flex;
+        gap: 0.5rem;
+        justify-content: space-between;
+        padding: 1rem;
+        max-width: 100%;
+        border-bottom: 1px solid;
+
+        & .doc-info {
+            display: grid;
+            justify-items: start;
+            gap: 0.35rem;
+            
+            & h3 {
+                margin-top: 0;
+            }
+        }
+
+        & img {
+            max-width: 150px;
+        }
+    }
+}
