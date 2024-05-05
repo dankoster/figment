@@ -27,6 +27,9 @@ The context menu that pops up will show you the element/component you are inspec
 
 
 # Recent & upcoming work
+
+https://github.com/dankoster/figment/assets/9935523/06e3b9c8-fa9a-45bc-abfa-69e04ef011f8
+
 ### Sidepanel stuff
    - [ ] Figma integration (wip)
       - [x] Keep Figma API key in local storage (prompt for key if missing)
