@@ -7,7 +7,6 @@ export class SidePanelTab {
 	bodyClass = 'tab-body';
 
 	constructor(title: HTMLElement, body?: HTMLElement) {
-		console.log('SidePanelTab');
 		this.title = title;
 		this.body = body;
 

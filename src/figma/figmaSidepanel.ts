@@ -6,7 +6,7 @@ import {
 import { SidePanelTab } from "../SidePanelTab.js"
 import { GetUpdatedFigmaDocument, enqueueImageRequest } from './figmaApi.js'
 import { FigmentMessage, SendMessageToCurrentTab } from '../Bifrost.js'
-import { applyStylesheetToDocument, applyDiff, childrenHavingClass, element, prettyDate } from '../html.js'
+import { applyStylesheetToDocument, applyDiff, childrenHavingClass, element, age } from '../html.js'
 
 import * as figmaLocalStorage from './localStorage.js'
 import { setApiKey } from './localStorage.js'
@@ -88,7 +88,7 @@ const figmaTabTitle = (text: string) => element('div', { className: 'figma-tab-t
 //Inject figma css, if necessary
 applyStylesheetToDocument('figmaSidePanel.css')
 
-
+let figmaDocsListRefreshTimer: number | undefined = undefined
 
 const figmaDataTab = new SidePanelTab(figmaTabTitle('Localhost'), renderFigmaDataUi())
 const figmaListTab = new SidePanelTab(figmaTabTitle('Figma Docs'), renderFigmaDocsList())
@@ -138,39 +138,51 @@ export const handleLocalhost: sidePanelUrlHandler = function (url: URL) {
 	figmaDataTab.setActive()
 }
 
-
 function renderFigmaDocsList() {
 	const userToken = figmaLocalStorage.getApiKey()
 	if (!userToken) {
 		return renderFigmaConfigUi()
 	}
 
-	const list = element('div', { className: 'figma-files' })
-	const files = figmaLocalStorage.figmaFiles()
-	for (const file of files) {
-		if (!file.document) throw new Error('cannot render a missing document')
+	const renderList = () => {
+		const list = element('div', { className: 'figma-files' })
+		list.appendChild(element('span', { innerText: 'Visit a document at figma.com to add it here' }))
 
-		//render the cached file
-		const fileDiv = element('div', { className: 'figma-file' })
-		fileDiv.appendChild(element('div', { className: 'doc-info' }, [
-			element('h3', { innerText: file.document.name }),
-			renderFigmaFileLink(file.docId),
-			element('span', {innerText: `last fetched: ${prettyDate(file.updated)}`}),
-			element('span', {innerText: `last modified: ${prettyDate(file.document.lastModified)}`}),
-			element('button', { innerText: 'remove' }, [], { 'click': () => {
-				//remove this doc from storage
-				figmaLocalStorage.removeDocument(file)
-	
-				//remove the associated dom elements
-				fileDiv.remove()
-			} }),
-		]))
-		fileDiv.appendChild(element('img', { src: file.document.thumbnailUrl }))
-		list.appendChild(fileDiv)
+		const files = figmaLocalStorage.figmaFiles()
+		for (const file of files) {
+			if (!file.document) throw new Error('cannot render a missing document')
+
+			//render the cached file
+			const fileDiv = element('div', { className: 'figma-file', id: `file_${file.docId}` })
+			fileDiv.appendChild(element('div', { className: 'doc-info' }, [
+				element('h3', { innerText: file.document?.name ?? '[UNNAMED DOCUMENT]' }),
+				renderFigmaFileLink(file.docId),
+				element('span', { innerText: `fetched ${age(file.updated, 'ago')}` }),
+				element('span', { innerText: `modified ${file.document?.lastModified ? age(file.document?.lastModified, 'ago') : '[UNKNOWN]'}` }),
+				element('button', { innerText: 'remove' }, [], {
+					'click': () => {
+						figmaLocalStorage.removeDocument(file)
+						fileDiv.remove()
+					}
+				}),
+			]))
+			fileDiv.appendChild(element('img', { src: file.document?.thumbnailUrl }))
+
+			list.appendChild(fileDiv)
+		}
+		return list
 	}
-	list.appendChild(element('span', { innerText: 'Visit a document at figma.com to add it here' }))
 
-	return list
+	//update every second, if visible
+	if (figmaDocsListRefreshTimer) clearInterval(figmaDocsListRefreshTimer)
+	figmaDocsListRefreshTimer = setInterval(() => {
+		const original = document.querySelector(`div.figma-files`)
+		if (original) {
+			applyDiff(original, renderList())
+		}
+	}, 1000)
+
+	return renderList()
 }
 
 function renderFigmaDataUi() {
