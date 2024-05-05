@@ -34,14 +34,14 @@ The context menu that pops up will show you the element/component you are inspec
       - [x] Get Figma images
       - [x] Keep Figma data synchronized
       - [x] Drag Figma image onto localhost page
-      - [ ] Manage local Figma docs (list, add, delete)
-      - [ ] Separate sidepanel pages for managing and using Figma data
+      - [x] Manage local Figma docs (list, add, delete)
+      - [x] Separate sidepanel pages for managing and using Figma data
       - [ ] Functionality to link React components to Figma designs
       - [ ] Full text search
       - [ ] Favorites/bookmarks?
       - [ ] Filter Figma data to only show designs relevant to the current page?
    - [ ] CSS styles for everything
-   - [ ] Sidepanel Header/Tabs
+   - [x] Sidepanel Header/Tabs
    - [ ] Configuration options sidepanel
      
 ### Menu stuff
