@@ -35,7 +35,7 @@
 
 .figment-menu-container {
 	z-index: 111111;
-	position: fixed;
+	position: absolute;
 	border-radius: 7px;
 	overflow: hidden;
 	box-shadow: 0px 5px 25px #000000a3;
@@ -75,14 +75,13 @@
 	&:hover>.submenu {
 		opacity: 1;
 		visibility: visible;
-		/* display: block;  */
 		animation: slideIn 200ms ease-out;
 	}
 
 	&>.submenu {
 		opacity: 0;
 		visibility: hidden;
-		/* display: none;  */
+		position: fixed;
 	}
 
 	&.has-submenu::after {

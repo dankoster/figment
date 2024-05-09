@@ -44,10 +44,19 @@ export class FigmentMenu extends HTMLElement {
 		});
 
 		resizeObserver.observe(document.body);
+
+		//ensure any submenus scroll with the document
+		document.addEventListener('scroll', () =>
+			this.container?.querySelectorAll('.submenu')
+				?.forEach(subMenu =>
+					FigmentMenu.updateSubmenuPosition(subMenu as HTMLDivElement)
+				)
+		)
 	}
 
 	Clear() {
 		this.container?.remove()
+		this.container = undefined
 		this.items.length = 0
 	}
 
