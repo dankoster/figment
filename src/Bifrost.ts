@@ -15,11 +15,12 @@ const dispatchExtensionEvent = (event: FigmentMessageAction, detail: string) => 
 
 type FigmentMessageAction =
 	"toggle_enabled" |
+	"toggle_sidepanel" |
 	"overlay_image" |
 	"start_drag_from_side_panel" |
 	"search_figma_data" | 
-	"sidepanel_open" | 
-	"sidepanel_got_message"
+	"sidepanel_has_opened" | 
+	"sidepanel_got_message" 
 
 //communicate from the page to the service worker
 export type FigmentMessage = {
@@ -55,8 +56,8 @@ export async function SendMessageToCurrentTab(event: FigmentMessageAction, detai
 function sendMessageToServiceWorker(extensionId: string, message: FigmentMessage) {
 	chrome?.runtime?.sendMessage && chrome.runtime.sendMessage(extensionId, { message },
 		function (response: FigmentResponse) {
-			if (!response.success)
-				console.error(response);
+			if (!response?.success)
+				console.error(response, message);
 		});
 }
 
@@ -72,6 +73,13 @@ export function setToolbarEnabledState(extensionId: string, enabled: boolean) {
 	sendMessageToServiceWorker(extensionId, {
 		action: 'toggle_enabled',
 		bool: enabled, 
+		messageId: Date.now() + Math.random()
+	})
+}
+
+export function toggleSidePanel(extensionId: string) {
+	sendMessageToServiceWorker(extensionId, {
+		action: 'toggle_sidepanel',
 		messageId: Date.now() + Math.random()
 	})
 }

@@ -12,23 +12,20 @@ import * as figmaLocalStorage from './localStorage.js'
 import { setApiKey } from './localStorage.js'
 
 
-//tell the service worker the sidepanel has opened
-chrome.runtime.sendMessage({
-	action: 'sidepanel_open',
-	messageId: Date.now() + Math.random()
-} as FigmentMessage)
-
 chrome.runtime.onUserScriptMessage.addListener((message, sender, sendResponse) => {
 	console.log('figmaSidePanel.onUserScriptMessage', { message, sender })
 })
+
+//from inside the extension
 chrome.runtime.onMessage.addListener((message: FigmentMessage, sender, sendResponse) => {
 	handleFigmentMessage(message)
 })
+
+//from the page
 chrome.runtime.onMessageExternal.addListener((request, sender, sendResponse) => {
 	handleFigmentMessage(request.message)
 })
 
-//handle messages from the page
 function handleFigmentMessage(message: FigmentMessage) {
 	switch (message.action) {
 		case 'search_figma_data':

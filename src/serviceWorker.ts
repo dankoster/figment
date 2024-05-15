@@ -11,7 +11,7 @@ chrome.action.onClicked.addListener((tab) => {
 chrome.commands.onCommand.addListener((command, tab) => {
 	switch (command) {
 		case 'configure':
-			openSidePanel(tab)
+			toggleSidePanel()
 			break
 		default:
 			throw new Error(`unrecognized command: ${command}`)
@@ -29,7 +29,7 @@ chrome.runtime.onMessage.addListener((message: FigmentMessage, sender, sendRespo
 				messagesForSidePanel.splice(index, 1)
 			}
 			break
-		case 'sidepanel_open':
+		case 'sidepanel_has_opened':
 			//send any queued messages to the sidepanel (first in, first out)
 			while (messagesForSidePanel.length) {
 				const message = messagesForSidePanel.shift()
@@ -55,6 +55,10 @@ const messagesForSidePanel: FigmentMessage[] = []
 chrome.runtime.onMessageExternal.addListener(async (request, sender, sendResponse) => {
 	const message = request.message as FigmentMessage
 	switch (message.action) {
+		case 'toggle_sidepanel':
+			toggleSidePanel();
+			sendResponse({ success: true })
+			break;
 		case 'toggle_enabled':
 			chrome.action.setBadgeText({ tabId: sender.tab?.id, text: message.bool ? "ON" : "OFF" });
 			sendResponse({ success: true })
@@ -75,7 +79,7 @@ chrome.runtime.onMessageExternal.addListener(async (request, sender, sendRespons
 			console.log(`handleMessageFromPage - unrecognized action ${message.action}`, message)
 			sendResponse({
 				success: false,
-				response: `unrecognized action: ${request.action}`
+				response: `unrecognized action: ${message.action}`
 			})
 			break;
 	}
@@ -89,7 +93,7 @@ chrome.runtime.onInstalled.addListener(() => {
 	});
 	chrome.contextMenus.create({
 		id: 'openSidePanel',
-		title: 'Open side panel',
+		title: 'Toggle side panel',
 		contexts: ['all']
 	});
 });
@@ -97,7 +101,7 @@ chrome.runtime.onInstalled.addListener(() => {
 chrome.contextMenus.onClicked.addListener((info, tab) => {
 	switch (info.menuItemId) {
 		case 'openSidePanel':
-			openSidePanel(tab);
+			toggleSidePanel()
 			break;
 		case 'openToggleEnabled':
 			toggleExtensionAction(tab)
@@ -107,10 +111,32 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 	}
 });
 
-function openSidePanel(tab: chrome.tabs.Tab | undefined) {
-	// This will open the panel in all the pages on the current window.
-	if (tab?.windowId)
-		chrome.sidePanel.open({ windowId: tab.windowId });
+function toggleSidePanel() {
+	//ask the sidepanel if it's open
+	// if open -> tell sidepanel to close
+	// if closed -> no no effect
+	chrome.runtime.sendMessage('are you still there')
+		.then(result => {
+			if (result === 'still alive') {
+				//console.log('sidepanel should close')
+				chrome.runtime.sendMessage('goodbye');
+			}
+		}).catch(e => {
+			if (e != 'Error: Could not establish connection. Receiving end does not exist.')
+				throw e;
+			//else console.log('sidepanel should open')
+		});
+
+	//open the sidepanel (MUST be done synchronously here to count as a 'user action')
+	// if open -> no effect
+	// if closed -> tell sidepanel to open
+	chrome.tabs.query({ active: true, lastFocusedWindow: true }, ([tab]) => {
+		if (tab?.windowId) {
+			//this causes the sidepanel to open, but it's not immediately available for messaging
+			// and there doesn't appear to be a good way to wait for it to be available.
+			chrome.sidePanel.open({ windowId: tab.windowId });
+		}
+	});
 }
 
 function toggleExtensionAction(tab?: chrome.tabs.Tab) {
@@ -122,4 +148,3 @@ function toggleExtensionAction(tab?: chrome.tabs.Tab) {
 			func: dispatchExtensionAction
 		});
 }
-

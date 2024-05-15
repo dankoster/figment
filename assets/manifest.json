@@ -72,7 +72,7 @@
 			"suggested_key": {
 				"default": "Alt+C"
 			},
-			"description": "Open Sidepanel"
+			"description": "Toggle Sidepanel"
 		}
 	},
 	"side_panel": {
