@@ -66,6 +66,7 @@ type FigmaHandlerFunction = (params: FigmaHandlerParams) => void | Promise<void>
 
 const figmaUrlPathHandlers = new Map<string, FigmaHandlerFunction>()
 figmaUrlPathHandlers.set('file', ({ params: [docId] }: FigmaHandlerParams) => handleFigmaFileURL(docId)) //handle https://www.figma.com/file....
+figmaUrlPathHandlers.set('design', ({ params: [docId] }: FigmaHandlerParams) => handleFigmaFileURL(docId)) //handle https://www.figma.com/file....
 figmaUrlPathHandlers.set('*', ({ path }) => displayStatus(`Open a specific figma file to read it`))
 
 const childNodeHandlers = new Map<figma.Node['type'], (docId: string, docName: string, node: any) => HTMLElement>()
@@ -101,19 +102,18 @@ export const handleFigmaUrl: sidePanelUrlHandler = function (url: URL) {
 async function handleFigmaFileURL(docId: string) {
 
 	const userToken = figmaLocalStorage.getApiKey()
-
 	if (!userToken) {
-		window.location.href = 'figmaApiKeyForm.html'
+		displayStatus('no user token found!')
+		return figmaConfigTab.setActive()
 	}
-	else {
-		displayStatus(`FETCHING ${docId}`)
-		const doc = await GetUpdatedFigmaDocument({ docId, userToken })
 
-		displayStatus(`GOT ${docId} last modified ${doc.lastModified}`)
+	displayStatus(`FETCHING ${docId}`)
+	const doc = await GetUpdatedFigmaDocument({ docId, userToken })
 
-		figmaListTab.setTabBody(renderFigmaDocsList())
-		figmaListTab.setActive()
-	}
+	displayStatus(`GOT ${docId} last modified ${doc.lastModified}`)
+
+	figmaListTab.setTabBody(renderFigmaDocsList())
+	figmaListTab.setActive()
 }
 
 /**
@@ -125,8 +125,7 @@ export const handleLocalhost: sidePanelUrlHandler = function (url: URL) {
 	const userToken = figmaLocalStorage.getApiKey()
 	if (!userToken) {
 		displayStatus('no user token found!')
-		figmaConfigTab.setActive()
-		return
+		return figmaConfigTab.setActive()
 	}
 
 	const figmaDataUi = renderFigmaDataUi()
@@ -253,7 +252,11 @@ function renderFigmaConfigUi() {
 			element('li', { innerText: 'Paste the generated token here' }),
 		]),
 		element('input', { id: 'key', type: 'text', placeholder: 'figma api key', value: figmaLocalStorage.getApiKey() },
-			[], { 'change': (e) => setApiKey((e.target as HTMLInputElement)?.value) })
+			[], { 'change': (e) => {
+				setApiKey((e.target as HTMLInputElement)?.value)
+				displayStatus('saved api key!')
+			} }
+		)
 	])
 }
 
