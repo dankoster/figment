@@ -11,6 +11,7 @@ export default function Trace(message) {
 
 	return {
 		caller, callee, stack, started,
+		shortCaller: `${caller.substring(caller.lastIndexOf('/') + 1, caller.lastIndexOf(':'))}.${caller.split(' ')[0]}`,
 		elapsed: (message) => {
 			let d = new Date(Date.now() - started).toISOString()
 			console.log(message || caller, d.substring(d.lastIndexOf('T') + 1, d.length - 1))
