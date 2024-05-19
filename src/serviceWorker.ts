@@ -63,17 +63,23 @@ chrome.runtime.onMessageExternal.addListener(async (request, sender, sendRespons
 			chrome.action.setBadgeText({ tabId: sender.tab?.id, text: message.bool ? "ON" : "OFF" });
 			sendResponse({ success: true })
 			break;
+		case 'update_react_data':
+			console.log('update_react_data')
+			await chrome.runtime.sendMessage(message);
+			sendResponse({ success: true })
+			break;
 		case 'search_figma_data':
 			chrome.tabs.query({ active: true, lastFocusedWindow: true }, ([tab]) => {
 				if (tab?.windowId) {
 					//this causes the sidepanel to open, but it's not immediately available for messaging
 					// and there doesn't appear to be a good way to wait for it to be available.
-					chrome.sidePanel.open({ windowId: tab.windowId })
+					chrome.sidePanel.open({ windowId: tab.windowId });
 
 					//queue the message for sending when the sidepanel is ready
-					messagesForSidePanel.push(message)
+					messagesForSidePanel.push(message);
 				}
-			})
+			});
+			sendResponse({ success: true })
 			break;
 		default:
 			console.log(`handleMessageFromPage - unrecognized action ${message.action}`, message)

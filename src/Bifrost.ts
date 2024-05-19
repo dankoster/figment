@@ -11,23 +11,31 @@
 export const dispatchExtensionAction = () => document.dispatchEvent(new Event("toggle_enabled"))
 export const handleExtensionEvent = (event: FigmentMessageAction, handler: EventListenerOrEventListenerObject) => document.addEventListener(event, handler)
 
-const dispatchExtensionEvent = (event: FigmentMessageAction, detail: string) => document.dispatchEvent(new CustomEvent(event, { detail }))
+const dispatchExtensionEvent = (event: FigmentMessageAction, detail?: string) => {
+	if (detail)
+		document.dispatchEvent(new CustomEvent(event, { detail }))
+	else
+		document.dispatchEvent(new CustomEvent(event))
+}
 
 type FigmentMessageAction =
 	"toggle_enabled" |
 	"toggle_sidepanel" |
 	"overlay_image" |
 	"start_drag_from_side_panel" |
-	"search_figma_data" | 
-	"sidepanel_has_opened" | 
-	"sidepanel_got_message" 
+	"search_figma_data" |
+	"sidepanel_has_opened" |
+	"sidepanel_got_message" |
+	"update_react_data" |
+	"request_updated_react_data"
 
 //communicate from the page to the service worker
 export type FigmentMessage = {
 	action: FigmentMessageAction,
 	messageId: number, //kinda-unique: Date.now() + Math.random()
 	bool?: boolean,
-	str?: string
+	str?: string,
+	data?: any
 }
 export type FigmentResponse = {
 	success: boolean,
@@ -40,7 +48,7 @@ async function getCurrentTab() {
 	return tab
 }
 
-export async function SendMessageToCurrentTab(event: FigmentMessageAction, detail: string) {
+export async function SendMessageToCurrentTab(event: FigmentMessageAction, detail?: string) {
 	//chrome.tabs.sendMessage ???
 	//https://developer.chrome.com/docs/extensions/reference/api/runtime#event-onMessage
 
@@ -49,7 +57,7 @@ export async function SendMessageToCurrentTab(event: FigmentMessageAction, detai
 		chrome.scripting.executeScript({
 			target: { tabId: tab.id },
 			func: dispatchExtensionEvent,
-			args: [event, detail]
+			args: detail ? [event, detail] : [event]
 		})
 	}
 }
@@ -69,10 +77,18 @@ export function searchFigmaData(extensionId: string, search: string) {
 	})
 }
 
+export function updateReactComponentsInSidebar(extensionId: string, data: any) {
+	sendMessageToServiceWorker(extensionId, {
+		action: 'update_react_data',
+		data: data,
+		messageId: Date.now() + Math.random()
+	})
+}
+
 export function setToolbarEnabledState(extensionId: string, enabled: boolean) {
 	sendMessageToServiceWorker(extensionId, {
 		action: 'toggle_enabled',
-		bool: enabled, 
+		bool: enabled,
 		messageId: Date.now() + Math.random()
 	})
 }

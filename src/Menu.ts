@@ -90,11 +90,15 @@ export class FigmentMenu extends HTMLElement {
 	}
 
 
-	ShowFor(target: HTMLElement) {
+	ShowFor(target: HTMLElement, extra?: HTMLElement) {
 		if (!target) throw new Error('invalid target:', target)
 		this.target = target
 
 		this.container = FigmentMenu.buildMenuElements(this.items)
+
+		if (extra) {		
+			this.container.appendChild(extra)
+		}
 
 		this.setLocation(FigmentMenu.calcPlacement(this.target))
 
@@ -157,13 +161,13 @@ export class FigmentMenu extends HTMLElement {
 		const container = document.createElement('div')
 		container.className = 'figment-menu-container'
 
-		const div = document.createElement('div')
-		div.className = 'figment-menu'
-		container.appendChild(div)
+		const menu = document.createElement('div')
+		menu.className = 'figment-menu'
+		container.appendChild(menu)
 
 		//recursively add submenus
 		for (const menuItem of menuItems) {
-			div.appendChild(menuItem.div)
+			menu.appendChild(menuItem.div)
 			if (menuItem.subMenuItems?.length) {
 				const subMenu = FigmentMenu.buildMenuElements(menuItem.subMenuItems)
 				subMenu.classList.add('submenu')

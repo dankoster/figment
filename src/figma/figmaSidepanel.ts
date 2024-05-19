@@ -70,7 +70,7 @@ type FigmaHandlerFunction = (params: FigmaHandlerParams) => void | Promise<void>
 const figmaUrlPathHandlers = new Map<string, FigmaHandlerFunction>()
 figmaUrlPathHandlers.set('file', ({ params: [docId] }: FigmaHandlerParams) => handleFigmaFileURL(docId)) //handle https://www.figma.com/file....
 figmaUrlPathHandlers.set('design', ({ params: [docId] }: FigmaHandlerParams) => handleFigmaFileURL(docId)) //handle https://www.figma.com/file....
-figmaUrlPathHandlers.set('*', ({ path }) => displayStatus(`Open a specific figma file to read it`))
+figmaUrlPathHandlers.set('*', ({ path }) => displayStatus(`Open a specific figma file to read it`, 'figma'))
 
 const childNodeHandlers = new Map<figma.Node['type'], (docId: string, docName: string, node: any) => HTMLElement>()
 childNodeHandlers.set('CANVAS', renderFigmaCanvasNode)
@@ -106,14 +106,14 @@ async function handleFigmaFileURL(docId: string) {
 
 	const userToken = figmaLocalStorage.getApiKey()
 	if (!userToken) {
-		displayStatus('no user token found!')
+		displayStatus('no user token found!', 'figma')
 		return figmaConfigTab.setActive()
 	}
 
-	displayStatus(`FETCHING ${docId}`)
+	displayStatus(`FETCHING ${docId}`, 'figma')
 	const doc = await GetUpdatedFigmaDocument({ docId, userToken })
 
-	displayStatus(`GOT ${docId} last modified ${doc.lastModified}`)
+	displayStatus(`GOT ${docId} last modified ${doc.lastModified}`, 'figma')
 
 	figmaListTab.setTabBody(renderFigmaDocsList())
 	figmaListTab.setActive()
@@ -127,7 +127,7 @@ async function handleFigmaFileURL(docId: string) {
 export const handleLocalhost: sidePanelUrlHandler = function (url: URL) {
 	const userToken = figmaLocalStorage.getApiKey()
 	if (!userToken) {
-		displayStatus('no user token found!')
+		displayStatus('no user token found!', 'figma')
 		return figmaConfigTab.setActive()
 	}
 
@@ -196,7 +196,7 @@ function renderFigmaDataUi() {
 	const files = figmaLocalStorage.figmaFiles()
 	if (!files?.length) {
 		const errorMessage = 'No figma file loaded. Visit figma.com to load a file.'
-		displayStatus(errorMessage)
+		displayStatus(errorMessage, 'figma')
 		newFigmaUI.appendChild(element('span', { innerText: errorMessage }))
 		return newFigmaUI
 	}
@@ -229,14 +229,14 @@ function renderFigmaDataUi() {
 		newFigmaUI.appendChild(fileDiv)
 
 		const handleUpdatedDoc = (updatedDoc: figma.GetFileResponse) => {
-			displayStatus(`GOT ${file.docId} Last modified: ${updatedDoc.lastModified}`)
+			displayStatus(`GOT ${file.docId} Last modified: ${updatedDoc.lastModified}`, 'figma')
 			const newFileDiv = renderFigmaFile(file.docId, updatedDoc)
 			//console.log('render updated file', file.docId)
 			applyDiff(fileDiv, newFileDiv)
 		}
 
 		//get updated data and render that next (also updates the cache)
-		displayStatus(`FETCHING ${file.docId}`)
+		displayStatus(`FETCHING ${file.docId}`, 'figma')
 		GetUpdatedFigmaDocument({ docId: file.docId, userToken })
 			.then(handleUpdatedDoc)
 	}
@@ -257,7 +257,7 @@ function renderFigmaConfigUi() {
 		element('input', { id: 'key', type: 'text', placeholder: 'figma api key', value: figmaLocalStorage.getApiKey() },
 			[], { 'change': (e) => {
 				setApiKey((e.target as HTMLInputElement)?.value)
-				displayStatus('saved api key!')
+				displayStatus('saved api key!', 'figma')
 			} }
 		)
 	])

@@ -1,0 +1,41 @@
+.react-tab-title {
+    display: flex;
+    gap: .75rem;
+    align-items: center;
+    text-wrap: nowrap;
+
+    & img {
+        max-width: .75rem;
+    }
+
+    .react-logo {
+        width: 100px;
+    }
+}
+
+.react-tab {
+
+    .url {
+        display: block;
+        margin-block-end: 1rem;
+    }
+
+    .react-component-list {
+        display: grid;
+        column-gap: 1rem;
+        grid-template-columns: minmax(40px, max-content) 1fr;
+
+        .react-component {
+            grid-column: 1 / -1;
+            display: grid;
+            grid-template-columns: subgrid;
+            padding: .5ch;
+        }
+
+        .react-component:hover {
+            outline: 1px dotted;
+            border-radius: 5px;
+            box-shadow: 0px 0px 15px #00000029;
+        }
+    }
+}

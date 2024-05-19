@@ -10,7 +10,7 @@ It lets you inspect the UI to quickly figure out what code is rendering what you
 https://github.com/dankoster/figment/assets/9935523/d72555a0-1849-4c75-8424-01de6b23144f
 
 
-This tool has no dependencies. Every bit of functionality was written by me because I learn best by making something I find useful. If you would like a feature that doesn't exist, [just let me know](https://github.com/dankoster/figment/issues/new) and I'll take a look. Or you can submit a PR. 
+This tool has no dependencies. It's all browser APIs and Vanilla JavaScript with TypeScript to help keep things on the rails. Every bit of functionality was written by me because I'm just tinkering, it's just for fun, and I learn best by making something I find useful. If you would like a feature that doesn't exist, [just let me know](https://github.com/dankoster/figment/issues/new) and I'll take a look. Or you can submit a PR. 
 
 I'm currently tinkering with a Figma integration to help correlate React components with Figma designs.
 
@@ -39,15 +39,23 @@ https://github.com/dankoster/figment/assets/9935523/06e3b9c8-fa9a-45bc-abfa-69e0
       - [x] Drag Figma image onto localhost page
       - [x] Manage local Figma docs (list, add, delete)
       - [x] Separate sidepanel pages for managing and using Figma data
-      - [ ] Functionality to link React components to Figma designs
+      - [ ] Functionality to link Figma designs to React components
       - [ ] Full text search
       - [ ] Favorites/bookmarks?
-      - [ ] Filter Figma data to only show designs relevant to the current page?
+      - [ ] Filter by "Ready for Dev"
+      - [ ] Filter by designs relevant to the current page?
    - [ ] CSS styles for everything
    - [x] Sidepanel Header/Tabs
+   - [x] Sidepanel toggle logic
+   - [x] React sidepanel
+      - [x] List all react components on the page with vsCode links
+      - [ ] Functionality to link React components to Figma designs
    - [ ] Configuration options sidepanel
      
 ### Menu stuff
+   - [x] Menu toolbar
+      - [x] option to stop inspecting the DOM
+      - [x] option to open/close the sidebar
    - [x] Add Submenus
    - [x] Submenu open/close css animations
    - [x] Scroll behavior 

@@ -33,6 +33,16 @@
 	color: #ffffff
 }
 
+.figment-extension-options {
+	display: flex;
+	gap: 0.5rem;
+	background: white;
+	color: #353535;
+	border-top: 1px solid #3535354f;
+	padding-block: 0.5em;
+	padding-inline: 0.75em;
+}
+
 .figment-menu-container {
 	z-index: 111111;
 	position: absolute;

@@ -1,30 +1,36 @@
 import { FigmentMessage } from "./Bifrost.js";
 import * as figmaSidepanel from "./figma/figmaSidepanel.js";
+import * as reactSidepanel from "./react/reactSidepanel.js";
 import { element } from "./html.js";
 
 
 export type sidePanelUrlHandler = (url: URL) => void
 
-const handlers = new Map<string, sidePanelUrlHandler>()
-handlers.set('localhost', figmaSidepanel.handleLocalhost)
-handlers.set('www.figma.com', figmaSidepanel.handleFigmaUrl)
+const handlers = new Map<string, sidePanelUrlHandler[]>()
+handlers.set('localhost', [reactSidepanel.addTab, figmaSidepanel.handleLocalhost])
+handlers.set('www.figma.com', [figmaSidepanel.handleFigmaUrl])
 
 async function handleTabUpdated(tab: chrome.tabs.Tab) {
 	if (!tab.url) return
 
 	const url = new URL(tab.url)
-	displayStatus(`----------------------------`)
+	displayStatus(`_____________________________`)
+	displayStatus(` `)
 	displayStatus(`${url.toString()}`)
-	const handler = handlers.get(url.hostname)
+	const handlerList = handlers.get(url.hostname)
 
-	if (handler) handler(url)
+	if (handlerList) {
+		for (const handler of handlerList) {
+			handler(url)
+		}
+	}
 	else displayStatus(`NO HANDLER for ${url.hostname}`)
 }
 
-export function displayStatus(value: string) {
+export function displayStatus(value: string, source?: string) {
 	const status = document.getElementById('status')
 	if (!status) throw new Error(`could not find element with id "${status}"`)
-	const newStatus = element('pre', { innerText: value })
+	const newStatus = element('pre', { innerText: `${source ? `[${source}] `:''}${value}` })
 	status.appendChild(newStatus)
 	newStatus.scrollIntoView({ behavior: "smooth", block: "end", inline: "nearest" })
 }

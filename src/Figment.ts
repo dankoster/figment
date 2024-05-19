@@ -1,8 +1,9 @@
-import { handleExtensionEvent, searchFigmaData, setToolbarEnabledState } from './Bifrost.js'
+import { handleExtensionEvent, toggleSidePanel, searchFigmaData, setToolbarEnabledState, updateReactComponentsInSidebar } from './Bifrost.js'
 import FigmentDragable from './FigmentDragable.js'
 import FigmentOutline from './FigmentOutline.js'
 import { FigmentMenu, MenuItem } from './Menu.js'
-import { RenderTreeNode, getElementPath, getReactRenderTree } from "./elementFunctions.js"
+import { RenderTreeNode, flatMapAllReactComponents, flatMapAllChildren, getElementPath, getReactRenderTree } from "./elementFunctions.js"
+import { element } from './html.js'
 
 //This code runs in the context of the page
 // - set up hotkeys
@@ -24,6 +25,20 @@ let enabled = false;
 handleExtensionEvent("toggle_enabled", toggleEnabled)
 handleExtensionEvent("overlay_image", handleOverlayImageEvent)
 handleExtensionEvent("start_drag_from_side_panel", handleDragFromSidePanel)
+handleExtensionEvent("request_updated_react_data", sendPageComponentsToSidebar)
+
+function sendPageComponentsToSidebar() {
+	const components = findDistinctReactComponentsInElement(document.getElementById('root'))
+	updateReactComponentsInSidebar(figmentId, JSON.stringify(Array.from(components)))
+	//console.log('sent updated react components to sidebar')
+	//for (const [name, path] of components) { console.log(name, path)} 
+}
+
+function findDistinctReactComponentsInElement(element: HTMLElement | null) {
+	const children = flatMapAllChildren(element)
+	const components = flatMapAllReactComponents(children)
+	return components
+}
 
 function toggleEnabled() {
 	enabled = !enabled
@@ -163,7 +178,12 @@ function onOverlayClick(e: MouseEvent, renderTree: RenderTreeNode[]) {
 		menu?.AddItem(item)
 	})
 
-	menu.ShowFor(e.target as HTMLElement)
+	const extensionOptions = element('div', { className: 'figment-extension-options' }, [
+		element('button', { textContent: 'X' }, undefined, { click: () => toggleEnabled() })
+		, element('button', { textContent: 'sidebar' }, undefined, { click: () => toggleSidePanel(figmentId) })
+	])
+
+	menu.ShowFor(e.target as HTMLElement, extensionOptions)
 
 	//detect when the menu should close
 	document.addEventListener('mouseup', onMouseUp, false)
