@@ -5,7 +5,7 @@ import {
 } from '../sidepanel.js'
 import { SidePanelTab } from "../SidePanelTab.js"
 import { GetUpdatedFigmaDocument, enqueueImageRequest } from './figmaApi.js'
-import { FigmentMessage, SendMessageToCurrentTab } from '../Bifrost.js'
+import { FigmentMessage, FigmentResponse, SendMessageToCurrentTab } from '../Bifrost.js'
 import { applyStylesheetToDocument, applyDiff, childrenHavingClass, element, age } from '../html.js'
 
 import * as figmaLocalStorage from './localStorage.js'
@@ -18,15 +18,15 @@ chrome.runtime.onUserScriptMessage.addListener((message, sender, sendResponse) =
 
 //from inside the extension
 chrome.runtime.onMessage.addListener((message: FigmentMessage, sender, sendResponse) => {
-	handleFigmentMessage(message)
+	handleFigmentMessage(message, sendResponse)
 })
 
 //from the page
 chrome.runtime.onMessageExternal.addListener((request, sender, sendResponse) => {
-	handleFigmentMessage(request.message)
+	handleFigmentMessage(request.message, sendResponse)
 })
 
-function handleFigmentMessage(message: FigmentMessage) {
+function handleFigmentMessage(message: FigmentMessage, sendResponse: (response?: FigmentResponse) => void) {
 	switch (message.action) {
 		case 'search_figma_data':
 			if (!message.str) throw new Error(`${message.str} is not a valid value`)
@@ -45,6 +45,9 @@ function handleFigmentMessage(message: FigmentMessage) {
 				action: 'sidepanel_got_message',
 				messageId: message.messageId
 			} as FigmentMessage)
+
+			sendResponse({ success: true })
+
 			break;
 	}
 }
@@ -89,8 +92,8 @@ applyStylesheetToDocument('figmaSidePanel.css')
 let figmaDocsListRefreshTimer: number | undefined = undefined
 
 const figmaDataTab = new SidePanelTab(figmaTabTitle('Localhost'), renderFigmaDataUi())
-const figmaListTab = new SidePanelTab(figmaTabTitle('Figma Docs'), renderFigmaDocsList())
-const figmaConfigTab = new SidePanelTab(figmaTabTitle('Figma Config'), renderFigmaConfigUi())
+const figmaListTab = new SidePanelTab(figmaTabTitle('Docs'), renderFigmaDocsList())
+const figmaConfigTab = new SidePanelTab(figmaTabTitle('Config'), renderFigmaConfigUi())
 
 export const handleFigmaUrl: sidePanelUrlHandler = function (url: URL) {
 	const [path, ...params] = splitUrlPath(url)	//file d8BAC23FK8bcpIGmkgwjYk Figma-basics
