@@ -89,7 +89,7 @@ export function getTotal(style: CSSStyleDeclaration, properties: string[]) {
 export function element<T extends keyof HTMLElementTagNameMap>(
 	tag: T,
 	properties: { [Property in keyof Partial<HTMLElementTagNameMap[T]>]: HTMLElementTagNameMap[T][Property] },
-	children?: Node[],
+	children?: (Node | undefined)[],
 	eventListeners?: { [Property in keyof Partial<HTMLElementEventMap>]: (this: HTMLInputElement, ev: HTMLElementEventMap[Property]) => any }
 ) {
 	const el = document.createElement(tag)
@@ -98,7 +98,7 @@ export function element<T extends keyof HTMLElementTagNameMap>(
 	}
 	if (children) {
 		for (const child of children) {
-			el.appendChild(child)
+			child && el.appendChild(child)
 		}
 	}
 	if (eventListeners) {
