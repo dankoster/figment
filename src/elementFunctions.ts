@@ -19,8 +19,27 @@ export function removeElementsByTagName(tagName: string) {
 	Array.from(elements).forEach(element => element.remove())
 }
 
+type Kind =
+	| 'FunctionComponent'
+	| 'ClassComponent'
+	| 'IndeterminateComponent'
+	| 'HostRoot'
+	| 'HostPortal'
+	| 'HostComponent'
+	| 'HostText'
+	| 'Fragment'
+	| 'Mode'
+	| 'ContextConsumer'
+	| 'ContextProvider'
+	| 'ForwardRef'
+	| 'Profiler'
+	| 'SuspenseComponent'
+	| 'MemoComponent'
+	| 'SimpleMemoComponent'
+	| 'LazyComponent'
 
-const tags: { [key: number]: string } = {
+
+const tags: { [key: number]: Kind } = {
 	0: 'FunctionComponent',
 	1: 'ClassComponent',
 	2: 'IndeterminateComponent',
@@ -45,64 +64,68 @@ export class RenderTreeNode {
 	tag: string;
 	kind: string;
 	fiber: any;
-	stateNode: HTMLElement;
 	debugSource: any;
 
 	constructor(fiber: any) {
-		this.type = this.fiberTypeName(fiber);
+		this.type = fiberTypeName(fiber);
 		this.tag = fiber.tag;
 		this.kind = tags[fiber.tag];
 		this.fiber = fiber;
 		this.debugSource = fiber._debugSource;
-
-		this.stateNode = RenderTreeNode.getStateNode(fiber);
 	}
 
-	static getStateNode(fiber: any) {
-		let stateNode = fiber.stateNode;
+	get stateNode() {
+		let stateNode = this.fiber.stateNode;
 		if (!stateNode) {
-			while (fiber && !stateNode) {
-				fiber = fiber.child || fiber.sibling;
-				stateNode = fiber?.stateNode;
+			while (this.fiber && !stateNode) {
+				this.fiber = this.fiber.child || this.fiber.sibling;
+				stateNode = this.fiber?.stateNode;
 			}
 		}
-		return stateNode;
+		return stateNode as HTMLElement;
 	}
 
-	get filePath() {
-		return this.fiber?._debugSource &&
-			[this.fiber._debugSource?.fileName, this.fiber._debugSource?.lineNumber, this.fiber._debugSource?.columnNumber].join(':');
-	}
+	get filePath() { return filePath(this.fiber) }
 
-	get fileName() {
-		return this.filePath?.substring(this.filePath.lastIndexOf('/') + 1) ?? '';
-	}
+	get fileName() { return fileName(this.filePath) }
 
-	get vsCodeUrl() {
-		return `vsCode://file${this.filePath}`;
-	}
+	get vsCodeUrl() { return vsCodeUrl(this.filePath) }
 
-	fiberTypeName(f: any): string {
-		let t = typeof f?.type;
-		let result;
-
-		if (t === 'string') {
-			result = f.type;
-		} else if (t === 'object') {
-			if (f.type?.displayName) {
-				result = f.type?.displayName;
-			}
-			//else if (typeof f.type?.$$typeof == 'symbol') result = f.type.$$typeof.description
-			//else Object.getPrototypeOf(f.type??{})?.constructor.name
-		} else if (t === 'function') {
-			result = f.type.name;
-		} else {
-			result = t;
-		}
-
-		return result;
-	}
 };
+
+function filePath(fiber: any) {
+	return fiber?._debugSource &&
+		[fiber._debugSource?.fileName, fiber._debugSource?.lineNumber, fiber._debugSource?.columnNumber].join(':');
+}
+
+function fileName(filePath: string) {
+	return filePath?.substring(filePath.lastIndexOf('/') + 1) ?? '';
+}
+
+function vsCodeUrl(filePath: string) {
+	return `vsCode://file${filePath}`;
+}
+
+function fiberTypeName(f: any): string {
+	let t = typeof f?.type;
+	let result;
+
+	if (t === 'string') {
+		result = f.type;
+	} else if (t === 'object') {
+		if (f.type?.displayName) {
+			result = f.type?.displayName;
+		}
+		//else if (typeof f.type?.$$typeof == 'symbol') result = f.type.$$typeof.description
+		//else Object.getPrototypeOf(f.type??{})?.constructor.name
+	} else if (t === 'function') {
+		result = f.type.name;
+	} else {
+		result = t;
+	}
+
+	return result;
+}
 
 const cache: {
 	element?: HTMLElement,
@@ -111,7 +134,7 @@ const cache: {
 
 export function getReactRenderTree(element: HTMLElement) {
 
-	if(cache.element === element && cache.tree) return cache.tree
+	if (cache.element === element && cache.tree) return cache.tree
 
 	const path = getElementPath(element);
 	let fiber = FindReactFiber(path[0]);
@@ -144,6 +167,47 @@ export function getReactRenderTree(element: HTMLElement) {
 	cache.tree = tree
 
 	return tree;
+}
+
+export function flatMapAllChildren(element: Element | null) {
+	const result: Element[] = []
+	if (!element)
+		return result
+
+	result.push(element)
+	for (const child of element.children) {
+		const childNodes = flatMapAllChildren(child)
+		for (const childNode of childNodes) {
+			result.push(childNode)
+		}
+	}
+
+	return result
+}
+
+export function flatMapAllReactComponents(elements: Element[]) {
+	const result = new Map<string, string>()
+	for (const element of elements) {
+		let fiber = FindReactFiber(element)
+		if (fiber) {
+
+			let prevFiber
+			while (fiber) {
+				const kind = tags[fiber.tag] as Kind
+				if (kind != "HostComponent") {
+					const name = fiberTypeName(fiber)
+					if(!result.has(name)) {
+						const url = vsCodeUrl(prevFiber?._debugSource?.fileName)
+						result.set(name, url)
+					}
+					break
+				}
+				prevFiber = fiber
+				fiber = fiber.return;
+			}
+		}
+	}
+	return result
 }
 
 function FindReactFiber(dom: any) {
