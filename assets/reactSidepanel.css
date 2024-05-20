@@ -26,16 +26,18 @@
         grid-template-columns: minmax(40px, max-content) 1fr;
 
         .react-component {
-            grid-column: 1 / -1;
             display: grid;
+            /* get template columns from parent grid and share with siblings */
             grid-template-columns: subgrid;
+            /* fill all columns of the parent grid row (-1 denotes final column) */
+            grid-column: 1 / -1;
             padding: .5ch;
-        }
 
-        .react-component:hover {
-            outline: 1px dotted;
-            border-radius: 5px;
-            box-shadow: 0px 0px 15px #00000029;
+            &:hover {
+                outline: 1px dotted;
+                border-radius: 5px;
+                box-shadow: 0px 0px 15px #00000029;
+            }
         }
     }
 }
