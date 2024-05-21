@@ -81,7 +81,7 @@ const elementById: { [key: string]: HTMLElement[] | undefined } = {}
 let file: figma.GetFileResponse | undefined
 let filter: string
 
-const figmaTabTitle = (text: string) => element('div', { className: 'figma-tab-title' }, [
+const figmaTabTitle = (text: string) => element('div', { className: 'title figma-tab-title' }, [
 	element('img', { src: 'figmaLogo.svg', className: 'figma-logo' }),
 	element('span', { innerText: text })
 ])

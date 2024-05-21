@@ -10,25 +10,21 @@ const reactTab = new SidePanelTab(tabTitle('Components'), renderReactTabUi(urlSt
 //Inject figma css, if necessary
 applyStylesheetToDocument('reactSidePanel.css')
 
-export const addTab: sidePanelUrlHandler = async function (url: URL) {
-
-	displayStatus(`requesting react update`, 'react')
-	await SendMessageToCurrentTab('request_updated_react_data')
-
+export const addTab: sidePanelUrlHandler = function (url: URL) {
 	urlString = url.toString()
-	reactTab.setTabBody(renderReactTabUi(urlString, cachedData))
-	reactTab.setActive()
+	displayStatus(`requesting react update for ${url}`, 'react')
+	SendMessageToCurrentTab('request_updated_react_data')
 }
 
 function tabTitle(text: string) {
-	return element('div', { className: 'react-tab-title' }, [
+	return element('div', { className: 'title react-tab-title' }, [
 		element('img', { src: 'reactLogo.svg', className: 'react-logo' }),
 		element('span', { innerText: text })
 	])
 }
 
 function renderReactTabUi(url: string, data?: string[][]) {
-	displayStatus(`rendering react tab`, 'react')
+	displayStatus(`rendering react tab for ${url}`, 'react')
 
 	const shorten = (url: string) => url.substring(url.lastIndexOf('/') + 1)
 
@@ -60,7 +56,7 @@ function handleFigmentMessage(message: FigmentMessage, sendResponse: (response?:
 
 			const data = JSON.parse(message.data)
 			cachedData = data;
-			displayStatus(`got updated react data`, 'react')
+			displayStatus(`got updated react data for ${urlString}`, 'react')
 			reactTab.setTabBody(renderReactTabUi(urlString, data))
 			reactTab.setActive()
 

@@ -25,24 +25,26 @@
 
 .tabs {
     display: flex;
-    gap: 1px;
-    padding: 1px;
+    align-items: center;
 
-    & .tab {
-        outline: 1px solid;
-        padding-inline: 1rem;
-        padding-block: 0.3rem;
-        border-top-left-radius: 5px;
-        border-top-right-radius: 5px;
-        margin-top: 0.3rem;
+    .tab {
         cursor: pointer;
-        background-color: #dcdcdc;
 
-        &.active {
-            padding-block: 0.5rem;
-            margin-top: 0;
+        .title {
+            display: flex;
+            gap: .75rem;
+            align-items: center;
+            text-wrap: nowrap;
+            margin-inline: 0.25rem;
+            margin-block: 0.25rem;
+            padding-inline: 0.5rem;
+            padding-block: 0.2rem;
+            /* outline: 1px solid; */
+        }
+
+        .active {
             font-weight: bold;
-            background-color: white;
+
         }
     }
 }
