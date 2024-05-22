@@ -12,10 +12,9 @@ export const dispatchExtensionAction = () => document.dispatchEvent(new Event("t
 export const handleExtensionEvent = (event: FigmentMessageAction, handler: EventListenerOrEventListenerObject) => document.addEventListener(event, handler)
 
 const dispatchExtensionEvent = (event: FigmentMessageAction, detail?: string) => {
-	if (detail)
-		document.dispatchEvent(new CustomEvent(event, { detail }))
-	else
-		document.dispatchEvent(new CustomEvent(event))
+	//console.log('dispatchExtensionEvent', event, detail)
+	if (detail) document.dispatchEvent(new CustomEvent(event, { detail }))
+	else document.dispatchEvent(new CustomEvent(event))
 }
 
 type FigmentMessageAction =
@@ -27,19 +26,66 @@ type FigmentMessageAction =
 	"sidepanel_has_opened" |
 	"sidepanel_got_message" |
 	"update_react_data" |
-	"request_updated_react_data"
+	"request_updated_react_data" |
+	"request_sidepanel_open_state" |
+	"close_sidepanel"
 
-//communicate from the page to the service worker
-export type FigmentMessage = {
-	action: FigmentMessageAction,
-	messageId: number, //kinda-unique: Date.now() + Math.random()
-	bool?: boolean,
-	str?: string,
-	data?: any
-}
-export type FigmentResponse = {
-	success: boolean,
-	response?: string
+type FigmaMessageTarget = 'page' |
+	'extension' |
+	'service_worker' |
+	'sidepanel' |
+	'figma_sidepanel' |
+	'react_sidepanel'
+
+type MessageInit = Omit<Message, 'messageId'>
+
+export class Message {
+	source: FigmaMessageTarget
+	target: FigmaMessageTarget
+	action: FigmentMessageAction
+
+	responseToMessageId?: number
+	data?: string
+	bool?: boolean
+	str?: string
+
+	messageId: number
+
+	constructor(message: MessageInit) {
+		//make typescript happy. Everything reassigned in the loop.
+		this.source = message.source
+		this.target = message.target
+		this.action = message.action
+
+		//assign optional props (actually everything)
+		for (const prop in message) {
+			(this as any)[prop] = (message as any)[prop]
+		}
+
+		this.messageId = Date.now() + Math.random()
+	}
+
+	static from(message: any) {
+		let deserialized
+		switch (typeof message) {
+			case 'object':
+				deserialized = message
+				break
+			case 'string':
+				deserialized = JSON.parse(message)
+				break
+			default:
+				throw new Error(`cannot construct Message from ${typeof message}`)
+		}
+
+		const result = new Message(deserialized)
+		result.messageId = deserialized.messageId
+		return result
+	}
+
+	static send(message: MessageInit) {
+		return chrome.runtime.sendMessage(new Message(message))
+	}
 }
 
 async function getCurrentTab() {
@@ -61,41 +107,42 @@ export async function SendMessageToCurrentTab(event: FigmentMessageAction, detai
 		})
 	}
 }
-function sendMessageToServiceWorker(extensionId: string, message: FigmentMessage) {
-	chrome?.runtime?.sendMessage && chrome.runtime.sendMessage(extensionId, { message },
-		function (response: FigmentResponse) {
-			if (!response?.success)
-				console.error(response, message);
-		});
+function sendMessageToExtension(extensionId: string, message: Message) {
+	// console.log(message.messageId, message.target, message.action)
+	chrome.runtime.sendMessage(extensionId, { message })
 }
 
 export function searchFigmaData(extensionId: string, search: string) {
-	sendMessageToServiceWorker(extensionId, {
+	sendMessageToExtension(extensionId, new Message({
+		source: 'page',
+		target: 'figma_sidepanel',
 		action: 'search_figma_data',
 		str: search,
-		messageId: Date.now() + Math.random()
-	})
+	}))
 }
 
 export function updateReactComponentsInSidebar(extensionId: string, data: any) {
-	sendMessageToServiceWorker(extensionId, {
+	sendMessageToExtension(extensionId, new Message({
+		source: 'page',
+		target: 'react_sidepanel',
 		action: 'update_react_data',
-		data: data,
-		messageId: Date.now() + Math.random()
-	})
+		data: data
+	}))
 }
 
 export function setToolbarEnabledState(extensionId: string, enabled: boolean) {
-	sendMessageToServiceWorker(extensionId, {
+	sendMessageToExtension(extensionId, new Message({
+		source: 'page',
+		target: 'extension',
 		action: 'toggle_enabled',
 		bool: enabled,
-		messageId: Date.now() + Math.random()
-	})
+	}))
 }
 
 export function toggleSidePanel(extensionId: string) {
-	sendMessageToServiceWorker(extensionId, {
+	sendMessageToExtension(extensionId, new Message({
+		source: 'page',
+		target: 'extension',
 		action: 'toggle_sidepanel',
-		messageId: Date.now() + Math.random()
-	})
+	}))
 }

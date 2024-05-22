@@ -1,4 +1,4 @@
-import { FigmentMessage, FigmentResponse, SendMessageToCurrentTab } from "../Bifrost.js";
+import { Message, SendMessageToCurrentTab } from "../Bifrost.js";
 import { SidePanelTab } from "../SidePanelTab.js";
 import { applyStylesheetToDocument, element } from "../html.js";
 import { displayStatus, sidePanelUrlHandler } from "../sidepanel.js";
@@ -41,32 +41,27 @@ function renderReactTabUi(url: string, data?: string[][]) {
 }
 
 //from inside the extension
-chrome.runtime.onMessage.addListener((message: FigmentMessage, sender, sendResponse) => {
-	handleFigmentMessage(message, sendResponse)
-})
+// chrome.runtime.onMessage.addListener((request, sender) => {
+// 	const message = Message.from(request)
+// 	console.log('onMessage', message)
+// 	handleFigmentMessage(message)
+// })
 
 //from the page
-chrome.runtime.onMessageExternal.addListener((request, sender, sendResponse) => {
-	handleFigmentMessage(request.message, sendResponse)
+chrome.runtime.onMessageExternal.addListener((request, sender) => {
+	// console.log('onMessageExternal', request.message)
+	handleFigmentMessage(request.message)
 })
 
-function handleFigmentMessage(message: FigmentMessage, sendResponse: (response?: FigmentResponse) => void) {
+function handleFigmentMessage(message: Message) {
 	switch (message.action) {
 		case 'update_react_data':
 
-			const data = JSON.parse(message.data)
+			const data = JSON.parse(message.data ?? '')
 			cachedData = data;
 			displayStatus(`got updated react data for ${urlString}`, 'react')
 			reactTab.setTabBody(renderReactTabUi(urlString, data))
 			reactTab.setActive()
-
-			//acknowledge reciept of this message
-			chrome.runtime.sendMessage({
-				action: 'sidepanel_got_message',
-				messageId: message.messageId
-			} as FigmentMessage)
-
-			sendResponse({ success: true })
 
 			break;
 	}

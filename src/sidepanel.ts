@@ -1,4 +1,4 @@
-import { FigmentMessage } from "./Bifrost.js";
+import { Message } from "./Bifrost.js";
 import * as figmaSidepanel from "./figma/figmaSidepanel.js";
 import * as reactSidepanel from "./react/reactSidepanel.js";
 import { element } from "./html.js";
@@ -47,10 +47,11 @@ window.onload = async function () {
 	handleTabUpdated(tab)
 
 	//tell the service worker
-	chrome.runtime.sendMessage({
+	Message.send({
+		source: 'sidepanel',
+		target: 'service_worker',
 		action: 'sidepanel_has_opened',
-		messageId: Date.now() + Math.random()
-	} as FigmentMessage)
+	})
 }
 
 //handle switching to a specific tab
@@ -71,12 +72,18 @@ chrome.tabs.onUpdated.addListener(async (tabId: number, changeInfo: chrome.tabs.
 	}
 })
 
-chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
-	switch (message) {
-		case 'are you still there':
-			sendResponse('still alive')
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+	const message = Message.from(request)
+	switch (message.action) {
+		case 'request_sidepanel_open_state':
+			sendResponse(new Message({
+				source: 'sidepanel', 
+				target: message.source,
+				action: 'request_sidepanel_open_state',
+				responseToMessageId: message.messageId,
+				bool: true}))
 			break;
-		case 'goodbye':
+		case 'close_sidepanel':
 			window.close()
 			break;
 	}

@@ -165,15 +165,15 @@ function onOverlayClick(e: MouseEvent, renderTree: RenderTreeNode[]) {
 				onClick: undefined //no action for clicking the element/component name in the menu
 			}))
 		})
-		// if(!isDomElement) {
-		// 	item.AddSubItem(new MenuItem({
-		// 		text: "Find in Figma",
-		// 		onTextClick: () => {
-		// 			searchFigmaData(figmentId, node.type)
-		// 			menu?.Clear() //close the menu
-		// 		}
-		// 	}))
-		// }
+		if(!isDomElement) {
+			item.AddSubItem(new MenuItem({
+				text: "Find in Figma",
+				onTextClick: () => {
+					searchFigmaData(figmentId, node.type)
+					menu?.Clear() //close the menu
+				}
+			}))
+		}
 
 		menu?.AddItem(item)
 	})

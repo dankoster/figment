@@ -5,28 +5,32 @@ import {
 } from '../sidepanel.js'
 import { SidePanelTab } from "../SidePanelTab.js"
 import { GetUpdatedFigmaDocument, enqueueImageRequest } from './figmaApi.js'
-import { FigmentMessage, FigmentResponse, SendMessageToCurrentTab } from '../Bifrost.js'
+import { Message, SendMessageToCurrentTab } from '../Bifrost.js'
 import { applyStylesheetToDocument, applyDiff, childrenHavingClass, element, age } from '../html.js'
 
 import * as figmaLocalStorage from './localStorage.js'
 import { setApiKey } from './localStorage.js'
 
 
-chrome.runtime.onUserScriptMessage.addListener((message, sender, sendResponse) => {
+chrome.runtime.onUserScriptMessage.addListener((message, sender) => {
 	console.log('figmaSidePanel.onUserScriptMessage', { message, sender })
 })
 
 //from inside the extension
-chrome.runtime.onMessage.addListener((message: FigmentMessage, sender, sendResponse) => {
-	handleFigmentMessage(message, sendResponse)
+chrome.runtime.onMessage.addListener((request, sender) => {
+	const message = Message.from(request)
+	// console.log('onMessage', request, message)
+	handleFigmentMessage(message)
 })
 
 //from the page
-chrome.runtime.onMessageExternal.addListener((request, sender, sendResponse) => {
-	handleFigmentMessage(request.message, sendResponse)
+chrome.runtime.onMessageExternal.addListener((request, sender) => {
+	const message = Message.from(request.message)
+	// console.log('onMessageExternal', request, message)
+	handleFigmentMessage(message)
 })
 
-function handleFigmentMessage(message: FigmentMessage, sendResponse: (response?: FigmentResponse) => void) {
+function handleFigmentMessage(message: Message) {
 	switch (message.action) {
 		case 'search_figma_data':
 			if (!message.str) throw new Error(`${message.str} is not a valid value`)
@@ -41,12 +45,12 @@ function handleFigmentMessage(message: FigmentMessage, sendResponse: (response?:
 			}
 
 			//acknowledge reciept of this message
-			chrome.runtime.sendMessage({
+			Message.send({
+				source: 'figma_sidepanel',
+				target: 'service_worker',
 				action: 'sidepanel_got_message',
-				messageId: message.messageId
-			} as FigmentMessage)
-
-			sendResponse({ success: true })
+				responseToMessageId: message.messageId
+			})
 
 			break;
 	}
