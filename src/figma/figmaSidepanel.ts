@@ -282,7 +282,7 @@ function renderFigmaFile(docId: string, figmaFile: figma.GetFileResponse) {
 	div.figmaNode = figmaFile
 
 	//render children
-	const children = renderChildNodes(docId, figmaFile.document.name, figmaFile.document)
+	const children = renderChildNodes(docId, figmaFile.document?.name, figmaFile.document)
 	for (const child of children) div.appendChild(child)
 
 	return div
@@ -330,7 +330,7 @@ function findString(node: any, searchString: string) {
 
 function renderChildNodes(docId: string, docName: string, node: figma.DocumentNode | figma.CanvasNode | figma.SectionNode) {
 	const children: HTMLElement[] = []
-	node.children?.forEach(figmaNode => {
+	node?.children?.forEach(figmaNode => {
 		const handler = childNodeHandlers.get(figmaNode.type)
 		const child = handler && handler(docId, docName, figmaNode)
 
