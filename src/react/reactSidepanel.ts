@@ -1,10 +1,10 @@
 import { Message, SendMessageToCurrentTab } from "../Bifrost.js";
 import { SidePanelTab } from "../SidePanelTab.js";
+import { ReactComponentInfo } from "../elementFunctions.js";
 import { applyStylesheetToDocument, element } from "../html.js";
 import { displayStatus, sidePanelUrlHandler } from "../sidepanel.js";
 
 let urlString = ''
-let cachedData: string[][] | undefined
 const reactTab = new SidePanelTab(tabTitle('Components'), renderReactTabUi(urlString))
 
 //Inject figma css, if necessary
@@ -23,18 +23,22 @@ function tabTitle(text: string) {
 	])
 }
 
-function renderReactTabUi(url: string, data?: string[][]) {
+function renderReactTabUi(url: string, data?: ReactComponentInfo[]) {
 	displayStatus(`rendering react tab for ${url}`, 'react')
 
 	const shorten = (url: string) => url.substring(url.lastIndexOf('/') + 1)
 
 	return element('div', { className: 'react-tab' }, [
-		element('h2', { innerText: 'React Components on this page' }),
-		element('span', {innerText: url, className: 'url'}),
+		element('h2', { innerText: `React Components for ${url}` }),
 		data && element('div', { className: 'react-component-list'}, 
-			data.map(([name, url]) => element('div', { className: 'react-component'}, [
+			data.map(({name, url, selectors}) => element('div', { className: 'react-component'}, [
 				element('span', { innerText: name }),
-				element('a', { innerText: shorten(url), href: url, target: '_vscode' })
+				element('a', { innerText: shorten(url), href: url, target: '_vscode' }),
+				element('div', {}, selectors.map((selector) => element('pre', {innerText: selector.replaceAll(':nth-child', '')}, [], {
+					mouseenter: () => { SendMessageToCurrentTab('highlight_selector', selector) },
+					mouseleave: () => { SendMessageToCurrentTab('clear_selector', selector)},
+				})))
+				
 			]))
 		)
 	])
@@ -56,9 +60,9 @@ chrome.runtime.onMessageExternal.addListener((request, sender) => {
 function handleFigmentMessage(message: Message) {
 	switch (message.action) {
 		case 'update_react_data':
+			if(!message.data) throw new Error(`update_react_data: data invalid! ${message.data}`)
 
-			const data = JSON.parse(message.data ?? '')
-			cachedData = data;
+			const data = JSON.parse(message.data) as ReactComponentInfo[]
 			displayStatus(`got updated react data for ${urlString}`, 'react')
 			reactTab.setTabBody(renderReactTabUi(urlString, data))
 			reactTab.setActive()

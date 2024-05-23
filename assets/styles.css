@@ -1,3 +1,9 @@
+
+.figment-highlight {
+    outline: 4px dashed rgba(0, 255, 0, 0.569);
+    outline-offset: -2px;
+}
+
 .figment-outline {
 	position: absolute;
 	pointer-events: none;

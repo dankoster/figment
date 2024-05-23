@@ -85,18 +85,16 @@ export class RenderTreeNode {
 		return stateNode as HTMLElement;
 	}
 
-	get filePath() { return filePath(this.fiber) }
+	get filePath() {
+		return this.debugSource &&
+			[this.debugSource?.fileName, this.debugSource?.lineNumber, this.debugSource?.columnNumber].join(':');
+	}
 
 	get fileName() { return fileName(this.filePath) }
 
 	get vsCodeUrl() { return vsCodeUrl(this.filePath) }
 
 };
-
-function filePath(fiber: any) {
-	return fiber?._debugSource &&
-		[fiber._debugSource?.fileName, fiber._debugSource?.lineNumber, fiber._debugSource?.columnNumber].join(':');
-}
 
 function fileName(filePath: string) {
 	return filePath?.substring(filePath.lastIndexOf('/') + 1) ?? '';
@@ -169,46 +167,73 @@ export function getReactRenderTree(element: HTMLElement) {
 	return tree;
 }
 
-export function flatMapAllChildren(element: Element | null) {
-	const result: Element[] = []
+export type ReactComponentInfo = {
+	name: string
+	kind: string
+	url: string
+	selectors: string[]
+}
+
+export function findReactComponents(element: Element | null): ReactComponentInfo[] {
+	const result: ReactComponentInfo[] = []
+
 	if (!element)
 		return result
 
-	result.push(element)
-	for (const child of element.children) {
-		const childNodes = flatMapAllChildren(child)
-		for (const childNode of childNodes) {
-			result.push(childNode)
+	let fiber = FindReactFiber(element)
+	if (fiber?.return) {
+		const return_kind = tags[fiber.return.tag] as Kind
+		if (return_kind != 'HostComponent') {
+			result.push({
+				name: fiberTypeName(fiber.return),
+				kind: return_kind,
+				url: vsCodeUrl(fiber._debugSource?.fileName),
+				selectors: [getSelector(element)]
+			})
+		}
+
+		// const kind = tags[fiber.tag] as Kind
+		// if (kind == 'HostComponent') {
+		// 	result.push({
+		// 		name: fiberTypeName(fiber),
+		// 		kind: kind,
+		// 		url: vsCodeUrl(fiber._debugSource?.fileName),
+		// 		selectors: [getSelector(element)]
+		// 	})
+		// }
+	}
+
+	for (const childElement of element.children) {
+		const components = findReactComponents(childElement)
+		for (const c of components) {
+			//accumulate the distinct selectors for each component
+			const index = result.findIndex(r => r.name === c.name)
+			if (index >= 0) result[index].selectors.push(...c.selectors)
+			else result.push(c)
 		}
 	}
 
 	return result
 }
 
-export function flatMapAllReactComponents(elements: Element[]) {
-	const result = new Map<string, string>()
-	for (const element of elements) {
-		let fiber = FindReactFiber(element)
-		if (fiber) {
-
-			let prevFiber
-			while (fiber) {
-				const kind = tags[fiber.tag] as Kind
-				if (kind != "HostComponent") {
-					const name = fiberTypeName(fiber)
-					if(!result.has(name)) {
-						const url = vsCodeUrl(prevFiber?._debugSource?.fileName)
-						result.set(name, url)
-					}
-					break
-				}
-				prevFiber = fiber
-				fiber = fiber.return;
-			}
+//https://stackoverflow.com/a/66291608
+function getSelector(element: Element) {
+	if (element.tagName === "BODY") return "BODY";
+	const names = [];
+	while (element.parentElement && element.tagName !== "BODY") {
+		if (element.id) {
+			names.unshift("#" + element.getAttribute("id")); // getAttribute, because `elm.id` could also return a child element with name "id"
+			break; // ID should be unique
+		} else {
+			let c = 1, e = element;
+			for (; e.previousElementSibling; e = e.previousElementSibling, c++);
+			names.unshift(element.tagName + ":nth-child(" + c + ")");
 		}
+		element = element.parentElement;
 	}
-	return result
+	return names.join(">");
 }
+
 
 function FindReactFiber(dom: any) {
 	//https://stackoverflow.com/a/39165137

@@ -2,7 +2,7 @@ import { handleExtensionEvent, toggleSidePanel, searchFigmaData, setToolbarEnabl
 import FigmentDragable from './FigmentDragable.js'
 import FigmentOutline from './FigmentOutline.js'
 import { FigmentMenu, MenuItem } from './Menu.js'
-import { RenderTreeNode, flatMapAllReactComponents, flatMapAllChildren, getElementPath, getReactRenderTree } from "./elementFunctions.js"
+import { RenderTreeNode, getElementPath, getReactRenderTree, findReactComponents } from "./elementFunctions.js"
 import { element } from './html.js'
 
 //This code runs in the context of the page
@@ -26,18 +26,36 @@ handleExtensionEvent("toggle_enabled", toggleEnabled)
 handleExtensionEvent("overlay_image", handleOverlayImageEvent)
 handleExtensionEvent("start_drag_from_side_panel", handleDragFromSidePanel)
 handleExtensionEvent("request_updated_react_data", sendPageComponentsToSidebar)
+handleExtensionEvent('highlight_selector', highlightSelector)
+handleExtensionEvent('clear_selector', clearSelector)
 
-function sendPageComponentsToSidebar() {
-	const components = findDistinctReactComponentsInElement(document.getElementById('root'))
-	updateReactComponentsInSidebar(figmentId, JSON.stringify(Array.from(components)))
-	//console.log('sent updated react components to sidebar')
-	//for (const [name, path] of components) { console.log(name, path)} 
+// Create an observer instance linked to the callback function
+const observer = new MutationObserver((mutationList, observer) => sendPageComponentsToSidebar())
+observer.observe(document, { attributes: false, childList: true, subtree: true });
+console.log('observing document for mutations')
+
+function highlightSelector({detail: selector}: CustomEventInit) {
+	const element = document.querySelector(selector) as HTMLElement
+	if(element) {
+		element.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" })
+		//element.classList.add('figment-highlight')
+		FigmentOutline.highlightElement({
+		node: element,
+		label: '',
+		onClick: undefined //no action for clicking the element/component name in the menu
+		})
+	}
 }
 
-function findDistinctReactComponentsInElement(element: HTMLElement | null) {
-	const children = flatMapAllChildren(element)
-	const components = flatMapAllReactComponents(children)
-	return components
+function clearSelector({detail: selector}: CustomEventInit) {
+	//const element = document.querySelector(selector)
+	//element.classList.remove('figment-highlight')
+	//FigmentOutline.removeHighlight()
+}
+
+function sendPageComponentsToSidebar() {
+	const components = findReactComponents(document.getElementById('root'))
+	updateReactComponentsInSidebar(figmentId, components)
 }
 
 function toggleEnabled() {

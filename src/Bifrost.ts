@@ -1,4 +1,6 @@
 
+import { ReactComponentInfo } from "./elementFunctions"
+
 //This file is intended to consolidate the functions that handle message 
 // passing communication between the page and the service worker. 
 // This file contains functions that are used in both places. 
@@ -28,7 +30,8 @@ type FigmentMessageAction =
 	"update_react_data" |
 	"request_updated_react_data" |
 	"request_sidepanel_open_state" |
-	"close_sidepanel"
+	"close_sidepanel" | 
+	"highlight_selector" | "clear_selector"
 
 type FigmaMessageTarget = 'page' |
 	'extension' |
@@ -121,12 +124,12 @@ export function searchFigmaData(extensionId: string, search: string) {
 	}))
 }
 
-export function updateReactComponentsInSidebar(extensionId: string, data: any) {
+export function updateReactComponentsInSidebar(extensionId: string, components: ReactComponentInfo[]) {
 	sendMessageToExtension(extensionId, new Message({
 		source: 'page',
 		target: 'react_sidepanel',
 		action: 'update_react_data',
-		data: data
+		data: JSON.stringify(components)
 	}))
 }
 
