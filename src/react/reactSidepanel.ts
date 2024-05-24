@@ -31,10 +31,11 @@ function renderReactTabUi(url: string, data?: ReactComponentInfo[]) {
 	return element('div', { className: 'react-tab' }, [
 		element('h2', { innerText: `React Components for ${url}` }),
 		data && element('div', { className: 'react-component-list'}, 
-			data.map(({name, url, selectors}) => element('div', { className: 'react-component'}, [
-				element('span', { innerText: name }),
-				element('a', { innerText: shorten(url), href: url, target: '_vscode' }),
-				element('div', {}, selectors.map((selector) => element('pre', {innerText: selector.replaceAll(':nth-child', '')}, [], {
+			data.map((component) => element('div', { className: 'react-component'}, [
+				element('span', { innerText: component.name }),
+				element('a', { innerText: shorten(component.url), href: component.url, target: '_vscode' }),
+				element('div', { className: 'dom-selectors'}, 
+				component.selectors.map((selector) => element('pre', {innerText: selector.replaceAll(':nth-child', '')}, [], {
 					mouseenter: () => { SendMessageToCurrentTab('highlight_selector', selector) },
 					mouseleave: () => { SendMessageToCurrentTab('clear_selector', selector)},
 				})))
