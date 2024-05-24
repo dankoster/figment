@@ -96,6 +96,10 @@ export class RenderTreeNode {
 
 };
 
+function filePath(debugSource: {fileName: string, lineNumber: string, columnNumber: string}) {
+	return [debugSource.fileName, debugSource.lineNumber, debugSource.columnNumber].join(':')
+}
+
 function fileName(filePath: string) {
 	return filePath?.substring(filePath.lastIndexOf('/') + 1) ?? '';
 }
@@ -183,11 +187,27 @@ export function findReactComponents(element: Element | null): ReactComponentInfo
 	let fiber = FindReactFiber(element)
 	if (fiber?.return) {
 		const return_kind = tags[fiber.return.tag] as Kind
-		if (return_kind != 'HostComponent') {
+		if (return_kind == 'Fragment') {
+			const url = vsCodeUrl(filePath(fiber._debugSource))
+			let name = fiberTypeName(fiber.return)
+			let type = fiber.type
+			while(!name) {
+				fiber = fiber.return.return
+				name = fiberTypeName(fiber.return)
+			}
 			result.push({
-				name: fiberTypeName(fiber.return),
+				name: `${name}.${return_kind}(${type})`,
 				kind: return_kind,
-				url: vsCodeUrl(fiber._debugSource?.fileName),
+				url,
+				selectors: [getSelector(element)]
+			})
+		}
+		else if (return_kind != 'HostComponent') {
+			const name = fiberTypeName(fiber.return)
+			result.push({
+				name,
+				kind: return_kind,
+				url: vsCodeUrl(filePath(fiber._debugSource)),
 				selectors: [getSelector(element)]
 			})
 		}
