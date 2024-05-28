@@ -75,7 +75,7 @@ export class RenderTreeNode {
 	}
 
 	get stateNode() {
-		let stateNode = this.fiber.stateNode;
+		let stateNode = this.fiber?.stateNode;
 		if (!stateNode) {
 			while (this.fiber && !stateNode) {
 				this.fiber = this.fiber.child || this.fiber.sibling;
@@ -97,7 +97,7 @@ export class RenderTreeNode {
 };
 
 function filePath(debugSource: {fileName: string, lineNumber: string, columnNumber: string}) {
-	return [debugSource.fileName, debugSource.lineNumber, debugSource.columnNumber].join(':')
+	return debugSource && [debugSource.fileName, debugSource.lineNumber, debugSource.columnNumber].join(':')
 }
 
 function fileName(filePath: string) {
@@ -171,11 +171,15 @@ export function getReactRenderTree(element: HTMLElement) {
 	return tree;
 }
 
+export type SelectorInfo = {
+	selector: string
+	url: string
+}
 export type ReactComponentInfo = {
 	name: string
 	kind: string
 	url: string
-	selectors: string[]
+	selectors: SelectorInfo[]
 }
 
 export function findReactComponents(element: Element | null): ReactComponentInfo[] {
@@ -199,7 +203,10 @@ export function findReactComponents(element: Element | null): ReactComponentInfo
 				name: `${name}.${return_kind}(${type})`,
 				kind: return_kind,
 				url,
-				selectors: [getSelector(element)]
+				selectors: [{ 
+					selector: getSelector(element), 
+					url: vsCodeUrl(filePath(fiber.return._debugSource)) 
+				}]
 			})
 		}
 		else if (return_kind != 'HostComponent') {
@@ -208,7 +215,10 @@ export function findReactComponents(element: Element | null): ReactComponentInfo
 				name,
 				kind: return_kind,
 				url: vsCodeUrl(filePath(fiber._debugSource)),
-				selectors: [getSelector(element)]
+				selectors: [{ 
+					selector: getSelector(element), 
+					url: vsCodeUrl(filePath(fiber.return._debugSource)) 
+				}]
 			})
 		}
 

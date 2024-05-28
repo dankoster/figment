@@ -26,20 +26,27 @@ function tabTitle(text: string) {
 function renderReactTabUi(url: string, data?: ReactComponentInfo[]) {
 	displayStatus(`rendering react tab for ${url}`, 'react')
 
-	const shorten = (url: string) => url.substring(url.lastIndexOf('/') + 1)
+	const shortUrl = (url: string) => url.substring(url.lastIndexOf('/') + 1)
+	const shortSel = (selector: string) => selector.replaceAll(':nth-child', '').replaceAll('#', '')
 
 	return element('div', { className: 'react-tab' }, [
 		element('h2', { innerText: `React Components for ${url}` }),
-		data && element('div', { className: 'react-component-list'}, 
-			data.map((component) => element('div', { className: 'react-component'}, [
-				element('span', { innerText: component.name }),
-				element('a', { innerText: shorten(component.url), href: component.url, target: '_vscode' }),
-				element('div', { className: 'dom-selectors'}, 
-				component.selectors.map((selector) => element('pre', {innerText: selector.replaceAll(':nth-child', '')}, [], {
-					mouseenter: () => { SendMessageToCurrentTab('highlight_selector', selector) },
-					mouseleave: () => { SendMessageToCurrentTab('clear_selector', selector)},
-				})))
-				
+		data && element('div', { className: 'react-component-list' },
+			data.map((component) => element('div', { className: 'react-component' }, [
+				element('div', { className: 'component-info' }, [
+					element('span', { innerText: component.name }),
+					element('a', { innerText: shortUrl(component.url), href: component.url, target: '_vscode' }),
+				]),
+				element('div', { className: 'dom-selectors' },
+					component.selectors.map((s) => element('div', { className: 'dom-selector' }, [
+						element('pre', { innerText: shortSel(s.selector) }, []),
+						element('a', { innerText: shortUrl(s.url), href: s.url, target: '_vscode' }),
+					], {
+						mouseenter: () => { SendMessageToCurrentTab('highlight_selector', s.selector) },
+						mouseleave: () => { SendMessageToCurrentTab('clear_selector', s.selector) },
+					})
+				))
+
 			]))
 		)
 	])
@@ -61,7 +68,7 @@ chrome.runtime.onMessageExternal.addListener((request, sender) => {
 function handleFigmentMessage(message: Message) {
 	switch (message.action) {
 		case 'update_react_data':
-			if(!message.data) throw new Error(`update_react_data: data invalid! ${message.data}`)
+			if (!message.data) throw new Error(`update_react_data: data invalid! ${message.data}`)
 
 			const data = JSON.parse(message.data) as ReactComponentInfo[]
 			displayStatus(`got updated react data for ${urlString}`, 'react')
