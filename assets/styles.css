@@ -98,6 +98,7 @@
 		opacity: 0;
 		visibility: hidden;
 		position: fixed;
+		max-width: 30svw;
 	}
 
 	&.has-submenu::after {
@@ -138,9 +139,9 @@ div.submenu-hover-target {
 
 .menu-text {
 	/* cursor: pointer; */
-	overflow: hidden;
+	/* overflow: hidden; */
 	text-wrap: nowrap;
-	text-overflow: ellipsis;
+	/* text-overflow: ellipsis; */
 	color: #282828;
 }
 
@@ -381,6 +382,9 @@ a.menu-btn {
 	text-align: end;
 	font-size: smaller;
 	align-self: center;
+	text-wrap: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
 }
 
 .menu-subtext :hover {

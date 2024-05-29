@@ -32,7 +32,6 @@ handleExtensionEvent('clear_selector', clearSelector)
 // Create an observer instance linked to the callback function
 const observer = new MutationObserver((mutationList, observer) => sendPageComponentsToSidebar())
 observer.observe(document, { attributes: false, childList: true, subtree: true });
-console.log('observing document for mutations')
 
 function highlightSelector({detail: selector}: CustomEventInit) {
 	const element = document.querySelector(selector) as HTMLElement
@@ -149,23 +148,6 @@ function onOverlayClick(e: MouseEvent, renderTree: RenderTreeNode[]) {
 	if (menu) menu.Clear()
 	else menu = FigmentMenu.Create({ extraClasses: 'menu-keep-open' }) as FigmentMenu
 
-
-
-	// menu.AddItem(new MenuItem({
-	// 	text: 'submenu test',
-	// 	subItems: [
-	// 		new MenuItem({
-	// 			text: 'item A'
-	// 		}),
-	// 		new MenuItem({
-	// 			text: 'item B'
-	// 		}),
-	// 		new MenuItem({
-	// 			text: 'item C'
-	// 		}),
-	// 	]
-	// }))
-
 	//create a menu UI from this tree
 	renderTree.forEach(node => {
 		const isDomElement = node.kind === 'HostComponent'
@@ -180,18 +162,29 @@ function onOverlayClick(e: MouseEvent, renderTree: RenderTreeNode[]) {
 			mouseEnter: ((e: MouseEvent) => FigmentOutline.highlightElement({
 				node: node.stateNode,
 				label: node.type,
-				onClick: undefined //no action for clicking the element/component name in the menu
 			}))
 		})
-		if(!isDomElement) {
+
+		for(const prop in node.fiber.memoizedProps) {
+			if(prop !== 'children')
 			item.AddSubItem(new MenuItem({
-				text: "Find in Figma",
-				onTextClick: () => {
-					searchFigmaData(figmentId, node.type)
-					menu?.Clear() //close the menu
-				}
+				text: `${prop}:`,
+				subtext: `${node.fiber.memoizedProps[prop]}`,
+				onSubTextClick: () => navigator.clipboard.writeText(node.fiber.memoizedProps[prop]),
+				onSubTextMouseDown: (ev:MouseEvent) => (ev.target as HTMLSpanElement).textContent = `✂︎ ${node.fiber.memoizedProps[prop]}`,
+				onSubTextMouseUp: (ev:MouseEvent) => (ev.target as HTMLSpanElement).textContent = node.fiber.memoizedProps[prop]
 			}))
 		}
+
+		// if(!isDomElement) {
+		// 	item.AddSubItem(new MenuItem({
+		// 		text: "Find in Figma",
+		// 		onTextClick: () => {
+		// 			searchFigmaData(figmentId, node.type)
+		// 			menu?.Clear() //close the menu
+		// 		}
+		// 	}))
+		// }
 
 		menu?.AddItem(item)
 	})

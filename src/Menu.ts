@@ -259,8 +259,10 @@ type MenuItemOptions = {
 	extraClasses?: ExtraClasses,
 	imageSrc?: string,
 	onSubTextClick?: (this: HTMLSpanElement, ev: MouseEvent) => any,
-	mouseEnter?: (this: HTMLSpanElement, ev: MouseEvent) => any,
-	mouseLeave?: (this: HTMLSpanElement, ev: MouseEvent) => any,
+	onSubTextMouseDown?: (this: HTMLSpanElement, ev: MouseEvent) => any,
+	onSubTextMouseUp?: (this: HTMLSpanElement, ev: MouseEvent) => any,
+	mouseEnter?: (this: HTMLSpanElement, ev: MouseEvent) => void,
+	mouseLeave?: (this: HTMLSpanElement, ev: MouseEvent) => void,
 	subItems?: MenuItem[],
 }
 
@@ -284,6 +286,8 @@ export class MenuItem {
 		subItems,
 		onTextClick,
 		onSubTextClick,
+		onSubTextMouseUp,
+		onSubTextMouseDown,
 		mouseEnter,
 		mouseLeave
 	}: MenuItemOptions) {
@@ -328,6 +332,9 @@ export class MenuItem {
 				subtextSpan.classList.add('menu-keep-open')
 				subtextSpan.addEventListener('click', onSubTextClick)
 			}
+
+			if (onSubTextMouseUp) subtextSpan.addEventListener('mouseup', onSubTextMouseUp)
+			if (onSubTextMouseDown) subtextSpan.addEventListener('mousedown', onSubTextMouseDown)
 		}
 
 		if (imageSrc) this.imageSrc = imageSrc
