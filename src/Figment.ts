@@ -33,20 +33,20 @@ handleExtensionEvent('clear_selector', clearSelector)
 const observer = new MutationObserver((mutationList, observer) => sendPageComponentsToSidebar())
 observer.observe(document, { attributes: false, childList: true, subtree: true });
 
-function highlightSelector({detail: selector}: CustomEventInit) {
+function highlightSelector({ detail: selector }: CustomEventInit) {
 	const element = document.querySelector(selector) as HTMLElement
-	if(element) {
+	if (element) {
 		element.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" })
 		//element.classList.add('figment-highlight')
 		FigmentOutline.highlightElement({
-		node: element,
-		label: '',
-		onClick: undefined //no action for clicking the element/component name in the menu
+			node: element,
+			label: '',
+			onClick: undefined //no action for clicking the element/component name in the menu
 		})
 	}
 }
 
-function clearSelector({detail: selector}: CustomEventInit) {
+function clearSelector({ detail: selector }: CustomEventInit) {
 	//const element = document.querySelector(selector)
 	//element.classList.remove('figment-highlight')
 	//FigmentOutline.removeHighlight()
@@ -165,15 +165,28 @@ function onOverlayClick(e: MouseEvent, renderTree: RenderTreeNode[]) {
 			}))
 		})
 
-		for(const prop in node.fiber.memoizedProps) {
-			if(prop !== 'children')
-			item.AddSubItem(new MenuItem({
-				text: `${prop}:`,
-				subtext: `${node.fiber.memoizedProps[prop]}`,
-				onSubTextClick: () => navigator.clipboard.writeText(node.fiber.memoizedProps[prop]),
-				onSubTextMouseDown: (ev:MouseEvent) => (ev.target as HTMLSpanElement).textContent = `✂︎ ${node.fiber.memoizedProps[prop]}`,
-				onSubTextMouseUp: (ev:MouseEvent) => (ev.target as HTMLSpanElement).textContent = node.fiber.memoizedProps[prop]
-			}))
+		for (const prop in node.fiber.memoizedProps) {
+			if (prop !== 'children') {
+				let subtext = ''
+				switch (typeof node.fiber.memoizedProps[prop]) {
+					case 'symbol':
+						subtext = node.fiber.memoizedProps[prop].toString()
+						break
+					case 'object':
+						subtext = JSON.stringify(node.fiber.memoizedProps[prop])
+						break
+					default:
+						subtext = `${node.fiber.memoizedProps[prop]}`
+						break
+				}
+				item.AddSubItem(new MenuItem({
+					text: `${prop}:`,
+					subtext,
+					onSubTextClick: () => navigator.clipboard.writeText(subtext),
+					onSubTextMouseDown: (ev: MouseEvent) => (ev.target as HTMLSpanElement).textContent = `✂︎ ${subtext}`,
+					onSubTextMouseUp: (ev: MouseEvent) => (ev.target as HTMLSpanElement).textContent = subtext
+				}))
+			}
 		}
 
 		// if(!isDomElement) {
