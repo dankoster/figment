@@ -96,7 +96,12 @@ export default class FigmentOutline extends HTMLElement {
 		if (node) {
 			let overlay = FigmentOutline.Create()
 			overlay.setLabel({ label, onClick })
-			overlay.trackNode(node)
+
+			try {
+				overlay.trackNode(node)
+			} catch(error) {
+				console.warn(error)
+			}
 		}
 	}
 }
