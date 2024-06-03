@@ -96,7 +96,7 @@ export class FigmentMenu extends HTMLElement {
 
 		this.container = FigmentMenu.buildMenuElements(this.items)
 
-		if (extra) {		
+		if (extra) {
 			this.container.appendChild(extra)
 		}
 
@@ -179,6 +179,7 @@ export class FigmentMenu extends HTMLElement {
 				// an other class that overrides the shape of the hover target polygon
 				const hoverTarget = document.createElement('div')
 				hoverTarget.className = 'submenu-hover-target'
+				hoverTarget.style.display = 'none'
 				hoverTarget.addEventListener('mousemove', (ev) => {
 					if (ev.movementX != 0) {
 						const menuIsLeft = hoverTarget.classList.contains('left')
@@ -192,12 +193,8 @@ export class FigmentMenu extends HTMLElement {
 						}
 					}
 				})
-				hoverTarget.addEventListener('mouseleave', () => {
-					hoverTarget.style.display = 'none'
-				})
-				menuItem.div.addEventListener('mouseenter', () => {
-					hoverTarget.style.display = 'block'
-				})
+				menuItem.div.addEventListener('mouseleave', () => hoverTarget.style.display = 'none' )
+				menuItem.div.addEventListener('mouseenter', () => hoverTarget.style.display = 'block' )
 				menuItem.div.appendChild(hoverTarget)
 
 				menuItem.div.appendChild(subMenu)
@@ -273,6 +270,7 @@ export class MenuItem {
 	img?: HTMLImageElement
 	expando?: HTMLDivElement
 	subMenuItems: MenuItem[] = []
+	text: string
 
 	constructor({
 		id,
@@ -294,6 +292,7 @@ export class MenuItem {
 		this.id = id
 		this.div = document.createElement('div')
 		this.div.classList.add('menu-item')
+		this.text = text
 
 		AddExtraClasses(this.div, extraClasses)
 

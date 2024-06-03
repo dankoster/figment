@@ -102,6 +102,7 @@
 	}
 
 	&.has-submenu::after {
+		pointer-events: none;
 		content: "";
 		position: relative;
 		height: 0;
@@ -118,7 +119,6 @@
 
 	&.is-dom-element:hover {
 		outline: 1px dashed #ff000091;
-		/* cursor: pointer; */
 		outline-width: 2px;
 		outline-offset: -2px;
 		border-radius: 4px;
