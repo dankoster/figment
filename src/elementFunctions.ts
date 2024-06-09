@@ -209,6 +209,18 @@ export function findReactComponents(element: Element | null): ReactComponentInfo
 				}]
 			})
 		}
+		else if (return_kind == 'ForwardRef') {
+			const name = fiberTypeName(fiber)
+			result.push({
+				name,
+				kind: return_kind,
+				url: vsCodeUrl(filePath(fiber._debugSource)),
+				selectors: [{ 
+					selector: getSelector(element), 
+					url: vsCodeUrl(filePath(fiber.return._debugSource)) 
+				}]
+			})
+		}
 		else if (return_kind != 'HostComponent') {
 			const name = fiberTypeName(fiber.return)
 			result.push({
