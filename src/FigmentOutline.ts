@@ -67,7 +67,7 @@ export default class FigmentOutline extends HTMLElement {
 	}
 
 	trackNode(node: HTMLElement) {
-		if (!node.getBoundingClientRect) throw new Error(`missing 'getBoundingClientRect' on node ${node}`)
+		if (!node.getBoundingClientRect) throw new Error(`missing 'getBoundingClientRect' on node ${(node as any)?.__proto__?.constructor?.name ?? node}`)
 
 		this.target = node
 		this.setLocation(node.getBoundingClientRect())
