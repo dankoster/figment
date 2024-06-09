@@ -105,7 +105,7 @@ function fileName(filePath: string) {
 }
 
 function vsCodeUrl(filePath: string) {
-	return `vsCode://file${filePath}`;
+	return filePath && `vsCode://file${filePath}`;
 }
 
 function fiberTypeName(f: any): string {
