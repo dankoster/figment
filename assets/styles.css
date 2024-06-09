@@ -65,6 +65,7 @@
 	color: black;
 	background: white;
 	max-height: inherit;
+	max-width: 50svw;
 	margin: 0;
 	padding-block: 0.5em;
 	padding-inline: 0.25em;
@@ -138,10 +139,11 @@ div.submenu-hover-target {
 }
 
 .menu-text {
-	/* cursor: pointer; */
-	/* overflow: hidden; */
+	cursor: pointer;
+	min-width: fit-content;
+	overflow: hidden;
 	text-wrap: nowrap;
-	/* text-overflow: ellipsis; */
+	text-overflow: ellipsis;
 	color: #282828;
 }
 
@@ -329,6 +331,7 @@ button.menu-btn {
 	background: none;
 	line-height: normal;
 	overflow: visible;
+	user-select: none;
 	-webkit-user-select: none;
 	-moz-user-select: none;
 	-ms-user-select: none;
