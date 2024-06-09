@@ -104,7 +104,8 @@ export class FigmentMenu extends HTMLElement {
 
 		this.shadowRoot?.appendChild(this.container)
 
-		FigmentMenu.fixSmallMenuScroll(this.container.querySelector('div.figment-menu') as HTMLDivElement)
+		const menu = this.container.querySelector('div.figment-menu') as HTMLDivElement
+		FigmentMenu.fixSmallMenuScroll(menu)
 		FigmentMenu.fixContainerOverflow(this.container)
 	}
 
@@ -113,15 +114,16 @@ export class FigmentMenu extends HTMLElement {
 		// but expand the menu max-height if there are fewer than that
 
 		if (!menu) throw new Error(`menu is ${menu}`)
+		if (menu?.toString() !== '[object HTMLDivElement]') throw new Error('menu is not HTMLDivElement')
 
-		const childrenHeight = GetTotalClientHeight(menu?.children)
-		const lastChildHeight = menu?.children[menu.children.length - 1].clientHeight
-		const menuHeight = stylePxToInt(getComputedStyle(menu).height)
+		const actualOverflow = (menu as HTMLElement)?.scrollHeight - (menu as HTMLElement)?.clientHeight
+		const menuItemHeight = ((menu as HTMLElement)?.firstChild as HTMLElement)?.clientHeight
+		const minAcceptableOverflow = menuItemHeight * minChildrenForScrolling
 
-		const allowableOverflow = lastChildHeight * minChildrenForScrolling
-		const overflowHeight = childrenHeight - menuHeight
-		if (overflowHeight < allowableOverflow) {
-			menu.style.maxHeight = childrenHeight + 'px'
+		if(actualOverflow > 0 && actualOverflow < minAcceptableOverflow) {
+			// console.log('fixSmallMenuScroll', menu);
+			// (menu.parentElement as HTMLElement).style.outline = "1px solid red";
+			(menu as HTMLElement).style.maxHeight = "fit-content";
 		}
 	}
 
@@ -169,8 +171,8 @@ export class FigmentMenu extends HTMLElement {
 		for (const menuItem of menuItems) {
 			menu.appendChild(menuItem.div)
 			if (menuItem.subMenuItems?.length) {
-				const subMenu = FigmentMenu.buildMenuElements(menuItem.subMenuItems)
-				subMenu.classList.add('submenu')
+				const subMenuContainer = FigmentMenu.buildMenuElements(menuItem.subMenuItems)
+				subMenuContainer.classList.add('submenu')
 
 				//add invisible hover target to cover lower menu items but remove it 
 				// if the mouse starts moving left. This is to let the user shortcut
@@ -197,25 +199,26 @@ export class FigmentMenu extends HTMLElement {
 				menuItem.div.addEventListener('mouseenter', () => hoverTarget.style.display = 'block' )
 				menuItem.div.appendChild(hoverTarget)
 
-				menuItem.div.appendChild(subMenu)
+				menuItem.div.appendChild(subMenuContainer)
 				menuItem.div.classList.add('has-submenu')
-				menuItem.div.parentElement?.addEventListener('scroll', () => FigmentMenu.updateSubmenuPosition(subMenu))
-				menuItem.div.parentElement?.addEventListener('mouseenter', () => FigmentMenu.updateSubmenuPosition(subMenu))
+				menuItem.div.parentElement?.addEventListener('scroll', () => FigmentMenu.updateSubmenuPosition(subMenuContainer))
+				menuItem.div.parentElement?.addEventListener('mouseenter', () => FigmentMenu.updateSubmenuPosition(subMenuContainer))
 			}
 		}
 
 		return container
 	}
 
-	private static updateSubmenuPosition(submenu: HTMLDivElement) {
-		const parentRect = submenu.parentElement?.getBoundingClientRect();
-		submenu.style.top = `${parentRect?.top}px`
-		submenu.style.left = `${parentRect?.right}px`
+	private static updateSubmenuPosition(submenuContainer: HTMLDivElement) {
+		const parentRect = submenuContainer.parentElement?.getBoundingClientRect();
+		submenuContainer.style.top = `${parentRect?.top}px`
+		submenuContainer.style.left = `${parentRect?.right}px`
 
-		FigmentMenu.fixContainerOverflow(submenu)
+		FigmentMenu.fixSmallMenuScroll(submenuContainer.firstChild as HTMLDivElement)
+		FigmentMenu.fixContainerOverflow(submenuContainer)
 
-		const submenuRect = submenu.getBoundingClientRect()
-		const hoverTarget = submenu.parentElement?.querySelector('div.submenu-hover-target') as HTMLDivElement
+		const submenuRect = submenuContainer.getBoundingClientRect()
+		const hoverTarget = submenuContainer.parentElement?.querySelector('div.submenu-hover-target') as HTMLDivElement
 
 		hoverTarget.style.top = `${parentRect?.top}px`
 		//todo: get (submenu.parentElement?.style.paddingBlockEnd ?? 0) instead of hardcoding -3
