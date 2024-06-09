@@ -165,6 +165,7 @@ function onOverlayClick(e: MouseEvent, renderTree: RenderTreeNode[]) {
 			}))
 		})
 
+		//make a submenu for the props
 		for (const prop in node.fiber.memoizedProps) {
 			if (prop !== 'children') {
 				let subtext = ''
@@ -173,7 +174,11 @@ function onOverlayClick(e: MouseEvent, renderTree: RenderTreeNode[]) {
 						subtext = node.fiber.memoizedProps[prop].toString()
 						break
 					case 'object':
-						subtext = JSON.stringify(node.fiber.memoizedProps[prop])
+						try {
+							subtext = JSON.stringify(node.fiber.memoizedProps[prop])
+						} catch (err) {
+							subtext = err as string 
+						}
 						break
 					default:
 						subtext = `${node.fiber.memoizedProps[prop]}`
