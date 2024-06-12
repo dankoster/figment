@@ -182,6 +182,9 @@ export class FigmentMenu extends HTMLElement {
 				const hoverTarget = document.createElement('div')
 				hoverTarget.className = 'submenu-hover-target'
 				hoverTarget.style.display = 'none'
+				hoverTarget.addEventListener('wheel', () => {
+					hoverTarget.style.display = 'none'
+				})
 				hoverTarget.addEventListener('mousemove', (ev) => {
 					if (ev.movementX != 0) {
 						const menuIsLeft = hoverTarget.classList.contains('left')
