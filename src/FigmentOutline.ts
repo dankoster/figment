@@ -58,11 +58,12 @@ export default class FigmentOutline extends HTMLElement {
 	}
 
 	setLocation(rect: DOMRect) {
+		const bodyRect = document.body.getBoundingClientRect()
 		this.setStyles({
 			top: window.scrollY + rect.top + 'px'
 			, left: rect.left + 'px'
 			, width: rect.width + 'px'
-			, height: rect.height + 'px'
+			, height: rect.bottom < bodyRect.bottom ? (rect.height + 'px') : (bodyRect.bottom - rect.top + 'px')
 		})
 	}
 
