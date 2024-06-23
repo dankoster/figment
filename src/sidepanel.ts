@@ -1,14 +1,28 @@
 import { Message } from "./Bifrost.js";
 import * as figmaSidepanel from "./figma/figmaSidepanel.js";
 import * as reactSidepanel from "./react/reactSidepanel.js";
+import * as optionsSidePanel from "./options/optionsSidepanel.js"
 import { element } from "./html.js";
+import { getAllOptions } from "./options.js";
 
+const options = await getAllOptions()
 
 export type sidePanelUrlHandler = (url: URL) => void
 
+//TODO: just use an array?
 const handlers = new Map<string, sidePanelUrlHandler[]>()
-handlers.set('localhost', [reactSidepanel.addTab, figmaSidepanel.handleLocalhost])
-handlers.set('www.figma.com', [figmaSidepanel.handleFigmaUrl])
+handlers.set('localhost', [optionsSidePanel.addTab])
+handlers.set('localhost', [reactSidepanel.addTab])
+
+//TODO: handle options change so we can turn tabs off and on without a refresh
+if(options.figmaEnabled.value) {
+	console.log("InitFigmaSidepanel")
+	figmaSidepanel.InitFigmaSidepanel()
+	handlers.set('localhost', [figmaSidepanel.handleLocalhost])
+	handlers.set('www.figma.com', [figmaSidepanel.handleFigmaUrl])
+}
+
+console.log('handlers initialized!', handlers)
 
 async function handleTabUpdated(tab: chrome.tabs.Tab) {
 	if (!tab.url) return

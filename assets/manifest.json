@@ -1,6 +1,6 @@
 {
-	"name": "Figment ⌁ for React + Figma",
-	"description": "Find the code and Figma designs for your React components!",
+	"name": "Figment ⌁ for React",
+	"description": "Find the React code that rendered what you see!",
 	"version": "0.5.4",
 	"manifest_version": 3,
 	"icons": {
@@ -56,7 +56,8 @@
 		"sidePanel",
 		"contextMenus",
 		"tabs",
-		"activeTab"
+		"activeTab",
+		"storage"
 	],
 	"host_permissions": [
 		"*://localhost/*",
@@ -77,5 +78,5 @@
 	},
 	"side_panel": {
 		"default_path": "sidepanel.html"
-	  }
+	}
 }

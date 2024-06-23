@@ -1,4 +1,4 @@
-import { Message, dispatchExtensionAction } from "./Bifrost.js"
+import { Message, SendMessageToCurrentTab, dispatchExtensionAction } from "./Bifrost.js"
 
 //https://developer.chrome.com/docs/extensions/reference/api/scripting#runtime_functions
 //https://developer.chrome.com/docs/extensions/reference/api/action
@@ -56,7 +56,13 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
 chrome.runtime.onMessageExternal.addListener(async (request, sender, sendResponse) => {
 	const message = Message.from(request.message)
+	console.log('onMessageExternal', message.action)
 	switch (message.action) {
+		case 'get_options':
+			const settings = await chrome.storage.sync.get()
+			console.log(message.action, 'RESULT', settings)
+			SendMessageToCurrentTab('got_options', JSON.stringify(settings))
+			break;
 		case 'toggle_sidepanel':
 			toggleSidePanel();
 			break;
@@ -104,6 +110,17 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
 		default:
 			throw new Error(`unhandled context menu: ${info.menuItemId}`)
 	}
+});
+
+chrome.storage.onChanged.addListener(async (changes, namespace) => {
+	// for (let [key, { oldValue, newValue }] of Object.entries(changes)) {
+	// 	console.log(
+	// 		`Storage key "${key}" in namespace "${namespace}" changed.`,
+	// 		`Old value was "${oldValue}", new value is "${newValue}".`
+	// 	);
+	// }
+	const settings = await chrome.storage.sync.get()
+	SendMessageToCurrentTab('got_options', JSON.stringify(settings))
 });
 
 function toggleSidePanel() {

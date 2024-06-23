@@ -1,0 +1,13 @@
+.options-tab {
+	.options {
+        .option {
+            display: flex;
+            gap: 1rem;
+            flex-direction: column;
+            outline: 1px solid;
+            margin: 1rem;
+            padding: 1rem;
+            border-radius: 5px;
+        }
+	}
+}

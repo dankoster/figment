@@ -1,9 +1,10 @@
-import { handleExtensionEvent, toggleSidePanel, searchFigmaData, setToolbarEnabledState, updateReactComponentsInSidebar } from './Bifrost.js'
+import { handleExtensionEvent, toggleSidePanel, setToolbarEnabledState, updateReactComponentsInSidebar, getOptions } from './Bifrost.js'
 import FigmentDragable from './FigmentDragable.js'
 import FigmentOutline from './FigmentOutline.js'
 import { FigmentMenu, MenuItem } from './Menu.js'
 import { RenderTreeNode, getElementPath, getReactRenderTree, findReactComponents } from "./elementFunctions.js"
 import { element } from './html.js'
+import { Options } from './options.js'
 
 //This code runs in the context of the page
 // - set up hotkeys
@@ -14,12 +15,13 @@ import { element } from './html.js'
 export const figmentId = document.head.getElementsByTagName('figment')[0].id
 
 const mouseMoveDetectionDelayMs = 50
-let mouseMoveDelayTimeout: number | undefined = undefined
-let frozenRenderTree: RenderTreeNode[] | undefined = undefined
-let menu: FigmentMenu | undefined = undefined
-let outline: FigmentOutline | undefined = undefined
-let dragable: FigmentDragable | undefined = undefined
-let enabled = false;
+let mouseMoveDelayTimeout: number | undefined
+let frozenRenderTree: RenderTreeNode[] | undefined
+let menu: FigmentMenu | undefined
+let outline: FigmentOutline | undefined
+let dragable: FigmentDragable | undefined
+let options: Options | undefined
+let enabled = false
 
 //handle events from the service worker
 handleExtensionEvent("toggle_enabled", toggleEnabled)
@@ -27,9 +29,13 @@ handleExtensionEvent("overlay_image", handleOverlayImageEvent)
 handleExtensionEvent("start_drag_from_side_panel", handleDragFromSidePanel)
 handleExtensionEvent("request_updated_react_data", sendPageComponentsToSidebar)
 handleExtensionEvent('highlight_selector', highlightSelector)
-handleExtensionEvent('clear_selector', clearSelector)
+//handleExtensionEvent('clear_selector', clearSelector)
+handleExtensionEvent('got_options', gotOptions)
 
-// Create an observer instance linked to the callback function
+getOptions(figmentId)
+
+// When the dom changes, we want to be alerted so we can update the react sidebar
+//TODO: only enable the observer when the sidebar is active!
 const observer = new MutationObserver((mutationList, observer) => sendPageComponentsToSidebar())
 observer.observe(document, { attributes: false, childList: true, subtree: true });
 
@@ -46,7 +52,12 @@ function highlightSelector({ detail: selector }: CustomEventInit) {
 	}
 }
 
+function gotOptions({ detail }: CustomEventInit) {
+	options = JSON.parse(detail)
+}
+
 function clearSelector({ detail: selector }: CustomEventInit) {
+	console.log('clearSelector', selector)
 	//const element = document.querySelector(selector)
 	//element.classList.remove('figment-highlight')
 	//FigmentOutline.removeHighlight()
@@ -99,7 +110,7 @@ function handleDragFromSidePanel(e: CustomEventInit) {
 
 function enableOverlay(enable: boolean) {
 	if (enable) {
-		document.addEventListener('mousemove', mouseMoved)
+		document.addEventListener('mousemove', document_mouseMoved)
 
 		//create the menu and outline elements to get the CSS pre-loaded before we need it
 		// (this avoids a race condition later when using them for the first time, 
@@ -109,7 +120,7 @@ function enableOverlay(enable: boolean) {
 		dragable = FigmentDragable.Create()
 	}
 	else {
-		document.removeEventListener('mousemove', mouseMoved)
+		document.removeEventListener('mousemove', document_mouseMoved)
 		FigmentOutline.removeHighlight()
 		FigmentMenu.removeMenu()
 	}
@@ -117,7 +128,7 @@ function enableOverlay(enable: boolean) {
 	setToolbarEnabledState(figmentId, enable)
 }
 
-function mouseMoved(e: MouseEvent) {
+function document_mouseMoved(e: MouseEvent) {
 	if (mouseMoveDelayTimeout) clearTimeout(mouseMoveDelayTimeout)
 	mouseMoveDelayTimeout = setTimeout(() => {
 		handleMouseMoved(e)
@@ -166,31 +177,33 @@ function onOverlayClick(e: MouseEvent, renderTree: RenderTreeNode[]) {
 		})
 
 		//make a submenu for the props
-		for (const prop in node.fiber.memoizedProps) {
-			if (prop !== 'children') {
-				let subtext = ''
-				switch (typeof node.fiber.memoizedProps[prop]) {
-					case 'symbol':
-						subtext = node.fiber.memoizedProps[prop].toString()
-						break
-					case 'object':
-						try {
-							subtext = JSON.stringify(node.fiber.memoizedProps[prop])
-						} catch (err) {
-							subtext = err as string 
-						}
-						break
-					default:
-						subtext = `${node.fiber.memoizedProps[prop]}`
-						break
+		if (options?.propsSubmenu.value) {
+			for (const prop in node.fiber.memoizedProps) {
+				if (prop !== 'children') {
+					let subtext = ''
+					switch (typeof node.fiber.memoizedProps[prop]) {
+						case 'symbol':
+							subtext = node.fiber.memoizedProps[prop].toString()
+							break
+						case 'object':
+							try {
+								subtext = JSON.stringify(node.fiber.memoizedProps[prop])
+							} catch (err) {
+								subtext = err as string
+							}
+							break
+						default:
+							subtext = `${node.fiber.memoizedProps[prop]}`
+							break
+					}
+					item.AddSubItem(new MenuItem({
+						text: `${prop}:`,
+						subtext,
+						onSubTextClick: () => navigator.clipboard.writeText(subtext),
+						onSubTextMouseDown: (ev: MouseEvent) => (ev.target as HTMLSpanElement).textContent = `✂︎ ${subtext}`,
+						onSubTextMouseUp: (ev: MouseEvent) => (ev.target as HTMLSpanElement).textContent = subtext
+					}))
 				}
-				item.AddSubItem(new MenuItem({
-					text: `${prop}:`,
-					subtext,
-					onSubTextClick: () => navigator.clipboard.writeText(subtext),
-					onSubTextMouseDown: (ev: MouseEvent) => (ev.target as HTMLSpanElement).textContent = `✂︎ ${subtext}`,
-					onSubTextMouseUp: (ev: MouseEvent) => (ev.target as HTMLSpanElement).textContent = subtext
-				}))
 			}
 		}
 
@@ -207,9 +220,15 @@ function onOverlayClick(e: MouseEvent, renderTree: RenderTreeNode[]) {
 		menu?.AddItem(item)
 	})
 
+	// const search_onKeyDown = (ev: KeyboardEvent) => {
+	// 	console.log((ev.target as HTMLInputElement)?.value + (ev.key.length === 1 ? ev.key : ''))
+	// }
+
 	const extensionOptions = element('div', { className: 'figment-extension-options' }, [
-		element('button', { textContent: 'X' }, undefined, { click: () => toggleEnabled() })
-		, element('button', { textContent: 'sidebar' }, undefined, { click: () => toggleSidePanel(figmentId) })
+		element('button', { textContent: '🛑' }, undefined, { click: () => toggleEnabled() })
+		, element('button', { textContent: '⇥' }, undefined, { click: () => toggleSidePanel(figmentId) })
+		// , element('button', { textContent: '✅' }, undefined, { click: () => getOptions(figmentId) })
+		// , element('input', { type: 'text', placeholder: 'search' }, undefined, { keydown: search_onKeyDown })
 	])
 
 	menu.ShowFor(e.target as HTMLElement, extensionOptions)

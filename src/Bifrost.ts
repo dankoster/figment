@@ -20,6 +20,8 @@ const dispatchExtensionEvent = (event: FigmentMessageAction, detail?: string) =>
 }
 
 type FigmentMessageAction =
+	"get_options" |
+	"got_options" |
 	"toggle_enabled" |
 	"toggle_sidepanel" |
 	"overlay_image" |
@@ -147,5 +149,13 @@ export function toggleSidePanel(extensionId: string) {
 		source: 'page',
 		target: 'extension',
 		action: 'toggle_sidepanel',
+	}))
+}
+
+export function getOptions(extensionId: string) {
+	sendMessageToExtension(extensionId, new Message({
+		source: 'page',
+		target: 'extension',
+		action: 'get_options'
 	}))
 }

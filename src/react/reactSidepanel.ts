@@ -7,7 +7,7 @@ import { displayStatus, sidePanelUrlHandler } from "../sidepanel.js";
 let urlString = ''
 const reactTab = new SidePanelTab(tabTitle('Components'), renderReactTabUi(urlString))
 
-//Inject figma css, if necessary
+//Inject css, if necessary
 applyStylesheetToDocument('reactSidePanel.css')
 
 export const addTab: sidePanelUrlHandler = function (url: URL) {
@@ -26,8 +26,8 @@ function tabTitle(text: string) {
 function renderReactTabUi(url: string, data?: ReactComponentInfo[]) {
 	displayStatus(`rendering react tab for ${url}`, 'react')
 
-	const shortUrl = (url: string) => url.substring(url.lastIndexOf('/') + 1)
-	const shortSel = (selector: string) => selector.replaceAll(':nth-child', '').replaceAll('#', '')
+	const shortUrl = (url?: string) => url?.substring(url.lastIndexOf('/') + 1)
+	const shortSel = (selector?: string) => selector?.replaceAll(':nth-child', '').replaceAll('#', '')
 
 	return element('div', { className: 'react-tab' }, [
 		element('h2', { innerText: `React Components for ${url}` }),
